@@ -9,7 +9,6 @@ import com.testpilot.project.dto.UpdateProjectRequest;
 import com.testpilot.project.entity.Project;
 import com.testpilot.project.repository.CodeFileRepository;
 import com.testpilot.project.repository.ProjectRepository;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,10 +19,15 @@ public class ProjectService {
 
     private final ProjectRepository projectRepository;
     private final CodeFileRepository codeFileRepository;
+    private final ProjectAuthorizationService authorizationService;
 
-    public ProjectService(ProjectRepository projectRepository, CodeFileRepository codeFileRepository) {
+    public ProjectService(
+            ProjectRepository projectRepository,
+            CodeFileRepository codeFileRepository,
+            ProjectAuthorizationService authorizationService) {
         this.projectRepository = projectRepository;
         this.codeFileRepository = codeFileRepository;
+        this.authorizationService = authorizationService;
     }
 
     @Transactional
@@ -67,22 +71,10 @@ public class ProjectService {
     }
 
     public Project findProjectAndVerifyReadAccess(Long id, UserPrincipal currentUser) {
-        Project project = projectRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Project not found with id: " + id));
-
-        if (currentUser.getRole() == Role.DEVELOPER && !project.getOwnerId().equals(currentUser.getId())) {
-            throw new AccessDeniedException("You do not have access to this project");
-        }
-        return project;
+        return authorizationService.requireReadAccess(id, currentUser);
     }
 
     public Project findProjectAndVerifyWriteAccess(Long id, UserPrincipal currentUser) {
-        Project project = projectRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Project not found with id: " + id));
-
-        if (currentUser.getRole() != Role.ADMIN && !project.getOwnerId().equals(currentUser.getId())) {
-            throw new AccessDeniedException("You do not have permission to modify this project");
-        }
-        return project;
+        return authorizationService.requireWriteAccess(id, currentUser);
     }
 }

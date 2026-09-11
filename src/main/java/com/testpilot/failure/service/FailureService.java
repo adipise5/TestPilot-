@@ -12,7 +12,7 @@ import com.testpilot.failure.entity.FixSuggestion;
 import com.testpilot.failure.repository.FailureAnalysisRepository;
 import com.testpilot.failure.repository.FixSuggestionRepository;
 import com.testpilot.project.entity.CodeFile;
-import com.testpilot.project.repository.CodeFileRepository;
+import com.testpilot.project.service.ProjectSourceService;
 import com.testpilot.project.service.ProjectService;
 import com.testpilot.rag.service.RagService;
 import com.testpilot.testing.entity.GeneratedTest;
@@ -34,7 +34,7 @@ public class FailureService {
     private final TestResultRepository testResultRepository;
     private final TestRunRepository testRunRepository;
     private final GeneratedTestRepository generatedTestRepository;
-    private final CodeFileRepository codeFileRepository;
+    private final ProjectSourceService projectSourceService;
     private final ProjectService projectService;
     private final FailureAnalysisAgent failureAnalysisAgent;
     private final FixSuggestionAgent fixSuggestionAgent;
@@ -46,7 +46,7 @@ public class FailureService {
             TestResultRepository testResultRepository,
             TestRunRepository testRunRepository,
             GeneratedTestRepository generatedTestRepository,
-            CodeFileRepository codeFileRepository,
+            ProjectSourceService projectSourceService,
             ProjectService projectService,
             FailureAnalysisAgent failureAnalysisAgent,
             FixSuggestionAgent fixSuggestionAgent,
@@ -56,14 +56,13 @@ public class FailureService {
         this.testResultRepository = testResultRepository;
         this.testRunRepository = testRunRepository;
         this.generatedTestRepository = generatedTestRepository;
-        this.codeFileRepository = codeFileRepository;
+        this.projectSourceService = projectSourceService;
         this.projectService = projectService;
         this.failureAnalysisAgent = failureAnalysisAgent;
         this.fixSuggestionAgent = fixSuggestionAgent;
         this.ragService = ragService;
     }
 
-    @Transactional
     public FailureAnalysisResponse analyzeFailure(Long testResultId, UserPrincipal currentUser) {
         TestResult testResult = testResultRepository.findById(testResultId)
                 .orElseThrow(() -> new ResourceNotFoundException("TestResult not found with id: " + testResultId));
@@ -73,7 +72,7 @@ public class FailureService {
 
         projectService.findProjectAndVerifyReadAccess(testRun.getProjectId(), currentUser);
 
-        List<CodeFile> sourceFiles = codeFileRepository.findByProjectId(testRun.getProjectId());
+        List<CodeFile> sourceFiles = projectSourceService.getActiveSourceFiles(testRun.getProjectId());
         List<GeneratedTest> generatedTests = generatedTestRepository.findByTestRunId(testRun.getId());
 
         String sourceCode = sourceFiles.isEmpty() ? "" : sourceFiles.get(0).getContent();
@@ -125,9 +124,7 @@ public class FailureService {
         FailureAnalysis analysis = failureAnalysisRepository.findByTestResultId(testResultId)
                 .orElseThrow(() -> new ResourceNotFoundException("Failure analysis not found for testResultId: " + testResultId));
 
-        TestResult testResult = testResultRepository.findById(testResultId).orElseThrow();
-        TestRun testRun = testRunRepository.findById(testResult.getTestRunId()).orElseThrow();
-        projectService.findProjectAndVerifyReadAccess(testRun.getProjectId(), currentUser);
+        verifyFailureAnalysisAccess(analysis, currentUser, false);
 
         return FailureAnalysisResponse.fromEntity(analysis);
     }
@@ -136,6 +133,9 @@ public class FailureService {
     public FixSuggestionResponse getFixSuggestion(Long failureAnalysisId, UserPrincipal currentUser) {
         FixSuggestion fix = fixSuggestionRepository.findByFailureAnalysisId(failureAnalysisId)
                 .orElseThrow(() -> new ResourceNotFoundException("Fix suggestion not found for failureAnalysisId: " + failureAnalysisId));
+        FailureAnalysis analysis = failureAnalysisRepository.findById(failureAnalysisId)
+                .orElseThrow(() -> new ResourceNotFoundException("Failure analysis not found with id: " + failureAnalysisId));
+        verifyFailureAnalysisAccess(analysis, currentUser, false);
         return FixSuggestionResponse.fromEntity(fix);
     }
 
@@ -144,13 +144,30 @@ public class FailureService {
         FixSuggestion fix = fixSuggestionRepository.findById(fixSuggestionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Fix suggestion not found with id: " + fixSuggestionId));
 
-        FailureAnalysis analysis = failureAnalysisRepository.findById(fix.getFailureAnalysisId()).orElseThrow();
-        TestResult testResult = testResultRepository.findById(analysis.getTestResultId()).orElseThrow();
-        TestRun testRun = testRunRepository.findById(testResult.getTestRunId()).orElseThrow();
-        projectService.findProjectAndVerifyWriteAccess(testRun.getProjectId(), currentUser);
+        FailureAnalysis analysis = failureAnalysisRepository.findById(fix.getFailureAnalysisId())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Failure analysis not found with id: " + fix.getFailureAnalysisId()));
+        verifyFailureAnalysisAccess(analysis, currentUser, true);
 
         fix.setStatus(status);
         FixSuggestion updated = fixSuggestionRepository.save(fix);
         return FixSuggestionResponse.fromEntity(updated);
+    }
+
+    private void verifyFailureAnalysisAccess(
+            FailureAnalysis analysis,
+            UserPrincipal currentUser,
+            boolean writeAccess) {
+        TestResult testResult = testResultRepository.findById(analysis.getTestResultId())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Test result not found with id: " + analysis.getTestResultId()));
+        TestRun testRun = testRunRepository.findById(testResult.getTestRunId())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Test run not found with id: " + testResult.getTestRunId()));
+        if (writeAccess) {
+            projectService.findProjectAndVerifyWriteAccess(testRun.getProjectId(), currentUser);
+        } else {
+            projectService.findProjectAndVerifyReadAccess(testRun.getProjectId(), currentUser);
+        }
     }
 }

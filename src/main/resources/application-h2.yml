@@ -12,4 +12,11 @@ spring:
     database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
       ddl-auto: create-drop
-    show-sql: true
+    show-sql: false
+
+jwt:
+  secret: test-only-secret-that-is-at-least-32-bytes-long
+
+testpilot:
+  security:
+    h2-console-enabled: true

@@ -1,5 +1,6 @@
 package com.testpilot.testing.entity;
 
+import com.testpilot.testing.execution.TestExecutionOutcomeType;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -23,6 +24,16 @@ public class TestRun {
 
     @Column(name = "completed_at")
     private LocalDateTime completedAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "execution_outcome")
+    private TestExecutionOutcomeType executionOutcome;
+
+    @Column(name = "process_exit_code")
+    private Integer processExitCode;
+
+    @Column(name = "execution_output", columnDefinition = "TEXT")
+    private String executionOutput;
 
     public TestRun() {}
 
@@ -61,5 +72,26 @@ public class TestRun {
 
     public LocalDateTime getCompletedAt() {
         return completedAt;
+    }
+
+    public TestExecutionOutcomeType getExecutionOutcome() {
+        return executionOutcome;
+    }
+
+    public Integer getProcessExitCode() {
+        return processExitCode;
+    }
+
+    public String getExecutionOutput() {
+        return executionOutput;
+    }
+
+    public void recordExecutionOutcome(
+            TestExecutionOutcomeType executionOutcome,
+            Integer processExitCode,
+            String executionOutput) {
+        this.executionOutcome = executionOutcome;
+        this.processExitCode = processExitCode;
+        this.executionOutput = executionOutput;
     }
 }

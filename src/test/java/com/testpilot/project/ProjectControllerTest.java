@@ -2,6 +2,8 @@ package com.testpilot.project;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.testpilot.auth.dto.AuthResponse;
+import com.testpilot.auth.dto.CreateManagedUserRequest;
+import com.testpilot.auth.dto.LoginRequest;
 import com.testpilot.auth.dto.RegisterRequest;
 import com.testpilot.auth.entity.Role;
 import com.testpilot.auth.service.AuthService;
@@ -43,9 +45,11 @@ class ProjectControllerTest {
 
     @BeforeEach
     void setUp() {
-        AuthResponse dev1 = authService.register(new RegisterRequest("Dev One", "dev1@testpilot.com", "password", Role.DEVELOPER));
-        AuthResponse dev2 = authService.register(new RegisterRequest("Dev Two", "dev2@testpilot.com", "password", Role.DEVELOPER));
-        AuthResponse reviewer = authService.register(new RegisterRequest("Rev One", "rev1@testpilot.com", "password", Role.REVIEWER));
+        AuthResponse dev1 = authService.register(new RegisterRequest("Dev One", "dev1@testpilot.com", "password"));
+        AuthResponse dev2 = authService.register(new RegisterRequest("Dev Two", "dev2@testpilot.com", "password"));
+        authService.createManagedUser(new CreateManagedUserRequest(
+                "Rev One", "rev1@testpilot.com", "reviewer-password", Role.REVIEWER));
+        AuthResponse reviewer = authService.login(new LoginRequest("rev1@testpilot.com", "reviewer-password"));
 
         dev1Token = "Bearer " + dev1.token();
         dev2Token = "Bearer " + dev2.token();

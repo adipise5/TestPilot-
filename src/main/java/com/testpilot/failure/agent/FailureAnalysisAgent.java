@@ -3,6 +3,7 @@ package com.testpilot.failure.agent;
 import com.testpilot.ai.client.LlmClient;
 import com.testpilot.failure.dto.FailureAnalysisResponse;
 import com.testpilot.failure.entity.Severity;
+import com.testpilot.ai.prompt.PromptBoundary;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -22,7 +23,7 @@ public class FailureAnalysisAgent {
             String stackTrace,
             String ragContext) {
 
-        String systemInstruction = """
+        String systemInstruction = PromptBoundary.UNTRUSTED_DATA_INSTRUCTION + """
                 You are an Expert Java Debugger and Test Failure Analysis Agent.
                 Your task is to analyze why a JUnit 5 test failed by evaluating the source code, test code, error message, and stack trace.
                 Explain the underlying root cause rather than repeating the stack trace.
@@ -35,14 +36,15 @@ public class FailureAnalysisAgent {
                 """;
 
         StringBuilder prompt = new StringBuilder();
-        prompt.append("Test Name: ").append(testName).append("\n");
-        prompt.append("Error Message: ").append(errorMessage != null ? errorMessage : "None").append("\n");
-        prompt.append("Stack Trace:\n").append(stackTrace != null ? stackTrace : "None").append("\n\n");
-        prompt.append("Source Code:\n").append(sourceCode).append("\n\n");
-        prompt.append("Generated Test Code:\n").append(testCode).append("\n\n");
+        prompt.append("Analyze the supplied test failure.");
+        prompt.append(PromptBoundary.section("TEST_NAME", testName, 500));
+        prompt.append(PromptBoundary.section("ERROR_MESSAGE", errorMessage, 10_000));
+        prompt.append(PromptBoundary.section("STACK_TRACE", stackTrace, 50_000));
+        prompt.append(PromptBoundary.section("JAVA_SOURCE", sourceCode, 300_000));
+        prompt.append(PromptBoundary.section("GENERATED_TEST", testCode, 200_000));
 
         if (ragContext != null && !ragContext.isBlank()) {
-            prompt.append("Relevant Testing Knowledge:\n").append(ragContext).append("\n\n");
+            prompt.append(PromptBoundary.section("RAG_CONTEXT", ragContext, 50_000));
         }
 
         try {

@@ -1,8 +1,22 @@
 # TestPilot implementation roadmap
 
-The product target is an agentic testing platform that accepts a GitHub repository instead of requiring pasted source code, generates tests at four levels, executes them safely, and uses measured retrieval to improve the results.
+The product target is an agentic testing platform that accepts a GitHub repository instead of requiring pasted source code, generates unit, module/component, and integration tests, executes them safely, and uses measured retrieval to improve the results.
+
+## Scope boundary
+
+System and end-to-end testing are not part of this project. The platform will not provision a complete deployed application, exercise browser/user journeys, or validate a production-like environment. The highest supported level is integration testing across selected application components and controlled dependencies.
 
 Every phase has a review gate. A later phase starts only after the current phase is tested, documented, committed by the repository owner, and explicitly approved.
+
+## Progress
+
+| Phase | Status |
+|---|---|
+| Phase 1 — reproducible foundation | Complete |
+| Phase 2 — security and execution correctness | Implemented; awaiting owner review and commit |
+| Phase 3 — GitHub repository intake and MCP boundary | Implemented; awaiting owner review and commit |
+| Phase 4 — LangGraph agentic workflow | Awaiting approval after the Phase 2/3 commit gate |
+| Phases 5–8 | Not started |
 
 ## Phase 1 — reproducible foundation
 
@@ -75,17 +89,16 @@ Initial graph roles:
 4. Unit-test specialist handles isolated functions/classes.
 5. Module-test specialist handles component boundaries inside one deployable module.
 6. Integration-test specialist handles databases, messaging, HTTP clients, and framework wiring.
-7. System-test specialist produces black-box scenarios for deployed behavior.
-8. Test reviewer checks compilability assumptions, duplication, assertions, and risk coverage.
-9. Execution coordinator submits approved suites to workers and interprets typed results.
-10. Failure triage agent classifies product defects, bad tests, environment failures, and flaky behavior.
-11. Report agent creates an evidence-backed final report.
+7. Test reviewer checks compilability assumptions, duplication, assertions, and risk coverage.
+8. Execution coordinator submits approved suites to workers and interprets typed results.
+9. Failure triage agent classifies product defects, bad tests, environment failures, and flaky behavior.
+10. Report agent creates an evidence-backed final report.
 
 Graph requirements:
 
 - Typed shared state, explicit node inputs/outputs, conditional edges, retry budgets, timeouts, and checkpoints.
 - Deterministic tools for repository reads, parsing, retrieval, execution, and metrics.
-- Human approval before expensive system tests or any write back to GitHub.
+- Human approval before integration tests that require external resources or any write back to GitHub.
 - No free-form agent may execute shell commands directly.
 
 Exit gate:
@@ -95,7 +108,7 @@ Exit gate:
 
 ## Phase 5 — isolated multi-level test execution
 
-**Goal:** generate and run unit, module, integration, and system tests with correct isolation semantics.
+**Goal:** generate and run unit, module/component, and integration tests with correct isolation semantics.
 
 Deliverables:
 
@@ -134,7 +147,7 @@ Exit gate:
 
 Deliverables:
 
-- Versioned Java benchmark spanning all four test levels and representative failures.
+- Versioned Java benchmark spanning all three supported test levels and representative failures.
 - No-RAG, dense-only, hybrid, and hybrid-plus-reranker experiments.
 - Retrieval metrics: Recall@k, MRR, nDCG, context precision, and latency.
 - Generation metrics: schema validity, compile rate, assertion relevance, coverage delta, mutation score, seeded-defect detection, and flakiness.

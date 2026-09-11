@@ -8,7 +8,6 @@ export default function Register() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('DEVELOPER');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -18,7 +17,7 @@ export default function Register() {
     setLoading(true);
 
     try {
-      const res = await api.register({ name, email, password, role });
+      const res = await api.register({ name, email, password });
       setAuthToken(res.token);
       setUser({ userId: res.userId, name: res.name, email: res.email, role: res.role });
       navigate('/');
@@ -81,19 +80,6 @@ export default function Register() {
             className="input-field"
             placeholder="••••••••"
           />
-        </div>
-
-        <div>
-          <label className="block text-xs font-semibold uppercase text-slate-400 mb-1">System Role</label>
-          <select
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-            className="input-field"
-          >
-            <option value="DEVELOPER">DEVELOPER (Create & Run Tests)</option>
-            <option value="REVIEWER">REVIEWER (Review Code & Fixes)</option>
-            <option value="ADMIN">ADMIN (System Administrator)</option>
-          </select>
         </div>
 
         <button type="submit" disabled={loading} className="btn-primary w-full justify-center">

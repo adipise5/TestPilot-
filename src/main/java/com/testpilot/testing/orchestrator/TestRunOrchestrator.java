@@ -14,10 +14,11 @@ import com.testpilot.failure.entity.FixSuggestion;
 import com.testpilot.failure.repository.FailureAnalysisRepository;
 import com.testpilot.failure.repository.FixSuggestionRepository;
 import com.testpilot.project.entity.CodeFile;
-import com.testpilot.project.repository.CodeFileRepository;
+import com.testpilot.project.service.ProjectSourceService;
 import com.testpilot.rag.service.RagService;
 import com.testpilot.testing.entity.*;
 import com.testpilot.testing.execution.TestExecutionService;
+import com.testpilot.testing.execution.TestExecutionOutcome;
 import com.testpilot.testing.repository.GeneratedTestRepository;
 import com.testpilot.testing.repository.TestResultRepository;
 import com.testpilot.testing.repository.TestRunRepository;
@@ -25,7 +26,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -37,7 +37,7 @@ public class TestRunOrchestrator {
     private final TestRunRepository testRunRepository;
     private final GeneratedTestRepository generatedTestRepository;
     private final TestResultRepository testResultRepository;
-    private final CodeFileRepository codeFileRepository;
+    private final ProjectSourceService projectSourceService;
     private final FailureAnalysisRepository failureAnalysisRepository;
     private final FixSuggestionRepository fixSuggestionRepository;
     private final CodeAnalysisAgent codeAnalysisAgent;
@@ -51,7 +51,7 @@ public class TestRunOrchestrator {
             TestRunRepository testRunRepository,
             GeneratedTestRepository generatedTestRepository,
             TestResultRepository testResultRepository,
-            CodeFileRepository codeFileRepository,
+            ProjectSourceService projectSourceService,
             FailureAnalysisRepository failureAnalysisRepository,
             FixSuggestionRepository fixSuggestionRepository,
             CodeAnalysisAgent codeAnalysisAgent,
@@ -63,7 +63,7 @@ public class TestRunOrchestrator {
         this.testRunRepository = testRunRepository;
         this.generatedTestRepository = generatedTestRepository;
         this.testResultRepository = testResultRepository;
-        this.codeFileRepository = codeFileRepository;
+        this.projectSourceService = projectSourceService;
         this.failureAnalysisRepository = failureAnalysisRepository;
         this.fixSuggestionRepository = fixSuggestionRepository;
         this.codeAnalysisAgent = codeAnalysisAgent;
@@ -75,14 +75,13 @@ public class TestRunOrchestrator {
     }
 
     @Async("testRunExecutor")
-    @Transactional
     public void orchestrateTestRunAsync(Long testRunId) {
         log.info("Starting asynchronous orchestration for TestRun ID: {}", testRunId);
         TestRun testRun = testRunRepository.findById(testRunId)
                 .orElseThrow(() -> new ResourceNotFoundException("TestRun not found with id: " + testRunId));
 
         try {
-            List<CodeFile> sourceFiles = codeFileRepository.findByProjectId(testRun.getProjectId());
+            List<CodeFile> sourceFiles = projectSourceService.getActiveSourceFiles(testRun.getProjectId());
 
             // Step 1: Analyze Code
             updateStatus(testRun, TestRunStatus.ANALYZING);
@@ -107,8 +106,19 @@ public class TestRunOrchestrator {
             // Step 3: Run Tests & Parse Surefire Reports
             updateStatus(testRun, TestRunStatus.RUNNING_TESTS);
             List<GeneratedTest> genTestList = List.of(genTest);
-            List<TestResult> results = testExecutionService.executeTests(testRunId, sourceFiles, genTestList);
-            List<TestResult> savedResults = testResultRepository.saveAll(results);
+            TestExecutionOutcome executionOutcome = testExecutionService.executeTests(testRunId, sourceFiles, genTestList);
+            List<TestResult> savedResults = testResultRepository.saveAll(executionOutcome.results());
+            testRun.recordExecutionOutcome(
+                    executionOutcome.type(),
+                    executionOutcome.processExitCode(),
+                    executionOutcome.output());
+            testRunRepository.save(testRun);
+
+            if (!executionOutcome.completedTestProcess()) {
+                updateStatus(testRun, TestRunStatus.FAILED);
+                log.warn("Test execution did not complete for run {}: {}", testRunId, executionOutcome.type());
+                return;
+            }
 
             // Step 4: Failure Analysis & Fix Suggestions if failures exist
             List<TestResult> failedResults = savedResults.stream()

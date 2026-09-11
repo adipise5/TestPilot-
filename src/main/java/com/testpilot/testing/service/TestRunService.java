@@ -2,12 +2,14 @@ package com.testpilot.testing.service;
 
 import com.testpilot.auth.security.UserPrincipal;
 import com.testpilot.common.exception.ResourceNotFoundException;
+import com.testpilot.common.validation.RepositoryPathPolicy;
 import com.testpilot.project.entity.CodeFile;
-import com.testpilot.project.repository.CodeFileRepository;
+import com.testpilot.project.service.ProjectSourceService;
 import com.testpilot.project.service.ProjectService;
 import com.testpilot.testing.dto.*;
 import com.testpilot.testing.entity.*;
 import com.testpilot.testing.execution.TestExecutionService;
+import com.testpilot.testing.execution.TestExecutionOutcome;
 import com.testpilot.testing.repository.GeneratedTestRepository;
 import com.testpilot.testing.repository.TestResultRepository;
 import com.testpilot.testing.repository.TestRunRepository;
@@ -22,23 +24,26 @@ public class TestRunService {
     private final TestRunRepository testRunRepository;
     private final GeneratedTestRepository generatedTestRepository;
     private final TestResultRepository testResultRepository;
-    private final CodeFileRepository codeFileRepository;
+    private final ProjectSourceService projectSourceService;
     private final ProjectService projectService;
     private final TestExecutionService testExecutionService;
+    private final RepositoryPathPolicy repositoryPathPolicy;
 
     public TestRunService(
             TestRunRepository testRunRepository,
             GeneratedTestRepository generatedTestRepository,
             TestResultRepository testResultRepository,
-            CodeFileRepository codeFileRepository,
+            ProjectSourceService projectSourceService,
             ProjectService projectService,
-            TestExecutionService testExecutionService) {
+            TestExecutionService testExecutionService,
+            RepositoryPathPolicy repositoryPathPolicy) {
         this.testRunRepository = testRunRepository;
         this.generatedTestRepository = generatedTestRepository;
         this.testResultRepository = testResultRepository;
-        this.codeFileRepository = codeFileRepository;
+        this.projectSourceService = projectSourceService;
         this.projectService = projectService;
         this.testExecutionService = testExecutionService;
+        this.repositoryPathPolicy = repositoryPathPolicy;
     }
 
     @Transactional
@@ -54,10 +59,11 @@ public class TestRunService {
         TestRun testRun = findTestRun(testRunId);
         projectService.findProjectAndVerifyWriteAccess(testRun.getProjectId(), currentUser);
 
+        String validatedTestClass = repositoryPathPolicy.validateGeneratedTestClass(request.testClass());
         GeneratedTest generatedTest = new GeneratedTest(
                 testRunId,
                 request.sourceFile(),
-                request.testClass(),
+                validatedTestClass,
                 request.testCode()
         );
 
@@ -65,7 +71,6 @@ public class TestRunService {
         return GeneratedTestResponse.fromEntity(saved);
     }
 
-    @Transactional
     public TestRunResponse executeTestRun(Long testRunId, UserPrincipal currentUser) {
         TestRun testRun = findTestRun(testRunId);
         projectService.findProjectAndVerifyWriteAccess(testRun.getProjectId(), currentUser);
@@ -73,29 +78,19 @@ public class TestRunService {
         testRun.setStatus(TestRunStatus.RUNNING_TESTS);
         testRunRepository.save(testRun);
 
-        List<CodeFile> sourceFiles = codeFileRepository.findByProjectId(testRun.getProjectId());
+        List<CodeFile> sourceFiles = projectSourceService.getActiveSourceFiles(testRun.getProjectId());
         List<GeneratedTest> generatedTests = generatedTestRepository.findByTestRunId(testRunId);
 
-        try {
-            List<TestResult> results = testExecutionService.executeTests(testRunId, sourceFiles, generatedTests);
-            List<TestResult> savedResults = testResultRepository.saveAll(results);
+        TestExecutionOutcome outcome = testExecutionService.executeTests(testRunId, sourceFiles, generatedTests);
+        List<TestResult> savedResults = testResultRepository.saveAll(outcome.results());
 
-            boolean anyFailures = savedResults.stream()
-                    .anyMatch(r -> r.getStatus() == TestResultStatus.FAILED || r.getStatus() == TestResultStatus.ERROR);
+        testRun.recordExecutionOutcome(outcome.type(), outcome.processExitCode(), outcome.output());
+        testRun.setStatus(outcome.completedTestProcess() ? TestRunStatus.COMPLETED : TestRunStatus.FAILED);
+        TestRun updatedRun = testRunRepository.save(testRun);
 
-            testRun.setStatus(TestRunStatus.COMPLETED);
-            TestRun updatedRun = testRunRepository.save(testRun);
-
-            List<GeneratedTestResponse> genDtos = generatedTests.stream().map(GeneratedTestResponse::fromEntity).toList();
-            List<TestResultResponse> resDtos = savedResults.stream().map(TestResultResponse::fromEntity).toList();
-
-            return TestRunResponse.fromEntity(updatedRun, genDtos, resDtos);
-
-        } catch (Exception e) {
-            testRun.setStatus(TestRunStatus.FAILED);
-            testRunRepository.save(testRun);
-            throw new RuntimeException("Test execution failed: " + e.getMessage(), e);
-        }
+        List<GeneratedTestResponse> genDtos = generatedTests.stream().map(GeneratedTestResponse::fromEntity).toList();
+        List<TestResultResponse> resDtos = savedResults.stream().map(TestResultResponse::fromEntity).toList();
+        return TestRunResponse.fromEntity(updatedRun, genDtos, resDtos);
     }
 
     @Transactional(readOnly = true)

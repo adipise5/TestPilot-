@@ -3,7 +3,6 @@ package com.testpilot.testing;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.testpilot.auth.dto.AuthResponse;
 import com.testpilot.auth.dto.RegisterRequest;
-import com.testpilot.auth.entity.Role;
 import com.testpilot.auth.service.AuthService;
 import com.testpilot.project.dto.CreateCodeFileRequest;
 import com.testpilot.project.dto.CreateProjectRequest;
@@ -44,7 +43,7 @@ class TestRunControllerTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        AuthResponse dev = authService.register(new RegisterRequest("Tester Dev", "tester@testpilot.com", "password", Role.DEVELOPER));
+        AuthResponse dev = authService.register(new RegisterRequest("Tester Dev", "tester@testpilot.com", "password"));
         devToken = "Bearer " + dev.token();
 
         // Create Project
@@ -117,6 +116,9 @@ class TestRunControllerTest {
                         .header("Authorization", devToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("COMPLETED"))
+                .andExpect(jsonPath("$.executionOutcome").value("SUCCESS"))
+                .andExpect(jsonPath("$.processExitCode").value(0))
+                .andExpect(jsonPath("$.executionOutput").isNotEmpty())
                 .andExpect(jsonPath("$.testResults[0].status").value("PASSED"))
                 .andExpect(jsonPath("$.testResults[0].testName").value("com.example.CalculatorTest.shouldAddNumbers"));
     }

@@ -3,9 +3,15 @@ spring:
     name: testpilot
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
+  jpa:
+    open-in-view: false
+  servlet:
+    multipart:
+      max-file-size: 1MB
+      max-request-size: 6MB
 
 jwt:
-  secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+  secret: ${JWT_SECRET:}
   expiration-ms: ${JWT_EXPIRATION_MS:86400000} # 24 hours in milliseconds
 
 ---
@@ -32,10 +38,27 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
+        include: health,info
   endpoint:
     health:
-      show-details: always
+      show-details: never
+
+testpilot:
+  bootstrap-admin:
+    enabled: ${BOOTSTRAP_ADMIN_ENABLED:false}
+    name: ${BOOTSTRAP_ADMIN_NAME:TestPilot Administrator}
+    email: ${BOOTSTRAP_ADMIN_EMAIL:}
+    password: ${BOOTSTRAP_ADMIN_PASSWORD:}
+  github:
+    api-base: ${GITHUB_API_BASE:https://api.github.com}
+    app-id: ${GITHUB_APP_ID:}
+    app-slug: ${GITHUB_APP_SLUG:}
+    private-key: ${GITHUB_APP_PRIVATE_KEY:}
+    webhook-secret: ${GITHUB_WEBHOOK_SECRET:}
+    mcp:
+      endpoint: ${GITHUB_MCP_ENDPOINT:https://api.githubcopilot.com/mcp/}
+      token: ${GITHUB_MCP_TOKEN:}
+      allowed-repositories: ${GITHUB_MCP_ALLOWED_REPOSITORIES:}
 
 server:
   port: ${PORT:8080}

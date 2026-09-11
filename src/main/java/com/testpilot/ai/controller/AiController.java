@@ -7,7 +7,7 @@ import com.testpilot.ai.dto.TestGenerationResponse;
 import com.testpilot.auth.security.UserPrincipal;
 import com.testpilot.common.exception.ResourceNotFoundException;
 import com.testpilot.project.entity.CodeFile;
-import com.testpilot.project.repository.CodeFileRepository;
+import com.testpilot.project.service.ProjectSourceService;
 import com.testpilot.project.service.ProjectService;
 import com.testpilot.rag.service.RagService;
 import com.testpilot.testing.entity.TestRun;
@@ -29,7 +29,7 @@ public class AiController {
     private final CodeAnalysisAgent codeAnalysisAgent;
     private final TestGenerationAgent testGenerationAgent;
     private final ProjectService projectService;
-    private final CodeFileRepository codeFileRepository;
+    private final ProjectSourceService projectSourceService;
     private final TestRunRepository testRunRepository;
     private final TestRunService testRunService;
     private final RagService ragService;
@@ -38,14 +38,14 @@ public class AiController {
             CodeAnalysisAgent codeAnalysisAgent,
             TestGenerationAgent testGenerationAgent,
             ProjectService projectService,
-            CodeFileRepository codeFileRepository,
+            ProjectSourceService projectSourceService,
             TestRunRepository testRunRepository,
             TestRunService testRunService,
             RagService ragService) {
         this.codeAnalysisAgent = codeAnalysisAgent;
         this.testGenerationAgent = testGenerationAgent;
         this.projectService = projectService;
-        this.codeFileRepository = codeFileRepository;
+        this.projectSourceService = projectSourceService;
         this.testRunRepository = testRunRepository;
         this.testRunService = testRunService;
         this.ragService = ragService;
@@ -56,7 +56,7 @@ public class AiController {
             @PathVariable Long id,
             @AuthenticationPrincipal UserPrincipal currentUser) {
         projectService.findProjectAndVerifyReadAccess(id, currentUser);
-        List<CodeFile> sourceFiles = codeFileRepository.findByProjectId(id);
+        List<CodeFile> sourceFiles = projectSourceService.getActiveSourceFiles(id);
 
         CodeAnalysisResponse response = codeAnalysisAgent.analyzeCode(sourceFiles);
         return ResponseEntity.ok(response);
@@ -70,7 +70,7 @@ public class AiController {
                 .orElseThrow(() -> new ResourceNotFoundException("TestRun not found with id: " + id));
 
         projectService.findProjectAndVerifyWriteAccess(testRun.getProjectId(), currentUser);
-        List<CodeFile> sourceFiles = codeFileRepository.findByProjectId(testRun.getProjectId());
+        List<CodeFile> sourceFiles = projectSourceService.getActiveSourceFiles(testRun.getProjectId());
 
         // 1. Analyze code
         CodeAnalysisResponse analysis = codeAnalysisAgent.analyzeCode(sourceFiles);

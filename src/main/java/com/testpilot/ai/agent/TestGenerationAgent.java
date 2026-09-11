@@ -3,6 +3,7 @@ package com.testpilot.ai.agent;
 import com.testpilot.ai.client.LlmClient;
 import com.testpilot.ai.dto.CodeAnalysisResponse;
 import com.testpilot.ai.dto.TestGenerationResponse;
+import com.testpilot.ai.prompt.PromptBoundary;
 import com.testpilot.project.entity.CodeFile;
 import org.springframework.stereotype.Component;
 
@@ -23,7 +24,7 @@ public class TestGenerationAgent {
                 .map(f -> "// File: " + f.getFilePath() + "\n" + f.getContent())
                 .collect(Collectors.joining("\n\n"));
 
-        String systemInstruction = """
+        String systemInstruction = PromptBoundary.UNTRUSTED_DATA_INSTRUCTION + """
                 You are an expert AI Software Testing Agent specializing in JUnit 5 and Mockito.
                 Your task is to generate complete, syntactically correct, and compilable JUnit 5 unit tests for the provided Java source code.
                 Ensure test methods cover happy paths, edge cases, invalid inputs, and exceptions.
@@ -35,15 +36,18 @@ public class TestGenerationAgent {
                 """;
 
         StringBuilder promptBuilder = new StringBuilder();
-        promptBuilder.append("Source Code:\n").append(combinedCode).append("\n\n");
+        promptBuilder.append("Generate tests for the supplied source code.");
+        promptBuilder.append(PromptBoundary.section("JAVA_SOURCE", combinedCode, 500_000));
 
         if (analysis != null) {
-            promptBuilder.append("Code Analysis Summary:\n").append(analysis.summary()).append("\n");
-            promptBuilder.append("Target Edge Cases: ").append(String.join(", ", analysis.edgeCases())).append("\n\n");
+            promptBuilder.append(PromptBoundary.section(
+                    "CODE_ANALYSIS",
+                    analysis.summary() + "\nTarget edge cases: " + String.join(", ", analysis.edgeCases()),
+                    20_000));
         }
 
         if (ragContext != null && !ragContext.isBlank()) {
-            promptBuilder.append("Testing Knowledge Base (RAG Context):\n").append(ragContext).append("\n\n");
+            promptBuilder.append(PromptBoundary.section("RAG_CONTEXT", ragContext, 50_000));
         }
 
         promptBuilder.append("Generate full JUnit 5 unit test code.");

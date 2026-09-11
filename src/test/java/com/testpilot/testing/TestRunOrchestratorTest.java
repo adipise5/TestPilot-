@@ -3,7 +3,6 @@ package com.testpilot.testing;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.testpilot.auth.dto.AuthResponse;
 import com.testpilot.auth.dto.RegisterRequest;
-import com.testpilot.auth.entity.Role;
 import com.testpilot.auth.service.AuthService;
 import com.testpilot.project.dto.CreateCodeFileRequest;
 import com.testpilot.project.dto.CreateProjectRequest;
@@ -42,7 +41,7 @@ class TestRunOrchestratorTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        AuthResponse dev = authService.register(new RegisterRequest("Orchestration Dev", "orchestrator@testpilot.com", "password", Role.DEVELOPER));
+        AuthResponse dev = authService.register(new RegisterRequest("Orchestration Dev", "orchestrator@testpilot.com", "password"));
         devToken = "Bearer " + dev.token();
 
         CreateProjectRequest projectReq = new CreateProjectRequest("Async Test Project", "Asynchronous test generation project");

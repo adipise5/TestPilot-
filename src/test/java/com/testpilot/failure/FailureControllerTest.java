@@ -3,7 +3,6 @@ package com.testpilot.failure;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.testpilot.auth.dto.AuthResponse;
 import com.testpilot.auth.dto.RegisterRequest;
-import com.testpilot.auth.entity.Role;
 import com.testpilot.auth.service.AuthService;
 import com.testpilot.project.dto.CreateCodeFileRequest;
 import com.testpilot.project.dto.CreateProjectRequest;
@@ -53,7 +52,7 @@ class FailureControllerTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        AuthResponse dev = authService.register(new RegisterRequest("Debug Dev", "debug@testpilot.com", "password", Role.DEVELOPER));
+        AuthResponse dev = authService.register(new RegisterRequest("Debug Dev", "debug@testpilot.com", "password"));
         devToken = "Bearer " + dev.token();
 
         // Create project

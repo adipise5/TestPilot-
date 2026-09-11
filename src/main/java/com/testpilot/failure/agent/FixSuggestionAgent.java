@@ -4,6 +4,7 @@ import com.testpilot.ai.client.LlmClient;
 import com.testpilot.failure.dto.FailureAnalysisResponse;
 import com.testpilot.failure.dto.FixSuggestionResponse;
 import com.testpilot.failure.entity.FixStatus;
+import com.testpilot.ai.prompt.PromptBoundary;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -21,7 +22,7 @@ public class FixSuggestionAgent {
             String stackTrace,
             String ragContext) {
 
-        String systemInstruction = """
+        String systemInstruction = PromptBoundary.UNTRUSTED_DATA_INSTRUCTION + """
                 You are an AI Code Remediation Agent.
                 Your task is to propose fixed, production-ready Java code to resolve a detected test failure.
                 Do not modify code arbitrarily; only fix the specific logic defect identified in the failure analysis.
@@ -32,10 +33,18 @@ public class FixSuggestionAgent {
                 """;
 
         StringBuilder prompt = new StringBuilder();
-        prompt.append("Root Cause: ").append(analysis.rootCause()).append("\n");
-        prompt.append("Affected Method: ").append(analysis.affectedMethod()).append("\n");
-        prompt.append("Explanation: ").append(analysis.explanation()).append("\n\n");
-        prompt.append("Original Source Code:\n").append(originalCode).append("\n\n");
+        prompt.append("Propose a narrowly scoped fix using the supplied evidence.");
+        prompt.append(PromptBoundary.section(
+                "FAILURE_ANALYSIS",
+                "Root cause: " + analysis.rootCause()
+                        + "\nAffected method: " + analysis.affectedMethod()
+                        + "\nExplanation: " + analysis.explanation(),
+                20_000));
+        prompt.append(PromptBoundary.section("STACK_TRACE", stackTrace, 50_000));
+        prompt.append(PromptBoundary.section("JAVA_SOURCE", originalCode, 300_000));
+        if (ragContext != null && !ragContext.isBlank()) {
+            prompt.append(PromptBoundary.section("RAG_CONTEXT", ragContext, 50_000));
+        }
 
         try {
             FixSuggestionResponse rawResponse = llmClient.generateStructured(prompt.toString(), systemInstruction, FixSuggestionResponse.class);

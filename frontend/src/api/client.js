@@ -65,6 +65,15 @@ export const api = {
   getCodeFiles: (projectId) => apiRequest(`/projects/${projectId}/files`),
   addCodeFile: (projectId, data) => apiRequest(`/projects/${projectId}/files`, 'POST', data),
 
+  // Immutable repository intake
+  startGithubInstall: () => apiRequest('/integrations/github/install/start', 'POST'),
+  getConnectedRepository: (projectId) => apiRequest(`/projects/${projectId}/repository`),
+  connectRepository: (projectId, data) => apiRequest(`/projects/${projectId}/repository`, 'POST', data),
+  refreshRepository: (repositoryId, revision) => apiRequest(
+    `/repositories/${repositoryId}/ingestions`, 'POST', { revision }),
+  getRepositoryCatalog: (repositoryId) => apiRequest(`/repositories/${repositoryId}/catalog`),
+  disconnectRepository: (repositoryId) => apiRequest(`/repositories/${repositoryId}`, 'DELETE'),
+
   // AI & Testing
   analyzeProject: (projectId) => apiRequest(`/projects/${projectId}/analyze`, 'POST'),
   createTestRun: (projectId) => apiRequest(`/projects/${projectId}/test-runs`, 'POST'),

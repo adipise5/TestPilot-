@@ -4,7 +4,11 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "code_files")
+@Table(
+        name = "code_files",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_code_file_origin_path",
+                columnNames = {"project_id", "origin", "file_path"}))
 public class CodeFile {
 
     @Id
@@ -23,6 +27,16 @@ public class CodeFile {
     @Column(columnDefinition = "TEXT", nullable = false)
     private String content;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private CodeFileOrigin origin;
+
+    @Column(name = "connected_repository_id")
+    private Long connectedRepositoryId;
+
+    @Column(name = "commit_sha", length = 40)
+    private String commitSha;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -33,6 +47,21 @@ public class CodeFile {
         this.fileName = fileName;
         this.filePath = filePath;
         this.content = content;
+        this.origin = CodeFileOrigin.MANUAL;
+    }
+
+    public static CodeFile fromRepository(
+            Long projectId,
+            Long connectedRepositoryId,
+            String commitSha,
+            String fileName,
+            String filePath,
+            String content) {
+        CodeFile file = new CodeFile(projectId, fileName, filePath, content);
+        file.origin = CodeFileOrigin.REPOSITORY;
+        file.connectedRepositoryId = connectedRepositoryId;
+        file.commitSha = commitSha;
+        return file;
     }
 
     @PrePersist
@@ -79,4 +108,8 @@ public class CodeFile {
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
+
+    public CodeFileOrigin getOrigin() { return origin; }
+    public Long getConnectedRepositoryId() { return connectedRepositoryId; }
+    public String getCommitSha() { return commitSha; }
 }

@@ -3,7 +3,6 @@ package com.testpilot.ai;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.testpilot.auth.dto.AuthResponse;
 import com.testpilot.auth.dto.RegisterRequest;
-import com.testpilot.auth.entity.Role;
 import com.testpilot.auth.service.AuthService;
 import com.testpilot.project.dto.CreateCodeFileRequest;
 import com.testpilot.project.dto.CreateProjectRequest;
@@ -41,7 +40,7 @@ class AiControllerTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        AuthResponse dev = authService.register(new RegisterRequest("AI Dev", "aidev@testpilot.com", "password", Role.DEVELOPER));
+        AuthResponse dev = authService.register(new RegisterRequest("AI Dev", "aidev@testpilot.com", "password"));
         devToken = "Bearer " + dev.token();
 
         CreateProjectRequest projectReq = new CreateProjectRequest("AI Test Project", "Project for AI analysis");

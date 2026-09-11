@@ -3,7 +3,9 @@ package com.testpilot.auth;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.testpilot.auth.dto.LoginRequest;
 import com.testpilot.auth.dto.RegisterRequest;
+import com.testpilot.auth.dto.CreateManagedUserRequest;
 import com.testpilot.auth.entity.Role;
+import com.testpilot.auth.service.AuthService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -31,13 +33,15 @@ class AuthControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private AuthService authService;
+
     @Test
     void shouldRegisterUserSuccessfully() throws Exception {
         RegisterRequest request = new RegisterRequest(
                 "Jane Doe",
                 "jane.doe@example.com",
-                "password123",
-                Role.DEVELOPER
+                "password123"
         );
 
         mockMvc.perform(post("/api/auth/register")
@@ -56,8 +60,7 @@ class AuthControllerTest {
         RegisterRequest request = new RegisterRequest(
                 "Alice Smith",
                 "alice@example.com",
-                "password123",
-                Role.DEVELOPER
+                "password123"
         );
 
         mockMvc.perform(post("/api/auth/register")
@@ -74,18 +77,14 @@ class AuthControllerTest {
     }
 
     @Test
-    void shouldLoginSuccessfully() throws Exception {
-        RegisterRequest registerRequest = new RegisterRequest(
-                "Bob Johnson",
-                "bob@example.com",
-                "securePass123",
-                Role.REVIEWER
-        );
-
+    void shouldIgnorePrivilegedRoleDuringPublicRegistrationAndLoginAsDeveloper() throws Exception {
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(registerRequest)))
-                .andExpect(status().isCreated());
+                        .content("""
+                                {"name":"Bob Johnson","email":"bob@example.com","password":"securePass123","role":"ADMIN"}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.role").value("DEVELOPER"));
 
         LoginRequest loginRequest = new LoginRequest("bob@example.com", "securePass123");
 
@@ -95,7 +94,7 @@ class AuthControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").exists())
                 .andExpect(jsonPath("$.email").value("bob@example.com"))
-                .andExpect(jsonPath("$.role").value("REVIEWER"));
+                .andExpect(jsonPath("$.role").value("DEVELOPER"));
     }
 
     @Test
@@ -103,8 +102,7 @@ class AuthControllerTest {
         RegisterRequest registerRequest = new RegisterRequest(
                 "Charlie Brown",
                 "charlie@example.com",
-                "correctPassword",
-                Role.DEVELOPER
+                "correctPassword"
         );
 
         mockMvc.perform(post("/api/auth/register")
@@ -119,5 +117,32 @@ class AuthControllerTest {
                         .content(objectMapper.writeValueAsString(loginRequest)))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.error").value("INVALID_CREDENTIALS"));
+    }
+
+    @Test
+    void shouldRestrictManagedRoleAssignmentToAdministrators() throws Exception {
+        authService.createManagedUser(new CreateManagedUserRequest(
+                "System Admin", "managed-admin@example.com", "administrator-password", Role.ADMIN));
+        String adminToken = "Bearer " + authService.login(
+                new LoginRequest("managed-admin@example.com", "administrator-password")).token();
+        String developerToken = "Bearer " + authService.register(
+                new RegisterRequest("Developer", "managed-dev@example.com", "password")).token();
+        String reviewerRequest = """
+                {"name":"Reviewer","email":"reviewer@example.com","password":"reviewer-password","role":"REVIEWER"}
+                """;
+
+        mockMvc.perform(post("/api/admin/users")
+                        .header("Authorization", developerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(reviewerRequest))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error").value("ACCESS_DENIED"));
+
+        mockMvc.perform(post("/api/admin/users")
+                        .header("Authorization", adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(reviewerRequest))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.role").value("REVIEWER"));
     }
 }

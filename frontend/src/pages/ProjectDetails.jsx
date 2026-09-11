@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { api } from '../api/client';
-import { FileCode, Play, Cpu, Plus, Clock } from 'lucide-react';
+import { FileCode, Play, Cpu, Plus, Clock, Github, RefreshCw, Unplug } from 'lucide-react';
 
 export default function ProjectDetails() {
   const { id } = useParams();
@@ -10,8 +10,16 @@ export default function ProjectDetails() {
   const [files, setFiles] = useState([]);
   const [testRuns, setTestRuns] = useState([]);
   const [analysis, setAnalysis] = useState(null);
+  const [repository, setRepository] = useState(null);
+  const [catalog, setCatalog] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showFileModal, setShowFileModal] = useState(false);
+  const [showRepositoryModal, setShowRepositoryModal] = useState(false);
+  const [repositoryTransport, setRepositoryTransport] = useState('GITHUB_MCP');
+  const [repositoryOwner, setRepositoryOwner] = useState('');
+  const [repositoryName, setRepositoryName] = useState('');
+  const [repositoryRevision, setRepositoryRevision] = useState('main');
+  const [installationId, setInstallationId] = useState('');
   const [fileName, setFileName] = useState('');
   const [filePath, setFilePath] = useState('');
   const [content, setContent] = useState('');
@@ -19,14 +27,22 @@ export default function ProjectDetails() {
 
   const loadProjectData = useCallback(async () => {
     try {
-      const [projData, fileData, runData] = await Promise.all([
+      const [projData, fileData, runData, repositoryData] = await Promise.all([
         api.getProject(id),
         api.getCodeFiles(id),
         api.getProjectTestRuns(id),
+        api.getConnectedRepository(id).catch(() => null),
       ]);
       setProject(projData);
       setFiles(fileData);
       setTestRuns(runData);
+      setRepository(repositoryData);
+      if (repositoryData?.status === 'CONNECTED') {
+        const catalogData = await api.getRepositoryCatalog(repositoryData.id);
+        setCatalog(catalogData);
+      } else {
+        setCatalog([]);
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -75,6 +91,51 @@ export default function ProjectDetails() {
     }
   };
 
+  const handleConnectRepository = async (e) => {
+    e.preventDefault();
+    setActionLoading(true);
+    try {
+      await api.connectRepository(id, {
+        transport: repositoryTransport,
+        owner: repositoryOwner,
+        name: repositoryName,
+        revision: repositoryRevision,
+        installationId: repositoryTransport === 'GITHUB_APP_REST' ? Number(installationId) : null,
+      });
+      setShowRepositoryModal(false);
+      await loadProjectData();
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRefreshRepository = async () => {
+    setActionLoading(true);
+    try {
+      await api.refreshRepository(repository.id, repository.defaultBranch);
+      await loadProjectData();
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDisconnectRepository = async () => {
+    if (!window.confirm('Disconnect this repository? Existing immutable catalog history is retained for audit.')) return;
+    setActionLoading(true);
+    try {
+      await api.disconnectRepository(repository.id);
+      await loadProjectData();
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   if (loading) return <div className="text-center py-12 text-slate-400">Loading project...</div>;
 
   return (
@@ -94,6 +155,70 @@ export default function ProjectDetails() {
         </div>
         <p className="text-sm text-slate-400">{project?.description || 'No description'}</p>
       </div>
+
+      <div className="card space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+          <h2 className="text-lg font-bold flex items-center gap-2">
+            <Github className="w-5 h-5 text-slate-200" /> Immutable repository source
+          </h2>
+          {!repository || repository.status === 'DISCONNECTED' ? (
+            <button onClick={() => setShowRepositoryModal(true)} className="btn-primary text-xs">
+              Connect repository
+            </button>
+          ) : (
+            <div className="flex gap-2">
+              <button onClick={handleRefreshRepository} disabled={actionLoading} className="btn-secondary text-xs">
+                <RefreshCw className="w-3.5 h-3.5" /> Refresh branch
+              </button>
+              <button onClick={handleDisconnectRepository} disabled={actionLoading} className="btn-danger text-xs inline-flex items-center gap-2 px-3 py-2 rounded">
+                <Unplug className="w-3.5 h-3.5" /> Disconnect
+              </button>
+            </div>
+          )}
+        </div>
+        {repository?.status === 'CONNECTED' ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+            <div><span className="text-slate-500 block text-xs uppercase">Repository</span>{repository.owner}/{repository.name}</div>
+            <div><span className="text-slate-500 block text-xs uppercase">Transport</span>{repository.transport}</div>
+            <div><span className="text-slate-500 block text-xs uppercase">Indexed files</span>{catalog.length}</div>
+            <div className="md:col-span-3"><span className="text-slate-500 block text-xs uppercase">Selected commit</span><code className="text-blue-300 break-all">{repository.selectedCommitSha}</code></div>
+          </div>
+        ) : (
+          <p className="text-sm text-slate-400">Connect an allowlisted MCP repository or a user-bound GitHub App installation. Every read is pinned to a full commit SHA.</p>
+        )}
+      </div>
+
+      {showRepositoryModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+          <div className="card max-w-xl w-full space-y-4">
+            <h2 className="text-xl font-bold">Connect GitHub repository</h2>
+            <form onSubmit={handleConnectRepository} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold uppercase text-slate-400 mb-1">Transport</label>
+                <select value={repositoryTransport} onChange={(e) => setRepositoryTransport(e.target.value)} className="input-field">
+                  <option value="GITHUB_MCP">GitHub MCP (configured allowlist)</option>
+                  <option value="GITHUB_APP_REST">GitHub App REST</option>
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <input required value={repositoryOwner} onChange={(e) => setRepositoryOwner(e.target.value)} className="input-field" placeholder="owner" />
+                <input required value={repositoryName} onChange={(e) => setRepositoryName(e.target.value)} className="input-field" placeholder="repository" />
+              </div>
+              <input required value={repositoryRevision} onChange={(e) => setRepositoryRevision(e.target.value)} className="input-field" placeholder="branch, tag, or commit" />
+              {repositoryTransport === 'GITHUB_APP_REST' && (
+                <div className="space-y-2">
+                  <input type="number" min="1" required value={installationId} onChange={(e) => setInstallationId(e.target.value)} className="input-field" placeholder="GitHub App installation ID" />
+                  <p className="text-xs text-slate-500">Start the authenticated GitHub App installation flow before using an installation ID.</p>
+                </div>
+              )}
+              <div className="flex justify-end gap-3">
+                <button type="button" onClick={() => setShowRepositoryModal(false)} className="btn-secondary">Cancel</button>
+                <button type="submit" disabled={actionLoading} className="btn-primary">Resolve SHA and ingest</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Code Analysis Result */}
       {analysis && (

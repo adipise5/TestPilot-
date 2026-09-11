@@ -2,6 +2,8 @@ package com.testpilot.rag;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.testpilot.auth.dto.AuthResponse;
+import com.testpilot.auth.dto.CreateManagedUserRequest;
+import com.testpilot.auth.dto.LoginRequest;
 import com.testpilot.auth.dto.RegisterRequest;
 import com.testpilot.auth.entity.Role;
 import com.testpilot.auth.service.AuthService;
@@ -41,8 +43,10 @@ class KnowledgeControllerTest {
 
     @BeforeEach
     void setUp() {
-        AuthResponse admin = authService.register(new RegisterRequest("Sys Admin", "admin@testpilot.com", "password", Role.ADMIN));
-        AuthResponse dev = authService.register(new RegisterRequest("Regular Dev", "dev@testpilot.com", "password", Role.DEVELOPER));
+        authService.createManagedUser(new CreateManagedUserRequest(
+                "Sys Admin", "admin@testpilot.com", "administrator-password", Role.ADMIN));
+        AuthResponse admin = authService.login(new LoginRequest("admin@testpilot.com", "administrator-password"));
+        AuthResponse dev = authService.register(new RegisterRequest("Regular Dev", "dev@testpilot.com", "password"));
 
         adminToken = "Bearer " + admin.token();
         devToken = "Bearer " + dev.token();

@@ -1,8 +1,10 @@
 package com.testpilot.auth.service;
 
 import com.testpilot.auth.dto.AuthResponse;
+import com.testpilot.auth.dto.CreateManagedUserRequest;
 import com.testpilot.auth.dto.LoginRequest;
 import com.testpilot.auth.dto.RegisterRequest;
+import com.testpilot.auth.dto.UserResponse;
 import com.testpilot.auth.entity.Role;
 import com.testpilot.auth.entity.User;
 import com.testpilot.auth.repository.UserRepository;
@@ -29,21 +31,7 @@ public class AuthService {
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
-        if (userRepository.existsByEmail(request.email())) {
-            throw new DuplicateEmailException("Email is already registered: " + request.email());
-        }
-
-        Role role = request.role() != null ? request.role() : Role.DEVELOPER;
-        String encodedPassword = passwordEncoder.encode(request.password());
-
-        User user = new User(
-                request.name(),
-                request.email(),
-                encodedPassword,
-                role
-        );
-
-        User savedUser = userRepository.save(user);
+        User savedUser = createUser(request.name(), request.email(), request.password(), Role.DEVELOPER);
         UserPrincipal principal = UserPrincipal.create(savedUser);
         String token = tokenProvider.generateToken(principal);
 
@@ -54,6 +42,12 @@ public class AuthService {
                 savedUser.getEmail(),
                 savedUser.getRole()
         );
+    }
+
+    @Transactional
+    public UserResponse createManagedUser(CreateManagedUserRequest request) {
+        User savedUser = createUser(request.name(), request.email(), request.password(), request.role());
+        return UserResponse.fromEntity(savedUser);
     }
 
     @Transactional(readOnly = true)
@@ -75,5 +69,13 @@ public class AuthService {
                 user.getEmail(),
                 user.getRole()
         );
+    }
+
+    private User createUser(String name, String email, String password, Role role) {
+        if (userRepository.existsByEmail(email)) {
+            throw new DuplicateEmailException("Email is already registered: " + email);
+        }
+
+        return userRepository.save(new User(name, email, passwordEncoder.encode(password), role));
     }
 }

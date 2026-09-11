@@ -78,6 +78,24 @@ export default function TestRunDetails() {
         </div>
       </div>
 
+      {testRun.executionOutcome && (
+        <div className="card space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold">Execution outcome</h2>
+            <span className="px-2 py-1 rounded border border-slate-700 font-mono text-sm">
+              {testRun.executionOutcome}
+              {testRun.processExitCode !== null && ` • exit ${testRun.processExitCode}`}
+            </span>
+          </div>
+          {testRun.executionOutput && (
+            <details>
+              <summary className="cursor-pointer text-sm text-slate-400">Show bounded Maven output</summary>
+              <pre className="code-block mt-3 max-h-80 overflow-auto">{testRun.executionOutput}</pre>
+            </details>
+          )}
+        </div>
+      )}
+
       {/* Generated JUnit Test Code */}
       {testRun.generatedTests && testRun.generatedTests.length > 0 && (
         <div className="card space-y-3">

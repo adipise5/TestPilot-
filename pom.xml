@@ -20,7 +20,20 @@
     <properties>
         <java.version>17</java.version>
         <jjwt.version>0.12.5</jjwt.version>
+        <mcp.version>2.0.0</mcp.version>
     </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.modelcontextprotocol.sdk</groupId>
+                <artifactId>mcp-bom</artifactId>
+                <version>${mcp.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
         <!-- Spring Boot Web Starter -->
@@ -51,6 +64,16 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
+        <!-- Model Context Protocol client with Spring Boot 3's Jackson 2 line -->
+        <dependency>
+            <groupId>io.modelcontextprotocol.sdk</groupId>
+            <artifactId>mcp-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.modelcontextprotocol.sdk</groupId>
+            <artifactId>mcp-json-jackson2</artifactId>
         </dependency>
 
         <!-- JJWT Dependencies for Token Authentication -->
