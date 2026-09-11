@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getUser, removeAuthToken } from '../api/client';
 import { Terminal, FolderGit2, ShieldCheck, LogOut, BookOpen } from 'lucide-react';

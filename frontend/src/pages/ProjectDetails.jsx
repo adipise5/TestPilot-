@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { api } from '../api/client';
-import { FileCode, Play, Cpu, Plus, CheckCircle2, Clock, AlertTriangle } from 'lucide-react';
+import { FileCode, Play, Cpu, Plus, Clock } from 'lucide-react';
 
 export default function ProjectDetails() {
   const { id } = useParams();
@@ -17,11 +17,7 @@ export default function ProjectDetails() {
   const [content, setContent] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
 
-  useEffect(() => {
-    loadProjectData();
-  }, [id]);
-
-  const loadProjectData = async () => {
+  const loadProjectData = useCallback(async () => {
     try {
       const [projData, fileData, runData] = await Promise.all([
         api.getProject(id),
@@ -36,7 +32,11 @@ export default function ProjectDetails() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    loadProjectData();
+  }, [loadProjectData]);
 
   const handleAddFile = async (e) => {
     e.preventDefault();

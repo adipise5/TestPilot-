@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { api } from '../api/client';
 import { BookOpen, Plus, Trash2, Search, Sparkles } from 'lucide-react';
 
@@ -13,11 +13,7 @@ export default function AdminKnowledge() {
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
 
-  useEffect(() => {
-    loadDocs();
-  }, []);
-
-  const loadDocs = async () => {
+  const loadDocs = useCallback(async () => {
     try {
       const data = await api.getKnowledgeDocs();
       setDocs(data);
@@ -26,7 +22,11 @@ export default function AdminKnowledge() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadDocs();
+  }, [loadDocs]);
 
   const handleCreateDoc = async (e) => {
     e.preventDefault();

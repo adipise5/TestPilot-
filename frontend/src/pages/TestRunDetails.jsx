@@ -1,16 +1,27 @@
-import React, { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { api } from '../api/client';
-import { PlayCircle, CheckCircle2, XCircle, Clock, AlertTriangle, Code, ArrowRight } from 'lucide-react';
+import { CheckCircle2, XCircle, Code, ArrowRight } from 'lucide-react';
 
 export default function TestRunDetails() {
   const { id } = useParams();
   const [testRun, setTestRun] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const loadTestRun = useCallback(async () => {
+    try {
+      const data = await api.getTestRun(id);
+      setTestRun(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [id]);
+
   useEffect(() => {
     loadTestRun();
-  }, [id]);
+  }, [loadTestRun]);
 
   // Polling loop for active test runs
   useEffect(() => {
@@ -22,18 +33,7 @@ export default function TestRunDetails() {
       }, 1000);
       return () => clearTimeout(timer);
     }
-  }, [testRun]);
-
-  const loadTestRun = async () => {
-    try {
-      const data = await api.getTestRun(id);
-      setTestRun(data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [testRun, loadTestRun]);
 
   if (loading) return <div className="text-center py-12 text-slate-400">Loading test run details...</div>;
   if (!testRun) return <div className="text-center py-12 text-red-400">TestRun not found.</div>;

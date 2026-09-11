@@ -1,18 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, getUser } from '../api/client';
-import { FolderGit2, PlayCircle, CheckCircle2, AlertTriangle, Cpu, Plus } from 'lucide-react';
+import { FolderGit2, CheckCircle2, AlertTriangle, Cpu, Plus } from 'lucide-react';
 
 export default function Dashboard() {
   const user = getUser();
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadDashboardData();
-  }, []);
-
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     try {
       const data = await api.getProjects();
       setProjects(data);
@@ -21,7 +17,11 @@ export default function Dashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadDashboardData();
+  }, [loadDashboardData]);
 
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-8">

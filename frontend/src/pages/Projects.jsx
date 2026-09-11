@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
-import { FolderGit2, Plus, Trash2, AlertCircle } from 'lucide-react';
+import { Plus, Trash2, AlertCircle } from 'lucide-react';
 
 export default function Projects() {
   const [projects, setProjects] = useState([]);
@@ -11,11 +11,7 @@ export default function Projects() {
   const [description, setDescription] = useState('');
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    loadProjects();
-  }, []);
-
-  const loadProjects = async () => {
+  const loadProjects = useCallback(async () => {
     try {
       const data = await api.getProjects();
       setProjects(data);
@@ -24,7 +20,11 @@ export default function Projects() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadProjects();
+  }, [loadProjects]);
 
   const handleCreateProject = async (e) => {
     e.preventDefault();

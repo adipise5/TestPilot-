@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
-import { AlertTriangle, CheckCircle, XCircle, ShieldAlert, GitCompare, ArrowLeft } from 'lucide-react';
+import { CheckCircle, XCircle, ShieldAlert, GitCompare, ArrowLeft } from 'lucide-react';
 
 export default function FailureDetails() {
   const { id } = useParams();
@@ -11,17 +11,13 @@ export default function FailureDetails() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
 
-  useEffect(() => {
-    loadFailureData();
-  }, [id]);
-
-  const loadFailureData = async () => {
+  const loadFailureData = useCallback(async () => {
     try {
       // 1. Analyze failure if not yet analyzed, or get analysis
       let faData;
       try {
         faData = await api.getFailureAnalysis(id);
-      } catch (err) {
+      } catch {
         faData = await api.analyzeFailure(id);
       }
       setAnalysis(faData);
@@ -36,7 +32,11 @@ export default function FailureDetails() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    loadFailureData();
+  }, [loadFailureData]);
 
   const handleAcceptFix = async () => {
     if (!fix) return;
