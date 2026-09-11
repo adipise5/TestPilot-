@@ -20,7 +20,7 @@
     <properties>
         <java.version>17</java.version>
         <jjwt.version>0.12.5</jjwt.version>
-        <mcp.version>2.0.0</mcp.version>
+        <mcp.version>2.0.1</mcp.version>
     </properties>
 
     <dependencyManagement>
