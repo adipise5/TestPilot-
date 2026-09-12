@@ -15,8 +15,9 @@ Every phase has a review gate. A later phase starts only after the current phase
 | Phase 1 — reproducible foundation | Complete |
 | Phase 2 — security and execution correctness | Implemented; awaiting owner review and commit |
 | Phase 3 — GitHub repository intake and MCP boundary | Implemented; awaiting owner review and commit |
-| Phase 4 — LangGraph agentic workflow | Awaiting approval after the Phase 2/3 commit gate |
-| Phases 5–8 | Not started |
+| Phase 4 — LangGraph agentic workflow | Implemented; awaiting owner review and commit |
+| Phase 5 — isolated multi-level test execution | Awaiting approval after the Phase 4 commit gate |
+| Phases 6–8 | Not started |
 
 ## Phase 1 — reproducible foundation
 
@@ -105,6 +106,13 @@ Exit gate:
 
 - A paused workflow resumes from a checkpoint without repeating completed side effects.
 - Each agent decision and tool result is traceable to a run and commit SHA.
+
+Implementation note:
+
+- The Python LangGraph control plane now uses typed JSON state, conditional specialist/triage routes, bounded retries for transient tool failures, SQLite checkpoints, and `interrupt`/`Command(resume=...)` approval.
+- Spring persists workflow identity and every tool attempt with an input hash and stable idempotency key. Replaying a completed tool returns its stored output.
+- The UI exposes the graph version, immutable revision, node trace, report, and project-authorized approve/reject controls.
+- The current local checkpoint and Spring `@Async` invocation topology is a development implementation. Shared production checkpoint storage and durable dispatch are still required with Phase 5 operational work.
 
 ## Phase 5 — isolated multi-level test execution
 

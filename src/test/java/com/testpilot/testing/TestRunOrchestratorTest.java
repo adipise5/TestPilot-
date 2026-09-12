@@ -7,6 +7,9 @@ import com.testpilot.auth.service.AuthService;
 import com.testpilot.project.dto.CreateCodeFileRequest;
 import com.testpilot.project.dto.CreateProjectRequest;
 import com.testpilot.testing.entity.TestRunStatus;
+import com.testpilot.testing.workflow.client.LangGraphClient;
+import com.testpilot.testing.workflow.dto.WorkflowInvocationResponse;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +20,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -36,11 +41,19 @@ class TestRunOrchestratorTest {
     @Autowired
     private AuthService authService;
 
+    @MockBean
+    private LangGraphClient langGraphClient;
+
     private String devToken;
     private Long projectId;
 
     @BeforeEach
     void setUp() throws Exception {
+        when(langGraphClient.start(any())).thenAnswer(invocation -> {
+            var workflow = invocation.getArgument(0, com.testpilot.testing.workflow.entity.WorkflowRun.class);
+            return new WorkflowInvocationResponse(
+                    1, workflow.getThreadId(), "COMPLETED", null, java.util.List.of("report"));
+        });
         AuthResponse dev = authService.register(new RegisterRequest("Orchestration Dev", "orchestrator@testpilot.com", "password"));
         devToken = "Bearer " + dev.token();
 

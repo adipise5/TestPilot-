@@ -61,7 +61,9 @@ public class TestRun {
 
     public void setStatus(TestRunStatus status) {
         this.status = status;
-        if (status == TestRunStatus.COMPLETED || status == TestRunStatus.FAILED) {
+        if (status == TestRunStatus.COMPLETED
+                || status == TestRunStatus.FAILED
+                || status == TestRunStatus.REJECTED) {
             this.completedAt = LocalDateTime.now();
         }
     }

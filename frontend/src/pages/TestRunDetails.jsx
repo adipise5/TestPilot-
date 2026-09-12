@@ -1,17 +1,24 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { api } from '../api/client';
-import { CheckCircle2, XCircle, Code, ArrowRight } from 'lucide-react';
+import { CheckCircle2, XCircle, Code, ArrowRight, GitBranch, ShieldCheck } from 'lucide-react';
 
 export default function TestRunDetails() {
   const { id } = useParams();
   const [testRun, setTestRun] = useState(null);
+  const [workflow, setWorkflow] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [decisionPending, setDecisionPending] = useState(false);
 
   const loadTestRun = useCallback(async () => {
     try {
       const data = await api.getTestRun(id);
       setTestRun(data);
+      try {
+        setWorkflow(await api.getWorkflowTrace(id));
+      } catch {
+        setWorkflow(null);
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -27,13 +34,30 @@ export default function TestRunDetails() {
   useEffect(() => {
     if (!testRun) return;
 
-    if (testRun.status !== 'COMPLETED' && testRun.status !== 'FAILED') {
+    if (!['COMPLETED', 'FAILED', 'REJECTED'].includes(testRun.status)) {
       const timer = setTimeout(() => {
         loadTestRun();
       }, 1000);
       return () => clearTimeout(timer);
     }
   }, [testRun, loadTestRun]);
+
+  const decideWorkflow = async (approved) => {
+    setDecisionPending(true);
+    try {
+      const updated = await api.decideWorkflow(
+        id,
+        approved,
+        approved ? 'Approved from TestPilot review screen' : 'Rejected from TestPilot review screen',
+      );
+      setWorkflow(updated);
+      await loadTestRun();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setDecisionPending(false);
+    }
+  };
 
   if (loading) return <div className="text-center py-12 text-slate-400">Loading test run details...</div>;
   if (!testRun) return <div className="text-center py-12 text-red-400">TestRun not found.</div>;
@@ -51,7 +75,7 @@ export default function TestRunDetails() {
           </div>
           <span className={`px-3 py-1 text-sm font-mono rounded-full border font-semibold ${
             testRun.status === 'COMPLETED' ? 'bg-emerald-950 border-emerald-800 text-emerald-400' :
-            testRun.status === 'FAILED' ? 'bg-red-950 border-red-800 text-red-400' :
+            ['FAILED', 'REJECTED'].includes(testRun.status) ? 'bg-red-950 border-red-800 text-red-400' :
             'bg-amber-950 border-amber-800 text-amber-400 animate-pulse'
           }`}>
             {testRun.status}
@@ -63,20 +87,90 @@ export default function TestRunDetails() {
           <div className={`p-2 rounded border ${testRun.status !== 'PENDING' ? 'bg-blue-950 border-blue-800 text-blue-300' : 'bg-slate-900 border-slate-800 text-slate-600'}`}>
             1. PENDING
           </div>
-          <div className={`p-2 rounded border ${['ANALYZING', 'GENERATING_TESTS', 'RUNNING_TESTS', 'ANALYZING_FAILURES', 'COMPLETED'].includes(testRun.status) ? 'bg-blue-950 border-blue-800 text-blue-300' : 'bg-slate-900 border-slate-800 text-slate-600'}`}>
-            2. ANALYZING
+          <div className={`p-2 rounded border ${!['PENDING', 'INTAKE'].includes(testRun.status) ? 'bg-blue-950 border-blue-800 text-blue-300' : 'bg-slate-900 border-slate-800 text-slate-600'}`}>
+            2. MAP & PLAN
           </div>
-          <div className={`p-2 rounded border ${['GENERATING_TESTS', 'RUNNING_TESTS', 'ANALYZING_FAILURES', 'COMPLETED'].includes(testRun.status) ? 'bg-blue-950 border-blue-800 text-blue-300' : 'bg-slate-900 border-slate-800 text-slate-600'}`}>
-            3. AI GEN
+          <div className={`p-2 rounded border ${['GENERATING_TESTS', 'GENERATING_UNIT_TESTS', 'GENERATING_MODULE_TESTS', 'GENERATING_INTEGRATION_TESTS', 'REVIEWING_TESTS', 'AWAITING_APPROVAL', 'RUNNING_TESTS', 'ANALYZING_FAILURES', 'REPORTING', 'COMPLETED'].includes(testRun.status) ? 'bg-blue-950 border-blue-800 text-blue-300' : 'bg-slate-900 border-slate-800 text-slate-600'}`}>
+            3. SPECIALISTS
           </div>
-          <div className={`p-2 rounded border ${['RUNNING_TESTS', 'ANALYZING_FAILURES', 'COMPLETED'].includes(testRun.status) ? 'bg-blue-950 border-blue-800 text-blue-300' : 'bg-slate-900 border-slate-800 text-slate-600'}`}>
-            4. MVN TEST
+          <div className={`p-2 rounded border ${['RUNNING_TESTS', 'ANALYZING_FAILURES', 'REPORTING', 'COMPLETED'].includes(testRun.status) ? 'bg-blue-950 border-blue-800 text-blue-300' : 'bg-slate-900 border-slate-800 text-slate-600'}`}>
+            4. EXECUTE
           </div>
           <div className={`p-2 rounded border ${testRun.status === 'COMPLETED' ? 'bg-emerald-950 border-emerald-800 text-emerald-400' : 'bg-slate-900 border-slate-800 text-slate-600'}`}>
             5. DONE
           </div>
         </div>
       </div>
+
+      {workflow && (
+        <div className="card space-y-4">
+          <div className="flex items-center justify-between gap-4">
+            <h2 className="text-lg font-bold flex items-center gap-2">
+              <GitBranch className="w-5 h-5 text-violet-400" /> LangGraph workflow
+            </h2>
+            <span className="px-2 py-1 rounded border border-slate-700 font-mono text-xs">
+              {workflow.graphVersion}
+            </span>
+          </div>
+          <div className="grid md:grid-cols-2 gap-3 text-xs font-mono text-slate-400">
+            <div>Thread: <span className="text-slate-200">{workflow.threadId}</span></div>
+            <div>Revision: <span className="text-slate-200 break-all">{workflow.commitSha || 'pending intake'}</span></div>
+          </div>
+
+          {workflow.status === 'WAITING_FOR_APPROVAL' && (
+            <div className="p-4 rounded-lg border border-amber-800 bg-amber-950/40 space-y-3">
+              <div className="flex gap-2 text-amber-300 font-semibold">
+                <ShieldCheck className="w-5 h-5 shrink-0" /> Human approval required
+              </div>
+              <p className="text-sm text-amber-100">{workflow.approvalPrompt}</p>
+              <p className="text-xs text-amber-300/80">
+                Approval only resumes this checkpointed revision. Rejecting ends the workflow without execution.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  className="btn-primary"
+                  disabled={decisionPending}
+                  onClick={() => decideWorkflow(true)}
+                >
+                  Approve and resume
+                </button>
+                <button
+                  className="btn-danger"
+                  disabled={decisionPending}
+                  onClick={() => decideWorkflow(false)}
+                >
+                  Reject plan
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <h3 className="text-sm font-semibold text-slate-300">Node trace</h3>
+            {workflow.steps.length === 0 ? (
+              <p className="text-sm text-slate-500">Waiting for the first graph node.</p>
+            ) : workflow.steps.map((step) => (
+              <div key={step.id} className="flex items-center justify-between gap-4 p-3 bg-slate-900 rounded border border-slate-800">
+                <div>
+                  <div className="font-mono text-sm text-slate-200">{step.node}</div>
+                  <div className="text-xs text-slate-500">attempts: {step.attempts} · input: {step.inputHash.slice(0, 12)}</div>
+                </div>
+                <span className={`text-xs font-mono ${step.status === 'COMPLETED' ? 'text-emerald-400' : step.status === 'FAILED' ? 'text-red-400' : 'text-amber-400'}`}>
+                  {step.status}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {workflow.report && (
+            <details>
+              <summary className="cursor-pointer text-sm text-slate-400">Show evidence report</summary>
+              <pre className="code-block mt-3 max-h-80 overflow-auto">{JSON.stringify(workflow.report, null, 2)}</pre>
+            </details>
+          )}
+          {workflow.failureReason && <p className="text-sm text-red-400">{workflow.failureReason}</p>}
+        </div>
+      )}
 
       {testRun.executionOutcome && (
         <div className="card space-y-3">
@@ -105,7 +199,7 @@ export default function TestRunDetails() {
           {testRun.generatedTests.map((gt) => (
             <div key={gt.id} className="space-y-2">
               <div className="flex items-center justify-between text-xs text-slate-400 font-mono">
-                <span>Class: {gt.testClass}</span>
+                <span>{gt.testLevel || 'UNIT'} · Class: {gt.testClass}</span>
                 <span>Source: {gt.sourceFile}</span>
               </div>
               <pre className="code-block">{gt.testCode}</pre>

@@ -1,6 +1,6 @@
 # TestPilot
 
-TestPilot is a full-stack prototype for repository-driven, AI-assisted Java test generation and execution. The current application can connect an allowlisted GitHub repository through MCP or a least-privilege GitHub App, resolve an immutable commit, build a safe text catalog, run a fixed multi-stage LLM workflow, generate JUnit tests, execute Maven with typed outcomes, parse Surefire reports, and present results in a React dashboard.
+TestPilot is a full-stack prototype for repository-driven, AI-assisted Java test generation and execution. The current application can connect an allowlisted GitHub repository through MCP or a least-privilege GitHub App, resolve an immutable commit, build a safe text catalog, run a checkpointed LangGraph workflow with specialized test agents and human approval, execute Maven with typed outcomes, parse Surefire reports, and present evidence in a React dashboard.
 
 The long-term product is a repository-driven, agentic testing platform: a user supplies a GitHub repository, specialized LangGraph workflows plan unit, module/component, and integration tests, isolated workers run them against an immutable revision, and a measured RAG pipeline supplies project and framework context.
 
@@ -14,9 +14,9 @@ System and end-to-end testing are explicitly outside the project scope. TestPilo
 | Capability | Current implementation | Target implementation |
 |---|---|---|
 | Repository input | GitHub App REST and GitHub MCP connectors, immutable SHA ingestion, plus legacy pasted files | Installation UI polish and provider contract testing against a live GitHub sandbox |
-| Orchestration | Fixed Spring `@Async` sequence | Durable LangGraph workflows with checkpoints and human gates |
-| Test types | One generated JUnit class | Unit, module/component, and integration-test specialists |
-| Code analysis | LLM analysis of concatenated source text | Build-aware and Java symbol/AST analysis |
+| Orchestration | Separate Python LangGraph control plane, SQLite checkpoints, conditional routes, retry budgets, and human interrupt/resume | Shared production checkpointer and durable job dispatch |
+| Test types | Conditional unit, module/component, and integration specialists plus deterministic review | Level-specific build templates, isolation policies, coverage, and mutation analysis |
+| Code analysis | Deterministic repository metadata plus bounded LLM analysis | Build-aware and Java symbol/AST analysis |
 | Retrieval | In-memory cosine search over CSV vectors | Project-scoped hybrid retrieval with pgvector, lexical search, and citations |
 | AI provider | Deterministic mock or basic OpenAI-compatible HTTP client | Versioned generation/embedding providers with traces and contract tests |
 | Execution | Host Maven subprocess with bounded logs, path defenses, timeout, and typed outcomes | Non-root isolated workers with no network and resource limits |
@@ -33,11 +33,14 @@ flowchart LR
     UI["React dashboard"] --> API["Spring Boot REST API"]
     API --> AUTH["JWT authentication and RBAC"]
     API --> DATA["Projects and source files"]
-    API --> FLOW["Fixed asynchronous workflow"]
-    FLOW --> ANALYZE["LLM code analysis"]
+    API --> GRAPH["Python LangGraph control plane"]
+    GRAPH --> CHECKPOINT["SQLite checkpoints"]
+    GRAPH --> TOOLS["Authenticated idempotent Spring tools"]
+    TOOLS --> ANALYZE["Mapper and test specialists"]
     ANALYZE --> RETRIEVE["Current RAG lookup"]
-    RETRIEVE --> GENERATE["LLM test generation"]
-    GENERATE --> MAVEN["Host Maven subprocess"]
+    RETRIEVE --> REVIEW["Deterministic test reviewer"]
+    REVIEW --> APPROVAL["Conditional human approval"]
+    APPROVAL --> MAVEN["Host Maven subprocess"]
     MAVEN --> REPORTS["Surefire parser"]
     REPORTS --> FAILURE["Failure and fix prompts"]
     AUTH --> DB["PostgreSQL or H2"]
@@ -48,7 +51,7 @@ flowchart LR
     FAILURE --> DB
 ```
 
-The classes named `*Agent` currently wrap task-specific prompt calls with explicit untrusted-data boundaries. They do not yet provide autonomous planning, tool selection, memory, reflection, or LangGraph execution; that remains Phase 4.
+LangGraph owns typed workflow state, conditional routing, retry policy, checkpoints, and human interrupts. Spring owns authentication, authorization, repository state, model calls, execution, and audit records. Agents cannot choose arbitrary tools or execute shell commands: every node maps to a compiled, authenticated Spring tool with an idempotency key and input hash.
 
 ## Technology
 
@@ -57,12 +60,14 @@ The classes named `*Agent` currently wrap task-specific prompt calls with explic
 - Maven 3.9.11 through Maven Wrapper
 - React 18, React Router, Vite 7, and Tailwind CSS 3
 - JUnit 5, Spring Security Test, MockMvc, and Surefire
+- Python 3.12+, LangGraph 1.2, FastAPI, HTTPX, and a SQLite checkpointer
 
 ## Prerequisites
 
 - JDK 17
 - Node.js 22 (the repository includes `.nvmrc`)
 - npm 10 or newer
+- Python 3.12 or newer
 - PostgreSQL only when using the `dev` profile; H2 needs no external database
 
 Maven does not need to be installed globally because the repository includes `mvnw` and `mvnw.cmd`.
@@ -76,6 +81,22 @@ Maven does not need to be installed globally because the repository includes `mv
 ```
 
 The API starts at `http://localhost:8080`. The H2 console is intended only for this local profile.
+
+### LangGraph orchestrator
+
+Run the Spring API first. In a second terminal, use the same internal token on both sides:
+
+```bash
+cd orchestrator
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements.lock
+export WORKFLOW_INTERNAL_TOKEN=test-only-workflow-token-at-least-32-bytes
+export TESTPILOT_API_BASE=http://localhost:8080
+export LANGGRAPH_CHECKPOINT_PATH=./data/checkpoints.sqlite3
+.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8090
+```
+
+For a non-H2 Spring profile, also export the same `WORKFLOW_INTERNAL_TOKEN` before starting Spring. The local checkpoint database is intentionally ignored by Git.
 
 ### Frontend
 
@@ -109,6 +130,10 @@ Run the same quality gates used by CI:
 
 ```bash
 ./mvnw --batch-mode test
+cd orchestrator
+python -m pip install -r requirements.lock
+python -m compileall -q app tests
+python -m pytest
 cd frontend
 npm ci
 npm run lint
@@ -135,6 +160,10 @@ CI configuration lives in [.github/workflows/ci.yml](.github/workflows/ci.yml).
 | `BOOTSTRAP_ADMIN_PASSWORD` | Empty | Bootstrap administrator password; at least 12 characters |
 | `AI_PROVIDER` | `mock` | Use `mock` or `openai` |
 | `AI_API_KEY` | Empty | Credential for the OpenAI-compatible provider |
+| `LANGGRAPH_ORCHESTRATOR_URL` | `http://localhost:8090` | Internal LangGraph service URL used by Spring |
+| `WORKFLOW_INTERNAL_TOKEN` | None outside H2 | Shared Spring/LangGraph credential; at least 32 UTF-8 bytes |
+| `TESTPILOT_API_BASE` | `http://localhost:8080` | Spring workflow-tool base URL used by LangGraph |
+| `LANGGRAPH_CHECKPOINT_PATH` | `orchestrator/data/checkpoints.sqlite3` | Local durable checkpoint database |
 
 There is no production JWT fallback: `JWT_SECRET` must contain at least 32 UTF-8 bytes. The H2 profile supplies a test-only key.
 
@@ -169,6 +198,7 @@ The mock provider is deterministic and useful for offline workflow tests. Its em
 | GitHub webhooks | `/api/integrations/github/webhooks` | Verify and apply installation-scope events |
 | AI analysis | `/api/projects/{id}/analyze` | Analyze stored source text |
 | Test runs | `/api/projects/{id}/test-runs`, `/api/test-runs` | Generate, execute, and inspect runs |
+| Workflow review | `/api/test-runs/{id}/workflow` | Inspect node traces and approve/reject paused integration plans |
 | Failures | `/api/failures`, `/api/fix-suggestions` | Explain failures and review suggestions |
 | Knowledge | `/api/knowledge` | Ingest and query the current retrieval scaffold |
 | Health | `/api/health`, `/actuator/health` | Local health endpoints |
@@ -186,13 +216,14 @@ src/main/java/com/testpilot/
   repository/  connector contract, GitHub transports, immutable catalogs, and installation/webhook scope
   rag/         document chunking and in-memory vector search
   testing/     orchestration, Maven execution, and report parsing
+orchestrator/  Python LangGraph control plane, checkpoint runtime, and graph tests
 frontend/      React dashboard
 docs/          architecture decisions and threat model
 ```
 
 ## Development roadmap
 
-Phases 1–3 establish the reproducible baseline, secure the existing service, and add immutable GitHub repository ingestion. The next approval gate is Phase 4, which introduces LangGraph workflows. See [ROADMAP.md](ROADMAP.md) for phase gates and deliverables.
+Phases 1–4 establish the reproducible baseline, secure the service, add immutable GitHub ingestion, and introduce checkpointed LangGraph workflows. The next approval gate is Phase 5, which moves compilation and testing into isolated workers. See [ROADMAP.md](ROADMAP.md) for phase gates and deliverables.
 
 ## Contributing and security
 

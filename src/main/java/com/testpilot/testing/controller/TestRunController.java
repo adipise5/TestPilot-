@@ -4,6 +4,7 @@ import com.testpilot.auth.security.UserPrincipal;
 import com.testpilot.testing.dto.*;
 import com.testpilot.testing.orchestrator.TestRunOrchestrator;
 import com.testpilot.testing.service.TestRunService;
+import com.testpilot.testing.workflow.service.WorkflowRunService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,10 +19,15 @@ public class TestRunController {
 
     private final TestRunService testRunService;
     private final TestRunOrchestrator testRunOrchestrator;
+    private final WorkflowRunService workflowRunService;
 
-    public TestRunController(TestRunService testRunService, TestRunOrchestrator testRunOrchestrator) {
+    public TestRunController(
+            TestRunService testRunService,
+            TestRunOrchestrator testRunOrchestrator,
+            WorkflowRunService workflowRunService) {
         this.testRunService = testRunService;
         this.testRunOrchestrator = testRunOrchestrator;
+        this.workflowRunService = workflowRunService;
     }
 
     @PostMapping("/api/projects/{projectId}/test-runs")
@@ -37,6 +43,7 @@ public class TestRunController {
             @PathVariable Long projectId,
             @AuthenticationPrincipal UserPrincipal currentUser) {
         TestRunResponse initialRun = testRunService.createTestRun(projectId, currentUser);
+        workflowRunService.create(initialRun.id(), projectId);
         testRunOrchestrator.orchestrateTestRunAsync(initialRun.id());
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(initialRun);
     }

@@ -59,6 +59,9 @@ testpilot:
       endpoint: ${GITHUB_MCP_ENDPOINT:https://api.githubcopilot.com/mcp/}
       token: ${GITHUB_MCP_TOKEN:}
       allowed-repositories: ${GITHUB_MCP_ALLOWED_REPOSITORIES:}
+  workflow:
+    orchestrator-base-url: ${LANGGRAPH_ORCHESTRATOR_URL:http://localhost:8090}
+    internal-token: ${WORKFLOW_INTERNAL_TOKEN:}
 
 server:
   port: ${PORT:8080}

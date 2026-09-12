@@ -1,6 +1,6 @@
 # TestPilot threat model
 
-Status: initial Phase 1 model. Security controls are incomplete; this document records the boundary rather than certifying the application for public use.
+Status: updated through Phase 4. Security controls are incomplete; this document records the boundary rather than certifying the application for public use.
 
 ## Assets
 
@@ -16,6 +16,9 @@ Status: initial Phase 1 model. Security controls are incomplete; this document r
 flowchart LR
     USER["Authenticated user"] --> API["Application API"]
     GH["GitHub and MCP connector"] --> API
+    API --> GRAPH["LangGraph control plane"]
+    GRAPH --> TOOLS["Authenticated deterministic tool API"]
+    TOOLS --> API
     API --> DB["Application database"]
     API --> MODEL["External model provider"]
     API --> QUEUE["Durable job boundary (planned)"]
@@ -33,6 +36,7 @@ All data crossing a boundary must be authenticated where applicable, authorized 
 - Source comments, README text, issues, stack traces, knowledge documents, and retrieved chunks.
 - LLM output, including file paths, commands, citations, test code, and structured fields.
 - Surefire XML and subprocess stdout/stderr.
+- LangGraph checkpoint state, resume decisions, node parameters, and tool responses.
 
 Untrusted content is data, never instruction. A model response cannot authorize a repository write or directly select a host filesystem path or shell command.
 
@@ -59,6 +63,15 @@ Untrusted content is data, never instruction. A model response cannot authorize 
 - Exclude Git metadata, binaries, generated outputs, vendor directories, and suspected secrets from model and embedding calls.
 - Treat MCP tool results as untrusted remote data and validate them through the same connector contract.
 - Never expose a repository token, Docker socket, host home directory, or application environment to a test worker.
+
+## LangGraph rules
+
+- LangGraph controls ordering, conditional routing, retries, checkpoints, and human interrupts; it does not receive database or GitHub credentials.
+- Graph nodes can call only the versioned Spring workflow-tool contract with a dedicated 32-byte-or-longer shared secret.
+- Tool calls are bound to a registered TestRun, workflow thread, graph version, immutable revision, input hash, and idempotency key.
+- A resumed checkpoint must replay completed tool output instead of repeating a completed side effect.
+- Integration plans that identify databases, messaging, or HTTP dependencies pause before execution for a project-authorized human decision.
+- Free-form model output cannot invoke a shell command or select a tool name; graph topology and tool names are code-defined.
 
 ## Execution-worker target
 

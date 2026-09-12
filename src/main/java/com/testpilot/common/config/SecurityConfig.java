@@ -49,6 +49,7 @@ public class SecurityConfig {
                         "/api/auth/**",
                         "/api/health",
                         "/actuator/health",
+                        "/api/internal/v1/workflow-tools/**",
                         "/api/integrations/github/install/callback",
                         "/api/integrations/github/webhooks").permitAll();
                 if (h2ConsoleEnabled) {

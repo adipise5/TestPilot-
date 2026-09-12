@@ -1,6 +1,7 @@
 package com.testpilot.testing.dto;
 
 import com.testpilot.testing.entity.GeneratedTest;
+import com.testpilot.testing.entity.TestLevel;
 import java.time.LocalDateTime;
 
 public record GeneratedTestResponse(
@@ -8,6 +9,7 @@ public record GeneratedTestResponse(
         Long testRunId,
         String sourceFile,
         String testClass,
+        TestLevel testLevel,
         String testCode,
         LocalDateTime createdAt
 ) {
@@ -17,6 +19,7 @@ public record GeneratedTestResponse(
                 test.getTestRunId(),
                 test.getSourceFile(),
                 test.getTestClass(),
+                test.getTestLevel(),
                 test.getTestCode(),
                 test.getCreatedAt()
         );

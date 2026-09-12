@@ -13,6 +13,10 @@
 
 ```bash
 ./mvnw --batch-mode test
+cd orchestrator
+python -m pip install -r requirements.lock
+python -m compileall -q app tests
+python -m pytest
 cd frontend
 npm ci
 npm run lint

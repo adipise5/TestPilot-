@@ -79,6 +79,9 @@ export const api = {
   createTestRun: (projectId) => apiRequest(`/projects/${projectId}/test-runs`, 'POST'),
   startAutomatedTestRun: (projectId) => apiRequest(`/projects/${projectId}/test-runs/auto`, 'POST'),
   getTestRun: (id) => apiRequest(`/test-runs/${id}`),
+  getWorkflowTrace: (id) => apiRequest(`/test-runs/${id}/workflow`),
+  decideWorkflow: (id, approved, comment = '') => apiRequest(
+    `/test-runs/${id}/workflow/decision`, 'POST', { approved, comment }),
   getProjectTestRuns: (projectId) => apiRequest(`/projects/${projectId}/test-runs`),
   executeTestRun: (id) => apiRequest(`/test-runs/${id}/execute`, 'POST'),
   generateTestsForRun: (id) => apiRequest(`/test-runs/${id}/generate-tests`, 'POST'),

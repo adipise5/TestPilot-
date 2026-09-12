@@ -20,3 +20,5 @@ jwt:
 testpilot:
   security:
     h2-console-enabled: true
+  workflow:
+    internal-token: ${WORKFLOW_INTERNAL_TOKEN:test-only-workflow-token-at-least-32-bytes}

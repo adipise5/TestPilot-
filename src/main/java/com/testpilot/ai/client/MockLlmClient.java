@@ -48,7 +48,9 @@ public class MockLlmClient implements LlmClient {
 
         if (responseType.equals(TestGenerationResponse.class)) {
             String className = extractClassNameFromPrompt(prompt);
-            String testClassName = className.endsWith("Test") ? className : className + "Test";
+            String levelSuffix = prompt.contains("TEST_LEVEL: INTEGRATION") ? "IntegrationTest"
+                    : prompt.contains("TEST_LEVEL: MODULE") ? "ModuleTest" : "Test";
+            String testClassName = className.endsWith(levelSuffix) ? className : className + levelSuffix;
             String packageName = extractPackageNameFromPrompt(prompt);
 
             String testCode = String.format("""
@@ -61,7 +63,7 @@ public class MockLlmClient implements LlmClient {
 
                         @Test
                         void testBasicOperation() {
-                            // Automatically generated unit test by TestPilot AI
+                            // Deterministic offline test generated for the requested test level
                             assertTrue(true, "Base assertion check passed");
                         }
                     }
@@ -69,7 +71,7 @@ public class MockLlmClient implements LlmClient {
 
             TestGenerationResponse mockGen = new TestGenerationResponse(
                     packageName + "." + testClassName,
-                    "Generated JUnit 5 unit test covering primary execution branches and edge cases.",
+                    "Generated JUnit 5 test for the requested workflow test level.",
                     List.of(new TestCaseDto("testBasicOperation", "@Test void testBasicOperation() { assertTrue(true); }")),
                     testCode
             );
@@ -91,25 +93,33 @@ public class MockLlmClient implements LlmClient {
     }
 
     private String extractClassNameFromPrompt(String prompt) {
-        if (prompt.contains("class ")) {
-            int idx = prompt.indexOf("class ") + 6;
-            int end = prompt.indexOf(" ", idx);
-            if (end == -1) end = prompt.indexOf("{", idx);
+        String sourcePrompt = extractSourceSection(prompt);
+        if (sourcePrompt.contains("class ")) {
+            int idx = sourcePrompt.indexOf("class ") + 6;
+            int end = sourcePrompt.indexOf(" ", idx);
+            if (end == -1) end = sourcePrompt.indexOf("{", idx);
             if (end > idx) {
-                return prompt.substring(idx, end).trim();
+                return sourcePrompt.substring(idx, end).trim();
             }
         }
         return "Sample";
     }
 
     private String extractPackageNameFromPrompt(String prompt) {
-        if (prompt.contains("package ")) {
-            int idx = prompt.indexOf("package ") + 8;
-            int end = prompt.indexOf(";", idx);
+        String sourcePrompt = extractSourceSection(prompt);
+        if (sourcePrompt.contains("package ")) {
+            int idx = sourcePrompt.indexOf("package ") + 8;
+            int end = sourcePrompt.indexOf(";", idx);
             if (end > idx) {
-                return prompt.substring(idx, end).trim();
+                return sourcePrompt.substring(idx, end).trim();
             }
         }
         return "com.example";
+    }
+
+    private String extractSourceSection(String prompt) {
+        String marker = "BEGIN UNTRUSTED DATA: JAVA_SOURCE";
+        int markerIndex = prompt.indexOf(marker);
+        return markerIndex >= 0 ? prompt.substring(markerIndex + marker.length()) : prompt;
     }
 }
