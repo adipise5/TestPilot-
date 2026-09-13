@@ -20,5 +20,5 @@ The graph contains intake, codebase mapper, test planner, unit/module/integratio
 - Restarting the LangGraph service can resume a persisted thread using the same checkpoint database.
 - Completed Spring side effects are not repeated when a tool request is replayed.
 - Spring and LangGraph traces identify the TestRun, graph version, node, attempt, input hash, and immutable revision.
-- The local SQLite checkpointer is appropriate for development and demonstration; a shared production checkpointer and durable job dispatch remain deployment work.
-- Test execution is still the Phase 2 host Maven subprocess. Process isolation, durable worker leases, cancellation, and resource enforcement remain Phase 5.
+- The local SQLite checkpointer is appropriate for development and demonstration; a shared production graph checkpointer remains deployment work.
+- Phase 5 subsequently moved execution behind persisted leases and a constrained container worker; see ADR 0004.

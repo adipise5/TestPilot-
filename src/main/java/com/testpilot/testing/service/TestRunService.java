@@ -3,16 +3,18 @@ package com.testpilot.testing.service;
 import com.testpilot.auth.security.UserPrincipal;
 import com.testpilot.common.exception.ResourceNotFoundException;
 import com.testpilot.common.validation.RepositoryPathPolicy;
-import com.testpilot.project.entity.CodeFile;
-import com.testpilot.project.service.ProjectSourceService;
 import com.testpilot.project.service.ProjectService;
 import com.testpilot.testing.dto.*;
 import com.testpilot.testing.entity.*;
-import com.testpilot.testing.execution.TestExecutionService;
+import com.testpilot.testing.execution.DurableTestExecutionService;
 import com.testpilot.testing.execution.TestExecutionOutcome;
+import com.testpilot.testing.execution.TestExecutionOutcomeType;
+import com.testpilot.testing.execution.job.ExecutionJobPersistenceService;
+import com.testpilot.testing.execution.job.ExecutionJobResponse;
 import com.testpilot.testing.repository.GeneratedTestRepository;
 import com.testpilot.testing.repository.TestResultRepository;
 import com.testpilot.testing.repository.TestRunRepository;
+import com.testpilot.testing.validation.GeneratedTestPolicyValidator;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,26 +26,29 @@ public class TestRunService {
     private final TestRunRepository testRunRepository;
     private final GeneratedTestRepository generatedTestRepository;
     private final TestResultRepository testResultRepository;
-    private final ProjectSourceService projectSourceService;
     private final ProjectService projectService;
-    private final TestExecutionService testExecutionService;
+    private final DurableTestExecutionService testExecutionService;
+    private final ExecutionJobPersistenceService executionJobs;
     private final RepositoryPathPolicy repositoryPathPolicy;
+    private final GeneratedTestPolicyValidator testPolicyValidator;
 
     public TestRunService(
             TestRunRepository testRunRepository,
             GeneratedTestRepository generatedTestRepository,
             TestResultRepository testResultRepository,
-            ProjectSourceService projectSourceService,
             ProjectService projectService,
-            TestExecutionService testExecutionService,
-            RepositoryPathPolicy repositoryPathPolicy) {
+            DurableTestExecutionService testExecutionService,
+            ExecutionJobPersistenceService executionJobs,
+            RepositoryPathPolicy repositoryPathPolicy,
+            GeneratedTestPolicyValidator testPolicyValidator) {
         this.testRunRepository = testRunRepository;
         this.generatedTestRepository = generatedTestRepository;
         this.testResultRepository = testResultRepository;
-        this.projectSourceService = projectSourceService;
         this.projectService = projectService;
         this.testExecutionService = testExecutionService;
+        this.executionJobs = executionJobs;
         this.repositoryPathPolicy = repositoryPathPolicy;
+        this.testPolicyValidator = testPolicyValidator;
     }
 
     @Transactional
@@ -60,6 +65,7 @@ public class TestRunService {
         projectService.findProjectAndVerifyWriteAccess(testRun.getProjectId(), currentUser);
 
         String validatedTestClass = repositoryPathPolicy.validateGeneratedTestClass(request.testClass());
+        testPolicyValidator.validate(validatedTestClass, request.testCode(), TestLevel.UNIT);
         GeneratedTest generatedTest = new GeneratedTest(
                 testRunId,
                 request.sourceFile(),
@@ -78,19 +84,32 @@ public class TestRunService {
         testRun.setStatus(TestRunStatus.RUNNING_TESTS);
         testRunRepository.save(testRun);
 
-        List<CodeFile> sourceFiles = projectSourceService.getActiveSourceFiles(testRun.getProjectId());
         List<GeneratedTest> generatedTests = generatedTestRepository.findByTestRunId(testRunId);
 
-        TestExecutionOutcome outcome = testExecutionService.executeTests(testRunId, sourceFiles, generatedTests);
-        List<TestResult> savedResults = testResultRepository.saveAll(outcome.results());
+        TestExecutionOutcome outcome = testExecutionService.execute(testRunId);
+        List<TestResult> savedResults = outcome.results();
 
+        testRun = findTestRun(testRunId);
         testRun.recordExecutionOutcome(outcome.type(), outcome.processExitCode(), outcome.output());
         testRun.setStatus(outcome.completedTestProcess() ? TestRunStatus.COMPLETED : TestRunStatus.FAILED);
         TestRun updatedRun = testRunRepository.save(testRun);
 
         List<GeneratedTestResponse> genDtos = generatedTests.stream().map(GeneratedTestResponse::fromEntity).toList();
         List<TestResultResponse> resDtos = savedResults.stream().map(TestResultResponse::fromEntity).toList();
-        return TestRunResponse.fromEntity(updatedRun, genDtos, resDtos);
+        return TestRunResponse.fromEntity(updatedRun, jobResponse(testRunId), genDtos, resDtos);
+    }
+
+    public TestRunResponse cancelExecution(Long testRunId, UserPrincipal currentUser) {
+        TestRun testRun = findTestRun(testRunId);
+        projectService.findProjectAndVerifyWriteAccess(testRun.getProjectId(), currentUser);
+        var job = executionJobs.requestCancellation(testRunId);
+        if (job.getStatus() == com.testpilot.testing.execution.job.ExecutionJobStatus.CANCELLED
+                && testRun.getExecutionOutcome() == null) {
+            testRun.recordExecutionOutcome(TestExecutionOutcomeType.CANCELLED, null, "Execution cancelled before lease acquisition");
+            testRun.setStatus(TestRunStatus.FAILED);
+            testRunRepository.save(testRun);
+        }
+        return getTestRun(testRunId, currentUser);
     }
 
     @Transactional(readOnly = true)
@@ -104,7 +123,7 @@ public class TestRunService {
         List<TestResultResponse> resDtos = testResultRepository.findByTestRunId(testRunId)
                 .stream().map(TestResultResponse::fromEntity).toList();
 
-        return TestRunResponse.fromEntity(testRun, genDtos, resDtos);
+        return TestRunResponse.fromEntity(testRun, jobResponse(testRunId), genDtos, resDtos);
     }
 
     @Transactional(readOnly = true)
@@ -117,7 +136,7 @@ public class TestRunService {
                             .stream().map(GeneratedTestResponse::fromEntity).toList();
                     List<TestResultResponse> resDtos = testResultRepository.findByTestRunId(run.getId())
                             .stream().map(TestResultResponse::fromEntity).toList();
-                    return TestRunResponse.fromEntity(run, genDtos, resDtos);
+                    return TestRunResponse.fromEntity(run, jobResponse(run.getId()), genDtos, resDtos);
                 })
                 .toList();
     }
@@ -125,5 +144,11 @@ public class TestRunService {
     private TestRun findTestRun(Long testRunId) {
         return testRunRepository.findById(testRunId)
                 .orElseThrow(() -> new ResourceNotFoundException("TestRun not found with id: " + testRunId));
+    }
+
+    private ExecutionJobResponse jobResponse(Long testRunId) {
+        return executionJobs.findByTestRunId(testRunId)
+                .map(ExecutionJobResponse::from)
+                .orElse(null);
     }
 }

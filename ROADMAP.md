@@ -13,11 +13,12 @@ Every phase has a review gate. A later phase starts only after the current phase
 | Phase | Status |
 |---|---|
 | Phase 1 — reproducible foundation | Complete |
-| Phase 2 — security and execution correctness | Implemented; awaiting owner review and commit |
-| Phase 3 — GitHub repository intake and MCP boundary | Implemented; awaiting owner review and commit |
-| Phase 4 — LangGraph agentic workflow | Implemented; awaiting owner review and commit |
-| Phase 5 — isolated multi-level test execution | Awaiting approval after the Phase 4 commit gate |
-| Phases 6–8 | Not started |
+| Phase 2 — security and execution correctness | Complete |
+| Phase 3 — GitHub repository intake and MCP boundary | Complete |
+| Phase 4 — LangGraph agentic workflow | Complete |
+| Phase 5 — isolated multi-level test execution | Implemented; awaiting owner review and commit |
+| Phase 6 — production RAG | Implemented; awaiting owner review and commit |
+| Phases 7–8 | Not started |
 
 ## Phase 1 — reproducible foundation
 
@@ -131,6 +132,12 @@ Exit gate:
 - Malicious fixtures cannot read host files, reach the network, fork indefinitely, or survive cleanup.
 - Worker loss and application restart do not lose or duplicate a completed run.
 
+Implementation note:
+
+- Execution jobs are unique per TestRun and persist leases, heartbeats, attempts, cancellation, bounded output, typed results, coverage, and optional mutation evidence.
+- The production backend materializes the screened immutable Maven catalog into a temporary workspace and runs it through the non-root worker image. Dependency resolution and offline test execution are separate constrained stages.
+- Unit, module, and integration proposals have different prompt guidance and deterministic validation policies. CI verifies the container restriction contract; the H2 profile uses a clearly identified trusted local runner.
+
 ## Phase 6 — production RAG
 
 **Goal:** retrieve the smallest authoritative and project-specific context that improves test quality.
@@ -148,6 +155,12 @@ Exit gate:
 
 - Cross-project retrieval is impossible by construction and tested.
 - Retrieval traces reproduce the exact context used for every generated test.
+
+Implementation note:
+
+- Generation and embedding providers are separate. Repository code, existing tests, build manifests, and guides are chunked semantically and indexed idempotently with source/model/version provenance.
+- The dev profile initializes pgvector and HNSW/full-text indexes. Dense and lexical candidates are scope-filtered, fused, thresholded, deduplicated, reranked, and packed to a token budget.
+- Generated tests reference persisted retrieval traces; the API and UI expose exact packed context and stable source/chunk citations. Cross-project isolation and trace reproduction have negative tests.
 
 ## Phase 7 — evaluation and observability
 

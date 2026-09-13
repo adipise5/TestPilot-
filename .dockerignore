@@ -1,0 +1,10 @@
+.git
+.env
+.env.*
+target
+frontend/node_modules
+frontend/dist
+orchestrator/.venv
+orchestrator/data
+**/__pycache__
+**/.pytest_cache

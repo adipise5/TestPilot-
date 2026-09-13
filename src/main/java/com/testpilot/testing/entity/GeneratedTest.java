@@ -31,6 +31,9 @@ public class GeneratedTest {
     @Column(name = "test_code", columnDefinition = "TEXT", nullable = false)
     private String testCode;
 
+    @Column(name = "rag_trace_id")
+    private Long ragTraceId;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -46,11 +49,22 @@ public class GeneratedTest {
             String testClass,
             String testCode,
             TestLevel testLevel) {
+        this(testRunId, sourceFile, testClass, testCode, testLevel, null);
+    }
+
+    public GeneratedTest(
+            Long testRunId,
+            String sourceFile,
+            String testClass,
+            String testCode,
+            TestLevel testLevel,
+            Long ragTraceId) {
         this.testRunId = testRunId;
         this.sourceFile = sourceFile;
         this.testClass = testClass;
         this.testCode = testCode;
         this.testLevel = testLevel;
+        this.ragTraceId = ragTraceId;
     }
 
     @PrePersist
@@ -81,6 +95,8 @@ public class GeneratedTest {
     public TestLevel getTestLevel() {
         return testLevel;
     }
+
+    public Long getRagTraceId() { return ragTraceId; }
 
     public LocalDateTime getCreatedAt() {
         return createdAt;

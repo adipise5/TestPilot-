@@ -43,6 +43,12 @@ management:
     health:
       show-details: never
 
+ai:
+  provider: ${AI_PROVIDER:mock}
+  embedding-provider: ${AI_EMBEDDING_PROVIDER:mock}
+  embedding-model: ${AI_EMBEDDING_MODEL:text-embedding-3-small}
+  embedding-dimensions: ${AI_EMBEDDING_DIMENSIONS:1536}
+
 testpilot:
   bootstrap-admin:
     enabled: ${BOOTSTRAP_ADMIN_ENABLED:false}
@@ -62,6 +68,24 @@ testpilot:
   workflow:
     orchestrator-base-url: ${LANGGRAPH_ORCHESTRATOR_URL:http://localhost:8090}
     internal-token: ${WORKFLOW_INTERNAL_TOKEN:}
+  execution:
+    backend: ${TEST_EXECUTION_BACKEND:container}
+    worker-image: ${TEST_WORKER_IMAGE:testpilot-worker:local}
+    dependency-network: ${TEST_DEPENDENCY_NETWORK:bridge}
+    timeout-seconds: ${TEST_EXECUTION_TIMEOUT_SECONDS:60}
+    await-seconds: ${TEST_EXECUTION_AWAIT_SECONDS:240}
+    lease-seconds: ${TEST_EXECUTION_LEASE_SECONDS:30}
+    max-attempts: ${TEST_EXECUTION_MAX_ATTEMPTS:3}
+    memory-limit: ${TEST_EXECUTION_MEMORY:1g}
+    cpu-limit: ${TEST_EXECUTION_CPUS:1.0}
+    pid-limit: ${TEST_EXECUTION_PIDS:128}
+    recovery-enabled: ${TEST_EXECUTION_RECOVERY_ENABLED:true}
+    mutation-enabled: ${TEST_MUTATION_ENABLED:false}
+  rag:
+    vector-store: ${RAG_VECTOR_STORE:pgvector}
+    ingestion-version: ${RAG_INGESTION_VERSION:rag-v2}
+    relevance-threshold: ${RAG_RELEVANCE_THRESHOLD:0.08}
+    token-budget: ${RAG_TOKEN_BUDGET:6000}
 
 server:
   port: ${PORT:8080}

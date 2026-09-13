@@ -10,7 +10,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.Random;
 
 @Component
 @ConditionalOnProperty(name = "ai.provider", havingValue = "mock", matchIfMissing = true)
@@ -50,6 +49,8 @@ public class MockLlmClient implements LlmClient {
             String className = extractClassNameFromPrompt(prompt);
             String levelSuffix = prompt.contains("TEST_LEVEL: INTEGRATION") ? "IntegrationTest"
                     : prompt.contains("TEST_LEVEL: MODULE") ? "ModuleTest" : "Test";
+            String levelTag = prompt.contains("TEST_LEVEL: INTEGRATION") ? "integration"
+                    : prompt.contains("TEST_LEVEL: MODULE") ? "module" : "unit";
             String testClassName = className.endsWith(levelSuffix) ? className : className + levelSuffix;
             String packageName = extractPackageNameFromPrompt(prompt);
 
@@ -57,17 +58,19 @@ public class MockLlmClient implements LlmClient {
                     package %s;
 
                     import org.junit.jupiter.api.Test;
+                    import org.junit.jupiter.api.Tag;
                     import static org.junit.jupiter.api.Assertions.*;
 
                     public class %s {
 
+                        @Tag("%s")
                         @Test
                         void testBasicOperation() {
                             // Deterministic offline test generated for the requested test level
                             assertTrue(true, "Base assertion check passed");
                         }
                     }
-                    """, packageName, testClassName);
+                    """, packageName, testClassName, levelTag);
 
             TestGenerationResponse mockGen = new TestGenerationResponse(
                     packageName + "." + testClassName,
@@ -79,17 +82,6 @@ public class MockLlmClient implements LlmClient {
         }
 
         throw new IllegalArgumentException("Unsupported responseType for MockLlmClient: " + responseType.getName());
-    }
-
-    @Override
-    public float[] generateEmbedding(String text) {
-        // Generate deterministic 1536-dimensional mock embedding
-        float[] embedding = new float[1536];
-        Random random = new Random(text.hashCode());
-        for (int i = 0; i < embedding.length; i++) {
-            embedding[i] = random.nextFloat() * 2 - 1;
-        }
-        return embedding;
     }
 
     private String extractClassNameFromPrompt(String prompt) {

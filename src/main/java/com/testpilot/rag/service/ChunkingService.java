@@ -1,40 +1,32 @@
 package com.testpilot.rag.service;
 
+import com.testpilot.rag.chunking.DocumentSectionChunker;
 import org.springframework.stereotype.Service;
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
 public class ChunkingService {
 
-    private static final int DEFAULT_CHUNK_SIZE = 500;
-    private static final int DEFAULT_CHUNK_OVERLAP = 100;
+    private final DocumentSectionChunker sectionChunker;
+
+    public ChunkingService(DocumentSectionChunker sectionChunker) {
+        this.sectionChunker = sectionChunker;
+    }
 
     public List<String> chunkText(String text) {
-        return chunkText(text, DEFAULT_CHUNK_SIZE, DEFAULT_CHUNK_OVERLAP);
+        return sectionChunker.chunk(text).stream().map(chunk -> chunk.content()).toList();
     }
 
     public List<String> chunkText(String text, int chunkSize, int chunkOverlap) {
-        List<String> chunks = new ArrayList<>();
-        if (text == null || text.isBlank()) {
-            return chunks;
+        if (text == null || text.isBlank()) return List.of();
+        int safeSize = Math.max(1, chunkSize);
+        int safeOverlap = Math.max(0, Math.min(chunkOverlap, safeSize - 1));
+        java.util.ArrayList<String> chunks = new java.util.ArrayList<>();
+        for (int i = 0; i < text.length(); i += safeSize - safeOverlap) {
+            int end = Math.min(text.length(), i + safeSize);
+            chunks.add(text.substring(i, end).trim());
+            if (end == text.length()) break;
         }
-
-        int step = chunkSize - chunkOverlap;
-        if (step <= 0) {
-            step = chunkSize;
-        }
-
-        for (int i = 0; i < text.length(); i += step) {
-            int end = Math.min(i + chunkSize, text.length());
-            String chunk = text.substring(i, end).trim();
-            if (!chunk.isEmpty()) {
-                chunks.add(chunk);
-            }
-            if (end == text.length()) {
-                break;
-            }
-        }
-        return chunks;
+        return List.copyOf(chunks);
     }
 }

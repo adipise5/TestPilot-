@@ -5,5 +5,6 @@ public enum TestExecutionOutcomeType {
     TEST_FAILURE,
     COMPILATION_FAILURE,
     TIMEOUT,
+    CANCELLED,
     INFRASTRUCTURE_FAILURE
 }

@@ -73,6 +73,13 @@ public class TestRunController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/api/test-runs/{id}/execution/cancel")
+    public ResponseEntity<TestRunResponse> cancelTestRunExecution(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserPrincipal currentUser) {
+        return ResponseEntity.ok(testRunService.cancelExecution(id, currentUser));
+    }
+
     @GetMapping("/api/test-runs/{id}")
     public ResponseEntity<TestRunResponse> getTestRun(
             @PathVariable Long id,

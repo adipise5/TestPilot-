@@ -82,6 +82,9 @@ export const api = {
   getWorkflowTrace: (id) => apiRequest(`/test-runs/${id}/workflow`),
   decideWorkflow: (id, approved, comment = '') => apiRequest(
     `/test-runs/${id}/workflow/decision`, 'POST', { approved, comment }),
+  getRagTraces: (id) => apiRequest(`/test-runs/${id}/rag-traces`),
+  cancelExecution: (id) => apiRequest(`/test-runs/${id}/execution/cancel`, 'POST'),
+  queryProjectRag: (projectId, data) => apiRequest(`/projects/${projectId}/rag/query`, 'POST', data),
   getProjectTestRuns: (projectId) => apiRequest(`/projects/${projectId}/test-runs`),
   executeTestRun: (id) => apiRequest(`/test-runs/${id}/execute`, 'POST'),
   generateTestsForRun: (id) => apiRequest(`/test-runs/${id}/generate-tests`, 'POST'),

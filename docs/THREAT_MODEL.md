@@ -1,6 +1,6 @@
 # TestPilot threat model
 
-Status: updated through Phase 4. Security controls are incomplete; this document records the boundary rather than certifying the application for public use.
+Status: updated through Phase 6. Security controls are implemented for the repository, workflow, retrieval, and container-execution boundaries, but this document does not certify any particular deployment for public use.
 
 ## Assets
 
@@ -21,9 +21,10 @@ flowchart LR
     TOOLS --> API
     API --> DB["Application database"]
     API --> MODEL["External model provider"]
-    API --> QUEUE["Durable job boundary (planned)"]
-    QUEUE --> WORKER["Isolated execution worker (planned)"]
-    WORKER --> OUT["Typed results and bounded logs"]
+    API --> QUEUE["Durable leased execution jobs"]
+    QUEUE --> WORKER["Constrained dependency container"]
+    WORKER --> OFFLINE["Offline test container"]
+    OFFLINE --> OUT["Typed results and bounded logs"]
     OUT --> API
 ```
 
@@ -44,15 +45,16 @@ Untrusted content is data, never instruction. A model response cannot authorize 
 
 | Risk | Current state | Required control |
 |---|---|---|
-| Host code execution | Maven executes uploaded/generated Java on the application host | Dedicated non-root worker with no network, hard resource limits, and no host mounts |
+| Host code execution | Production defaults to a constrained non-root container; H2 retains an explicit trusted local backend | Keep the local backend inaccessible in public deployments and continuously verify the worker policy |
 | Path traversal | Supplied file paths reach workspace resolution | Canonical relative-path allowlist, symlink rejection, and root containment check |
 | Privilege escalation | Public registration accepts a requested role | Force the public default role and protect role administration |
 | Object authorization | Some ID-based reads do not verify project access | Central authorization policy and cross-user endpoint tests |
 | False success | Nonzero Maven outcomes can produce no reports and still complete | Capture bounded logs/exit code and model typed terminal outcomes |
 | Secret exposure | Development JWT fallback and repository/model credentials | Secret manager/environment requirements, redaction, rotation, and fail-fast production config |
 | Prompt injection | Repository and knowledge text is interpolated into prompts | Trust delimiters, deterministic tools, output schemas, scoped retrieval, and human write gates |
-| Cross-project RAG leakage | Current chunks lack tenant/project scope | Authorization filters in the storage query plus negative tests |
-| Denial of service | User code and LLM calls consume CPU, memory, time, and cost | Quotas, queue backpressure, resource limits, timeouts, cancellation, and budgets |
+| Cross-project RAG leakage | Dense and lexical candidates require tenant/project/commit/model scope; global guides have an explicit zero scope | Preserve mandatory filters and cross-project negative tests for every storage adapter |
+| Dependency-stage egress | Maven dependencies require network access before offline execution | Route only the dependency container through a deployment-controlled allowlisted network; never attach the test container |
+| Denial of service | User code and LLM calls consume CPU, memory, time, and cost | Current worker limits, timeouts, cancellation, retrieval budgets, plus deployment quotas and queue backpressure |
 
 ## GitHub and MCP rules
 
@@ -73,9 +75,20 @@ Untrusted content is data, never instruction. A model response cannot authorize 
 - Integration plans that identify databases, messaging, or HTTP dependencies pause before execution for a project-authorized human decision.
 - Free-form model output cannot invoke a shell command or select a tool name; graph topology and tool names are code-defined.
 
-## Execution-worker target
+## Execution-worker rules
 
-The worker must run as a non-root user with a read-only root filesystem, a fresh temporary workspace, dropped Linux capabilities, bounded PIDs/CPU/memory/file sizes/logs, a strict wall-clock timeout, and no network during compilation/test execution. Dependency resolution, when necessary, is a separate policy-controlled stage using an allowlisted cache.
+The worker runs as UID/GID 10001 with a read-only root filesystem during test execution, a fresh temporary workspace, dropped Linux capabilities, `no-new-privileges`, bounded PIDs/CPU/memory/file sizes/logs, a strict wall-clock timeout, and `--network none`. Dependency resolution is a separate constrained stage. Its cache is writable only during resolution, read-only during tests, and removed with the workspace. `TEST_DEPENDENCY_NETWORK` must identify an egress-controlled network in production.
+
+Execution jobs are unique per TestRun. Database leases, heartbeats, persisted cancellation, bounded retries, and serialized terminal results prevent duplicate completed execution and permit recovery after worker/application loss. The screened immutable catalog is hash-checked again before materialization. Neither worker stage receives GitHub/model credentials, application environment secrets, the Docker socket, or arbitrary host mounts.
+
+## RAG rules
+
+- Generation and embedding providers are separate; changing the embedding model creates a separate index identity.
+- Every project candidate query includes tenant, project, immutable commit, and embedding-model filters before ranking.
+- Global testing guidance is stored only in the explicit `tenant=0/project=0/commit=global` scope.
+- Dense and lexical lists are fused and reranked only after storage-level scope filtering.
+- Retrieved content remains untrusted prompt data and cannot select tools or authorize execution.
+- Every generated test stores a trace ID whose record contains the exact packed context, ordered citations, query hash, retrieval configuration, and content hashes.
 
 ## Abuse cases to test
 
@@ -88,4 +101,4 @@ The worker must run as a non-root user with a read-only root filesystem, a fresh
 
 ## Security release gate
 
-The application must not be presented as safe for public, multi-tenant execution until Phase 2 authorization/path/result controls and Phase 5 isolated workers have passed their negative test suites.
+The application must not be presented as safe for public, multi-tenant execution solely because the code contains these controls. A deployment must additionally prove its Docker/runtime policy, dependency-egress allowlist, database isolation/backups, secret handling, quotas, monitoring, and incident response. CI exercises the worker contract and project-scope negative tests.

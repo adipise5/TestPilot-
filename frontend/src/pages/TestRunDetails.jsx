@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { api } from '../api/client';
-import { CheckCircle2, XCircle, Code, ArrowRight, GitBranch, ShieldCheck } from 'lucide-react';
+import { CheckCircle2, XCircle, Code, ArrowRight, GitBranch, ShieldCheck, Database, Ban } from 'lucide-react';
 
 export default function TestRunDetails() {
   const { id } = useParams();
   const [testRun, setTestRun] = useState(null);
   const [workflow, setWorkflow] = useState(null);
+  const [ragTraces, setRagTraces] = useState([]);
   const [loading, setLoading] = useState(true);
   const [decisionPending, setDecisionPending] = useState(false);
 
@@ -18,6 +19,11 @@ export default function TestRunDetails() {
         setWorkflow(await api.getWorkflowTrace(id));
       } catch {
         setWorkflow(null);
+      }
+      try {
+        setRagTraces(await api.getRagTraces(id));
+      } catch {
+        setRagTraces([]);
       }
     } catch (err) {
       console.error(err);
@@ -52,6 +58,17 @@ export default function TestRunDetails() {
       );
       setWorkflow(updated);
       await loadTestRun();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setDecisionPending(false);
+    }
+  };
+
+  const cancelExecution = async () => {
+    setDecisionPending(true);
+    try {
+      setTestRun(await api.cancelExecution(id));
     } catch (err) {
       console.error(err);
     } finally {
@@ -190,6 +207,72 @@ export default function TestRunDetails() {
         </div>
       )}
 
+      {testRun.executionJob && (
+        <div className="card space-y-4">
+          <div className="flex items-center justify-between gap-4">
+            <h2 className="text-lg font-bold flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-cyan-400" /> Isolated execution job
+            </h2>
+            <span className="px-2 py-1 rounded border border-slate-700 font-mono text-xs">
+              {testRun.executionJob.status}
+            </span>
+          </div>
+          <div className="grid md:grid-cols-3 gap-3 text-sm">
+            <div className="p-3 bg-slate-900 rounded border border-slate-800">
+              <div className="text-xs text-slate-500">Backend</div>
+              <div className="font-mono text-slate-200">{testRun.executionJob.isolationBackend || 'awaiting worker'}</div>
+            </div>
+            <div className="p-3 bg-slate-900 rounded border border-slate-800">
+              <div className="text-xs text-slate-500">Attempts</div>
+              <div className="font-mono text-slate-200">{testRun.executionJob.attempts}/{testRun.executionJob.maxAttempts}</div>
+            </div>
+            <div className="p-3 bg-slate-900 rounded border border-slate-800">
+              <div className="text-xs text-slate-500">Last heartbeat</div>
+              <div className="font-mono text-slate-200">{testRun.executionJob.heartbeatAt || 'not leased'}</div>
+            </div>
+          </div>
+          <div className="grid md:grid-cols-2 gap-3 text-sm">
+            <div>Line coverage: <span className="font-mono text-emerald-400">{testRun.executionJob.lineCoveragePercent ?? testRun.executionJob.coverageStatus}</span></div>
+            <div>Mutation score: <span className="font-mono text-violet-400">{testRun.executionJob.mutationScorePercent ?? testRun.executionJob.mutationStatus}</span></div>
+          </div>
+          {['QUEUED', 'LEASED', 'RUNNING', 'RETRY_WAIT'].includes(testRun.executionJob.status) && (
+            <button className="btn-danger flex items-center gap-2" disabled={decisionPending} onClick={cancelExecution}>
+              <Ban className="w-4 h-4" /> Cancel execution
+            </button>
+          )}
+        </div>
+      )}
+
+      {ragTraces.length > 0 && (
+        <div className="card space-y-4">
+          <h2 className="text-lg font-bold flex items-center gap-2">
+            <Database className="w-5 h-5 text-fuchsia-400" /> RAG grounding evidence
+          </h2>
+          {ragTraces.map((trace) => (
+            <details key={trace.id} className="p-3 bg-slate-900 rounded border border-slate-800">
+              <summary className="cursor-pointer text-sm text-slate-300">
+                Trace #{trace.id} · {trace.packedTokens} tokens · {trace.citations.length} citations
+              </summary>
+              <div className="mt-3 space-y-3">
+                <div className="text-xs font-mono text-slate-500 break-all">query hash: {trace.queryHash}</div>
+                <div className="text-sm text-slate-300">Query: {trace.queryText}</div>
+                {trace.citations.map((citation) => (
+                  <div key={citation.chunkKey} className="text-xs border-l-2 border-fuchsia-800 pl-3">
+                    <div className="text-fuchsia-300">{citation.source}{citation.symbol ? ` · ${citation.symbol}` : ''}</div>
+                    <div className="text-slate-500">lines {citation.startLine}-{citation.endLine} · score {citation.score.toFixed(3)}</div>
+                    <div className="font-mono text-slate-600 break-all">{citation.uri}</div>
+                  </div>
+                ))}
+                <details>
+                  <summary className="cursor-pointer text-xs text-slate-500">Exact packed context</summary>
+                  <pre className="code-block mt-2 max-h-80 overflow-auto">{trace.packedContext}</pre>
+                </details>
+              </div>
+            </details>
+          ))}
+        </div>
+      )}
+
       {/* Generated JUnit Test Code */}
       {testRun.generatedTests && testRun.generatedTests.length > 0 && (
         <div className="card space-y-3">
@@ -202,6 +285,7 @@ export default function TestRunDetails() {
                 <span>{gt.testLevel || 'UNIT'} · Class: {gt.testClass}</span>
                 <span>Source: {gt.sourceFile}</span>
               </div>
+              {gt.ragTraceId && <div className="text-xs font-mono text-fuchsia-400">Grounded by RAG trace #{gt.ragTraceId}</div>}
               <pre className="code-block">{gt.testCode}</pre>
             </div>
           ))}

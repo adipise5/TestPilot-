@@ -10,6 +10,7 @@ public record GeneratedTestResponse(
         String sourceFile,
         String testClass,
         TestLevel testLevel,
+        Long ragTraceId,
         String testCode,
         LocalDateTime createdAt
 ) {
@@ -20,6 +21,7 @@ public record GeneratedTestResponse(
                 test.getSourceFile(),
                 test.getTestClass(),
                 test.getTestLevel(),
+                test.getRagTraceId(),
                 test.getTestCode(),
                 test.getCreatedAt()
         );

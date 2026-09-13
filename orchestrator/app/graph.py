@@ -23,6 +23,7 @@ class WorkflowState(TypedDict, total=False):
     build_system: str
     analysis: dict[str, Any]
     codebase_map: dict[str, Any]
+    rag_ingestion: dict[str, Any]
     test_plan: list[dict[str, Any]]
     approval_required: bool
     approval_reason: str

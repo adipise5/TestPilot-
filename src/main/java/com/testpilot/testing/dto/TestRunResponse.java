@@ -3,6 +3,7 @@ package com.testpilot.testing.dto;
 import com.testpilot.testing.entity.TestRun;
 import com.testpilot.testing.entity.TestRunStatus;
 import com.testpilot.testing.execution.TestExecutionOutcomeType;
+import com.testpilot.testing.execution.job.ExecutionJobResponse;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -15,10 +16,19 @@ public record TestRunResponse(
         String executionOutput,
         LocalDateTime startedAt,
         LocalDateTime completedAt,
+        ExecutionJobResponse executionJob,
         List<GeneratedTestResponse> generatedTests,
         List<TestResultResponse> testResults
 ) {
     public static TestRunResponse fromEntity(TestRun testRun, List<GeneratedTestResponse> generatedTests, List<TestResultResponse> testResults) {
+        return fromEntity(testRun, null, generatedTests, testResults);
+    }
+
+    public static TestRunResponse fromEntity(
+            TestRun testRun,
+            ExecutionJobResponse executionJob,
+            List<GeneratedTestResponse> generatedTests,
+            List<TestResultResponse> testResults) {
         return new TestRunResponse(
                 testRun.getId(),
                 testRun.getProjectId(),
@@ -28,6 +38,7 @@ public record TestRunResponse(
                 testRun.getExecutionOutput(),
                 testRun.getStartedAt(),
                 testRun.getCompletedAt(),
+                executionJob,
                 generatedTests,
                 testResults
         );

@@ -68,9 +68,9 @@ public class TestGenerationAgent {
 
     private String levelGuidance(TestLevel level) {
         return switch (level) {
-            case UNIT -> "Isolate one class and replace collaborators with test doubles where needed.";
-            case MODULE -> "Exercise collaborating classes inside one application module without crossing deployable boundaries.";
-            case INTEGRATION -> "Exercise framework wiring or controlled infrastructure boundaries; never call uncontrolled production services.";
+            case UNIT -> "Isolate one class, replace collaborators with test doubles, and add @Tag(\"unit\").";
+            case MODULE -> "Exercise collaborating classes inside one application module without crossing deployable boundaries, and add @Tag(\"module\").";
+            case INTEGRATION -> "Exercise framework wiring or controlled infrastructure boundaries, add @Tag(\"integration\"), and never call uncontrolled production services.";
         };
     }
 }

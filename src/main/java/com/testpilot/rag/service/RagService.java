@@ -1,90 +1,107 @@
 package com.testpilot.rag.service;
 
-import com.testpilot.ai.client.LlmClient;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.testpilot.common.exception.ResourceNotFoundException;
-import com.testpilot.rag.dto.CreateKnowledgeDocumentRequest;
-import com.testpilot.rag.dto.KnowledgeDocumentResponse;
-import com.testpilot.rag.dto.RagQueryResult;
-import com.testpilot.rag.entity.DocumentChunk;
+import com.testpilot.project.entity.Project;
+import com.testpilot.project.repository.ProjectRepository;
+import com.testpilot.rag.dto.*;
 import com.testpilot.rag.entity.KnowledgeDocument;
+import com.testpilot.rag.model.RagScope;
 import com.testpilot.rag.repository.DocumentChunkRepository;
 import com.testpilot.rag.repository.KnowledgeDocumentRepository;
+import com.testpilot.rag.repository.RagRetrievalTraceRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class RagService {
 
-    private final KnowledgeDocumentRepository documentRepository;
-    private final DocumentChunkRepository chunkRepository;
-    private final ChunkingService chunkingService;
-    private final VectorSearchService vectorSearchService;
-    private final LlmClient llmClient;
+    private final KnowledgeDocumentRepository documents;
+    private final DocumentChunkRepository chunks;
+    private final RagRetrievalTraceRepository traces;
+    private final ProjectRepository projects;
+    private final RagIngestionService ingestion;
+    private final HybridRetrievalService retrieval;
+    private final ObjectMapper objectMapper;
 
     public RagService(
-            KnowledgeDocumentRepository documentRepository,
-            DocumentChunkRepository chunkRepository,
-            ChunkingService chunkingService,
-            VectorSearchService vectorSearchService,
-            LlmClient llmClient) {
-        this.documentRepository = documentRepository;
-        this.chunkRepository = chunkRepository;
-        this.chunkingService = chunkingService;
-        this.vectorSearchService = vectorSearchService;
-        this.llmClient = llmClient;
+            KnowledgeDocumentRepository documents,
+            DocumentChunkRepository chunks,
+            RagRetrievalTraceRepository traces,
+            ProjectRepository projects,
+            RagIngestionService ingestion,
+            HybridRetrievalService retrieval,
+            ObjectMapper objectMapper) {
+        this.documents = documents;
+        this.chunks = chunks;
+        this.traces = traces;
+        this.projects = projects;
+        this.ingestion = ingestion;
+        this.retrieval = retrieval;
+        this.objectMapper = objectMapper;
     }
 
     @Transactional
     public KnowledgeDocumentResponse ingestDocument(CreateKnowledgeDocumentRequest request) {
-        KnowledgeDocument doc = new KnowledgeDocument(request.title(), request.source(), request.content());
-        KnowledgeDocument savedDoc = documentRepository.save(doc);
-
-        List<String> textChunks = chunkingService.chunkText(request.content());
-
-        for (String chunkText : textChunks) {
-            float[] embedding = llmClient.generateEmbedding(chunkText);
-            DocumentChunk chunk = new DocumentChunk(savedDoc.getId(), chunkText, embedding);
-            chunkRepository.save(chunk);
-        }
-
-        return KnowledgeDocumentResponse.fromEntity(savedDoc);
+        return KnowledgeDocumentResponse.fromEntity(
+                ingestion.ingestGuide(request.title(), request.source(), request.content()));
     }
 
     @Transactional(readOnly = true)
     public List<KnowledgeDocumentResponse> getAllDocuments() {
-        return documentRepository.findAll().stream()
+        return documents.findByTenantIdAndProjectIdOrderBySource(0L, 0L).stream()
                 .map(KnowledgeDocumentResponse::fromEntity)
                 .toList();
     }
 
     @Transactional
     public void deleteDocument(Long id) {
-        if (!documentRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Knowledge document not found with id: " + id);
-        }
-        chunkRepository.deleteAll(chunkRepository.findByDocumentId(id));
-        documentRepository.deleteById(id);
+        KnowledgeDocument document = documents.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Knowledge document not found with id: " + id));
+        chunks.deleteAll(chunks.findByDocumentId(document.getId()));
+        documents.delete(document);
     }
 
-    @Transactional(readOnly = true)
     public List<RagQueryResult> queryKnowledgeBase(String queryText, int topK) {
-        float[] queryEmbedding = llmClient.generateEmbedding(queryText);
-        List<DocumentChunk> allChunks = chunkRepository.findAll();
-        return vectorSearchService.searchTopK(queryEmbedding, allChunks, topK);
+        return retrieval.retrieve(RagScope.global(), queryText, topK, null, null).results();
+    }
+
+    public RagRetrievalResult retrieveForTesting(
+            Long projectId,
+            String commitSha,
+            String query,
+            Long testRunId) {
+        Project project = project(projectId);
+        return retrieval.retrieve(
+                new RagScope(project.getOwnerId(), projectId, commitSha), query, 8, null, testRunId);
+    }
+
+    public RagRetrievalResult retrieveForProject(
+            Long projectId,
+            String commitSha,
+            String query,
+            int topK,
+            Integer tokenBudget) {
+        Project project = project(projectId);
+        return retrieval.retrieve(
+                new RagScope(project.getOwnerId(), projectId, commitSha), query, topK, tokenBudget, null);
+    }
+
+    public String getRelevantContextForTesting(String codeSnippet) {
+        return retrieval.retrieve(RagScope.global(), codeSnippet, 3, null, null).context();
     }
 
     @Transactional(readOnly = true)
-    public String getRelevantContextForTesting(String codeSnippet) {
-        List<RagQueryResult> topResults = queryKnowledgeBase(codeSnippet, 3);
-        if (topResults.isEmpty()) {
-            return "";
-        }
+    public List<RagRetrievalTraceResponse> tracesForTestRun(Long testRunId) {
+        return traces.findByTestRunIdOrderByCreatedAtAsc(testRunId).stream()
+                .map(trace -> RagRetrievalTraceResponse.from(trace, objectMapper))
+                .toList();
+    }
 
-        return topResults.stream()
-                .map(res -> "- [Relevance: " + String.format("%.2f", res.similarityScore()) + "] " + res.content())
-                .collect(Collectors.joining("\n"));
+    private Project project(Long projectId) {
+        return projects.findById(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Project not found: " + projectId));
     }
 }

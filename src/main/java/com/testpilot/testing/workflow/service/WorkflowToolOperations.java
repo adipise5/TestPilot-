@@ -22,19 +22,24 @@ import com.testpilot.failure.repository.FixSuggestionRepository;
 import com.testpilot.project.entity.CodeFile;
 import com.testpilot.project.service.ProjectSourceService;
 import com.testpilot.rag.service.RagService;
+import com.testpilot.rag.service.RagIngestionService;
+import com.testpilot.rag.dto.RagRetrievalResult;
 import com.testpilot.repository.entity.ConnectedRepository;
 import com.testpilot.repository.entity.RepositoryConnectionStatus;
 import com.testpilot.repository.entity.RepositoryIngestionStatus;
 import com.testpilot.repository.repository.ConnectedRepositoryRepository;
 import com.testpilot.repository.repository.RepositoryIngestionRepository;
+import com.testpilot.repository.repository.RepositoryArtifactRepository;
 import com.testpilot.testing.entity.*;
 import com.testpilot.testing.execution.TestExecutionOutcome;
 import com.testpilot.testing.execution.TestExecutionOutcomeType;
-import com.testpilot.testing.execution.TestExecutionService;
+import com.testpilot.testing.execution.DurableTestExecutionService;
+import com.testpilot.testing.execution.job.ExecutionJobPersistenceService;
 import com.testpilot.testing.repository.GeneratedTestRepository;
 import com.testpilot.testing.repository.TestResultRepository;
 import com.testpilot.testing.repository.TestRunRepository;
 import com.testpilot.testing.workflow.entity.WorkflowRun;
+import com.testpilot.testing.validation.GeneratedTestPolicyValidator;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
@@ -52,6 +57,7 @@ public class WorkflowToolOperations {
     private final ProjectSourceService projectSourceService;
     private final ConnectedRepositoryRepository connectedRepositoryRepository;
     private final RepositoryIngestionRepository ingestionRepository;
+    private final RepositoryArtifactRepository artifactRepository;
     private final CodeAnalysisAgent codeAnalysisAgent;
     private final TestGenerationAgent testGenerationAgent;
     private final FailureAnalysisAgent failureAnalysisAgent;
@@ -61,16 +67,20 @@ public class WorkflowToolOperations {
     private final GeneratedTestRepository generatedTestRepository;
     private final TestResultRepository testResultRepository;
     private final TestRunRepository testRunRepository;
-    private final TestExecutionService testExecutionService;
+    private final DurableTestExecutionService testExecutionService;
+    private final ExecutionJobPersistenceService executionJobs;
     private final RepositoryPathPolicy pathPolicy;
     private final RagService ragService;
+    private final RagIngestionService ragIngestionService;
     private final WorkflowRunService workflowRunService;
+    private final GeneratedTestPolicyValidator testPolicyValidator;
 
     public WorkflowToolOperations(
             ObjectMapper objectMapper,
             ProjectSourceService projectSourceService,
             ConnectedRepositoryRepository connectedRepositoryRepository,
             RepositoryIngestionRepository ingestionRepository,
+            RepositoryArtifactRepository artifactRepository,
             CodeAnalysisAgent codeAnalysisAgent,
             TestGenerationAgent testGenerationAgent,
             FailureAnalysisAgent failureAnalysisAgent,
@@ -80,14 +90,18 @@ public class WorkflowToolOperations {
             GeneratedTestRepository generatedTestRepository,
             TestResultRepository testResultRepository,
             TestRunRepository testRunRepository,
-            TestExecutionService testExecutionService,
+            DurableTestExecutionService testExecutionService,
+            ExecutionJobPersistenceService executionJobs,
             RepositoryPathPolicy pathPolicy,
             RagService ragService,
-            WorkflowRunService workflowRunService) {
+            RagIngestionService ragIngestionService,
+            WorkflowRunService workflowRunService,
+            GeneratedTestPolicyValidator testPolicyValidator) {
         this.objectMapper = objectMapper;
         this.projectSourceService = projectSourceService;
         this.connectedRepositoryRepository = connectedRepositoryRepository;
         this.ingestionRepository = ingestionRepository;
+        this.artifactRepository = artifactRepository;
         this.codeAnalysisAgent = codeAnalysisAgent;
         this.testGenerationAgent = testGenerationAgent;
         this.failureAnalysisAgent = failureAnalysisAgent;
@@ -98,15 +112,18 @@ public class WorkflowToolOperations {
         this.testResultRepository = testResultRepository;
         this.testRunRepository = testRunRepository;
         this.testExecutionService = testExecutionService;
+        this.executionJobs = executionJobs;
         this.pathPolicy = pathPolicy;
         this.ragService = ragService;
+        this.ragIngestionService = ragIngestionService;
         this.workflowRunService = workflowRunService;
+        this.testPolicyValidator = testPolicyValidator;
     }
 
     public JsonNode execute(String node, WorkflowRun workflow, JsonNode state) {
         return switch (node) {
             case "intake" -> intake(workflow);
-            case "codebase_mapper" -> mapCodebase(workflow);
+            case "codebase_mapper" -> mapCodebase(workflow, state);
             case "test_planner" -> planTests(workflow, state);
             case "unit_test_specialist" -> generateProposal(workflow, state, TestLevel.UNIT);
             case "module_test_specialist" -> generateProposal(workflow, state, TestLevel.MODULE);
@@ -162,7 +179,7 @@ public class WorkflowToolOperations {
                 .set("source_paths", paths);
     }
 
-    private JsonNode mapCodebase(WorkflowRun workflow) {
+    private JsonNode mapCodebase(WorkflowRun workflow, JsonNode state) {
         List<CodeFile> sourceFiles = requireSourceFiles(workflow);
         CodeAnalysisResponse analysis = codeAnalysisAgent.analyzeCode(sourceFiles);
         Set<String> packages = new TreeSet<>();
@@ -189,6 +206,20 @@ public class WorkflowToolOperations {
         ObjectNode updates = objectMapper.createObjectNode();
         updates.set("analysis", objectMapper.valueToTree(analysis));
         updates.set("codebase_map", codebaseMap);
+        String commitSha = state.path("commit_sha").asText(workflow.getCommitSha());
+        String frameworkVersion = frameworks.isEmpty() ? "plain-java" : String.join(",", frameworks);
+        var catalog = connectedRepositoryRepository.findByProjectId(workflow.getProjectId())
+                .filter(repository -> repository.getStatus() == RepositoryConnectionStatus.CONNECTED)
+                .flatMap(repository -> ingestionRepository.findByConnectedRepositoryIdAndCommitSha(
+                        repository.getId(), commitSha))
+                .filter(ingestion -> ingestion.getStatus() == RepositoryIngestionStatus.COMPLETED)
+                .map(ingestion -> artifactRepository.findByIngestionIdOrderByPath(ingestion.getId()))
+                .orElse(List.of());
+        var ragIngestion = catalog.isEmpty()
+                ? ragIngestionService.indexProject(workflow.getProjectId(), commitSha, sourceFiles, frameworkVersion)
+                : ragIngestionService.indexRepositoryCatalog(
+                        workflow.getProjectId(), commitSha, catalog, frameworkVersion);
+        updates.set("rag_ingestion", objectMapper.valueToTree(ragIngestion));
         return updates;
     }
 
@@ -222,17 +253,23 @@ public class WorkflowToolOperations {
         List<CodeFile> sourceFiles = requireSourceFiles(workflow);
         CodeAnalysisResponse analysis = convertAnalysis(state.path("analysis"));
         String primaryContent = sourceFiles.get(0).getContent();
-        String ragContext = ragService.getRelevantContextForTesting(primaryContent);
+        RagRetrievalResult retrieval = ragService.retrieveForTesting(
+                workflow.getProjectId(),
+                state.path("commit_sha").asText(workflow.getCommitSha()),
+                primaryContent,
+                workflow.getTestRunId());
         TestGenerationResponse generated = testGenerationAgent.generateTests(
-                sourceFiles, analysis, ragContext, level);
+                sourceFiles, analysis, retrieval.context(), level);
         String testClass = pathPolicy.validateGeneratedTestClass(generated.testClass());
 
         ObjectNode proposal = objectMapper.createObjectNode();
         proposal.put("level", level.name());
-        proposal.put("source_file", sourceFiles.get(0).getFileName());
+        proposal.put("source_file", sourceFiles.get(0).getFilePath());
         proposal.put("test_class", testClass);
         proposal.put("explanation", generated.explanation());
         proposal.put("test_code", generated.fullTestCode());
+        if (retrieval.traceId() != null) proposal.put("rag_trace_id", retrieval.traceId());
+        proposal.set("rag_citations", objectMapper.valueToTree(retrieval.citations()));
         return objectMapper.createObjectNode().set("proposal", proposal);
     }
 
@@ -251,18 +288,14 @@ public class WorkflowToolOperations {
         for (JsonNode proposal : proposals) {
             String testClass = pathPolicy.validateGeneratedTestClass(proposal.path("test_class").asText());
             String testCode = proposal.path("test_code").asText();
-            if (testCode.isBlank() || testCode.length() > 200_000 || !testCode.contains("@Test")) {
-                throw new InvalidRequestException("Test reviewer rejected invalid JUnit code for " + testClass);
-            }
+            TestLevel level = TestLevel.valueOf(proposal.path("level").asText());
             if (!classes.add(testClass)) {
                 throw new InvalidRequestException("Test reviewer rejected duplicate test class: " + testClass);
             }
-            String simpleName = testClass.substring(testClass.lastIndexOf('.') + 1);
-            if (!testCode.contains("class " + simpleName)) {
-                throw new InvalidRequestException("Generated code does not declare expected class: " + simpleName);
-            }
+            List<String> policyChecks = testPolicyValidator.validate(testClass, testCode, level);
             accepted.add(proposal);
             checks.add("accepted:" + testClass);
+            policyChecks.forEach(check -> checks.add(level.name().toLowerCase() + ":" + check));
         }
 
         ObjectNode review = objectMapper.createObjectNode()
@@ -281,11 +314,8 @@ public class WorkflowToolOperations {
         List<TestResult> savedResults;
 
         if (testRun.getExecutionOutcome() == null) {
-            TestExecutionOutcome outcome = testExecutionService.executeTests(
-                    testRun.getId(),
-                    requireSourceFiles(workflow),
-                    generatedTests);
-            savedResults = testResultRepository.saveAll(outcome.results());
+            TestExecutionOutcome outcome = testExecutionService.execute(testRun.getId());
+            savedResults = outcome.results();
             testRun.recordExecutionOutcome(outcome.type(), outcome.processExitCode(), outcome.output());
             testRunRepository.save(testRun);
         } else {
@@ -306,6 +336,20 @@ public class WorkflowToolOperations {
         execution.put("completed_test_process",
                 testRun.getExecutionOutcome() == TestExecutionOutcomeType.SUCCESS
                         || testRun.getExecutionOutcome() == TestExecutionOutcomeType.TEST_FAILURE);
+        executionJobs.findByTestRunId(testRun.getId()).ifPresent(job -> {
+            execution.put("job_id", job.getId());
+            execution.put("job_status", job.getStatus().name());
+            execution.put("attempts", job.getAttempts());
+            execution.put("isolation_backend", job.getIsolationBackend());
+            if (job.getLineCoveragePercent() != null) {
+                execution.put("line_coverage_percent", job.getLineCoveragePercent());
+            }
+            if (job.getMutationScorePercent() != null) {
+                execution.put("mutation_score_percent", job.getMutationScorePercent());
+            }
+            execution.put("coverage_status", job.getCoverageStatus());
+            execution.put("mutation_status", job.getMutationStatus());
+        });
         execution.set("failed_result_ids", failedIds);
         return objectMapper.createObjectNode().set("execution", execution);
     }
@@ -315,7 +359,11 @@ public class WorkflowToolOperations {
         String source = sourceFiles.get(0).getContent();
         List<GeneratedTest> generatedTests = generatedTestRepository.findByTestRunId(workflow.getTestRunId());
         String testCode = generatedTests.isEmpty() ? "" : generatedTests.get(0).getTestCode();
-        String ragContext = ragService.getRelevantContextForTesting(source);
+        String ragContext = ragService.retrieveForTesting(
+                workflow.getProjectId(),
+                state.path("commit_sha").asText(workflow.getCommitSha()),
+                source,
+                workflow.getTestRunId()).context();
         ArrayNode triage = objectMapper.createArrayNode();
 
         for (JsonNode idNode : state.path("execution").path("failed_result_ids")) {
@@ -355,6 +403,14 @@ public class WorkflowToolOperations {
         report.put("failed_tests", execution.path("failed_result_ids").size());
         report.put("triaged_failures", state.path("triage").size());
         report.set("planned_levels", state.path("test_plan").deepCopy());
+        ArrayNode ragTraceIds = objectMapper.createArrayNode();
+        ArrayNode ragCitations = objectMapper.createArrayNode();
+        state.path("accepted_proposals").forEach(proposal -> {
+            if (proposal.hasNonNull("rag_trace_id")) ragTraceIds.add(proposal.path("rag_trace_id").asLong());
+            proposal.path("rag_citations").forEach(ragCitations::add);
+        });
+        report.set("rag_trace_ids", ragTraceIds);
+        report.set("rag_citations", ragCitations);
         workflowRunService.finish(workflow.getId(), report, terminalStatus);
         ObjectNode updates = objectMapper.createObjectNode();
         updates.set("report", report);
@@ -376,7 +432,10 @@ public class WorkflowToolOperations {
                             proposal.path("source_file").asText("Source.java"),
                             testClass,
                             proposal.path("test_code").asText(),
-                            TestLevel.valueOf(proposal.path("level").asText()))));
+                            TestLevel.valueOf(proposal.path("level").asText()),
+                            proposal.hasNonNull("rag_trace_id")
+                                    ? proposal.path("rag_trace_id").asLong()
+                                    : null)));
             tests.add(test);
         }
         return List.copyOf(tests);

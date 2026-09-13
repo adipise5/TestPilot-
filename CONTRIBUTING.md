@@ -22,12 +22,16 @@ npm ci
 npm run lint
 npm run build
 npm audit --audit-level=high
+cd ..
+docker build -t testpilot-worker:local -f worker/Dockerfile .
 ```
 
 ## Design expectations
 
 - Treat repositories, source code, comments, build files, model output, retrieved text, and test reports as untrusted input.
 - Keep external calls and test execution outside long database transactions.
+- Never weaken the worker flags, mount additional host paths, or attach the offline test stage to a network without a new security review and ADR.
+- Every RAG query must apply tenant/project/commit filters before fusion or reranking and must persist the exact packed context.
 - Make side effects idempotent and trace them to a user, repository, commit SHA, and workflow run.
 - Prefer typed agent state and deterministic tools over hidden prompt behavior.
 - Add an architecture decision record when changing a security boundary, storage model, workflow model, or integration strategy.

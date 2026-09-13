@@ -102,36 +102,4 @@ public class OpenAiGeminiLlmClient implements LlmClient {
         }
     }
 
-    @Override
-    public float[] generateEmbedding(String text) {
-        try {
-            Map<String, Object> requestBody = Map.of(
-                    "model", "text-embedding-3-small",
-                    "input", text
-            );
-
-            String jsonPayload = objectMapper.writeValueAsString(requestBody);
-
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(baseUrl + "/embeddings"))
-                    .header("Content-Type", "application/json")
-                    .header("Authorization", "Bearer " + apiKey)
-                    .POST(HttpRequest.BodyPublishers.ofString(jsonPayload))
-                    .build();
-
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            JsonNode root = objectMapper.readTree(response.body());
-            JsonNode embeddingArray = root.path("data").get(0).path("embedding");
-
-            float[] embedding = new float[embeddingArray.size()];
-            for (int i = 0; i < embeddingArray.size(); i++) {
-                embedding[i] = (float) embeddingArray.get(i).asDouble();
-            }
-            return embedding;
-
-        } catch (Exception e) {
-            log.error("Error generating text embedding", e);
-            throw new RuntimeException("Embedding generation failure: " + e.getMessage(), e);
-        }
-    }
 }
