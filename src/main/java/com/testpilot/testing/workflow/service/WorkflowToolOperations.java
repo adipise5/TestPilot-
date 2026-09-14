@@ -19,6 +19,7 @@ import com.testpilot.failure.entity.FailureAnalysis;
 import com.testpilot.failure.entity.FixSuggestion;
 import com.testpilot.failure.repository.FailureAnalysisRepository;
 import com.testpilot.failure.repository.FixSuggestionRepository;
+import com.testpilot.observability.service.ModelInvocationRecorder;
 import com.testpilot.project.entity.CodeFile;
 import com.testpilot.project.service.ProjectSourceService;
 import com.testpilot.rag.service.RagService;
@@ -74,6 +75,7 @@ public class WorkflowToolOperations {
     private final RagIngestionService ragIngestionService;
     private final WorkflowRunService workflowRunService;
     private final GeneratedTestPolicyValidator testPolicyValidator;
+    private final ModelInvocationRecorder modelInvocations;
 
     public WorkflowToolOperations(
             ObjectMapper objectMapper,
@@ -96,7 +98,8 @@ public class WorkflowToolOperations {
             RagService ragService,
             RagIngestionService ragIngestionService,
             WorkflowRunService workflowRunService,
-            GeneratedTestPolicyValidator testPolicyValidator) {
+            GeneratedTestPolicyValidator testPolicyValidator,
+            ModelInvocationRecorder modelInvocations) {
         this.objectMapper = objectMapper;
         this.projectSourceService = projectSourceService;
         this.connectedRepositoryRepository = connectedRepositoryRepository;
@@ -118,6 +121,7 @@ public class WorkflowToolOperations {
         this.ragIngestionService = ragIngestionService;
         this.workflowRunService = workflowRunService;
         this.testPolicyValidator = testPolicyValidator;
+        this.modelInvocations = modelInvocations;
     }
 
     public JsonNode execute(String node, WorkflowRun workflow, JsonNode state) {
@@ -181,7 +185,9 @@ public class WorkflowToolOperations {
 
     private JsonNode mapCodebase(WorkflowRun workflow, JsonNode state) {
         List<CodeFile> sourceFiles = requireSourceFiles(workflow);
-        CodeAnalysisResponse analysis = codeAnalysisAgent.analyzeCode(sourceFiles);
+        CodeAnalysisResponse analysis = modelInvocations.observe(
+                workflow.getTestRunId(), "code-analysis", sourceMaterial(sourceFiles),
+                () -> codeAnalysisAgent.analyzeCode(sourceFiles));
         Set<String> packages = new TreeSet<>();
         Set<String> modules = new TreeSet<>();
         Set<String> frameworks = new TreeSet<>();
@@ -258,8 +264,10 @@ public class WorkflowToolOperations {
                 state.path("commit_sha").asText(workflow.getCommitSha()),
                 primaryContent,
                 workflow.getTestRunId());
-        TestGenerationResponse generated = testGenerationAgent.generateTests(
-                sourceFiles, analysis, retrieval.context(), level);
+        TestGenerationResponse generated = modelInvocations.observe(
+                workflow.getTestRunId(), "test-generation-" + level.name().toLowerCase(),
+                sourceMaterial(sourceFiles) + "\n" + retrieval.context(),
+                () -> testGenerationAgent.generateTests(sourceFiles, analysis, retrieval.context(), level));
         String testClass = pathPolicy.validateGeneratedTestClass(generated.testClass());
 
         ObjectNode proposal = objectMapper.createObjectNode();
@@ -371,9 +379,11 @@ public class WorkflowToolOperations {
             TestResult failure = testResultRepository.findById(resultId)
                     .orElseThrow(() -> new ResourceNotFoundException("Failed test result not found: " + resultId));
             FailureAnalysis analysis = failureAnalysisRepository.findByTestResultId(resultId)
-                    .orElseGet(() -> createFailureAnalysis(failure, source, testCode, ragContext));
+                    .orElseGet(() -> createFailureAnalysis(
+                            workflow.getTestRunId(), failure, source, testCode, ragContext));
             FixSuggestion fix = fixSuggestionRepository.findByFailureAnalysisId(analysis.getId())
-                    .orElseGet(() -> createFixSuggestion(analysis, failure, source, ragContext));
+                    .orElseGet(() -> createFixSuggestion(
+                            workflow.getTestRunId(), analysis, failure, source, ragContext));
 
             ObjectNode item = objectMapper.createObjectNode();
             item.put("test_result_id", resultId);
@@ -442,17 +452,22 @@ public class WorkflowToolOperations {
     }
 
     private FailureAnalysis createFailureAnalysis(
+            Long testRunId,
             TestResult failure,
             String source,
             String testCode,
             String ragContext) {
-        FailureAnalysisResponse response = failureAnalysisAgent.analyzeFailure(
-                source,
-                testCode,
-                failure.getTestName(),
-                failure.getErrorMessage(),
-                failure.getStackTrace(),
-                ragContext);
+        FailureAnalysisResponse response = modelInvocations.observe(
+                testRunId,
+                "failure-analysis",
+                source + "\n" + testCode + "\n" + failure.getErrorMessage() + "\n" + ragContext,
+                () -> failureAnalysisAgent.analyzeFailure(
+                        source,
+                        testCode,
+                        failure.getTestName(),
+                        failure.getErrorMessage(),
+                        failure.getStackTrace(),
+                        ragContext));
         return failureAnalysisRepository.save(new FailureAnalysis(
                 failure.getId(),
                 response.rootCause(),
@@ -463,6 +478,7 @@ public class WorkflowToolOperations {
     }
 
     private FixSuggestion createFixSuggestion(
+            Long testRunId,
             FailureAnalysis analysis,
             TestResult failure,
             String source,
@@ -476,8 +492,12 @@ public class WorkflowToolOperations {
                 analysis.getExplanation(),
                 analysis.getConfidence(),
                 analysis.getCreatedAt());
-        FixSuggestionResponse fix = fixSuggestionAgent.generateFix(
-                source, response, failure.getStackTrace(), ragContext);
+        FixSuggestionResponse fix = modelInvocations.observe(
+                testRunId,
+                "fix-suggestion",
+                source + "\n" + response.explanation() + "\n" + failure.getStackTrace() + "\n" + ragContext,
+                () -> fixSuggestionAgent.generateFix(
+                        source, response, failure.getStackTrace(), ragContext));
         return fixSuggestionRepository.save(new FixSuggestion(
                 analysis.getId(), fix.originalCode(), fix.suggestedCode(), fix.explanation()));
     }
@@ -552,6 +572,13 @@ public class WorkflowToolOperations {
         } catch (Exception e) {
             throw new IllegalStateException("SHA-256 is unavailable", e);
         }
+    }
+
+    private String sourceMaterial(List<CodeFile> files) {
+        return files.stream()
+                .sorted(Comparator.comparing(CodeFile::getFilePath))
+                .map(file -> file.getFilePath() + "\n" + file.getContent())
+                .collect(java.util.stream.Collectors.joining("\n"));
     }
 
     private String joinText(JsonNode values) {

@@ -1,6 +1,6 @@
 # TestPilot
 
-TestPilot is a full-stack prototype for repository-driven, AI-assisted Java test generation and execution. The current application can connect an allowlisted GitHub repository through MCP or a least-privilege GitHub App, resolve an immutable commit, build a safe text catalog, run a checkpointed LangGraph workflow with specialized test agents and human approval, retrieve project-scoped hybrid RAG context, execute Maven through durable isolated jobs, parse Surefire/coverage evidence, and present citations and results in a React dashboard.
+TestPilot is a full-stack prototype for repository-driven, AI-assisted Java test generation and execution. The current application can connect an allowlisted GitHub repository through MCP or a least-privilege GitHub App, resolve an immutable commit, build a safe text catalog, run a checkpointed LangGraph workflow with specialized test agents and human approval, retrieve project-scoped hybrid RAG context, execute Maven through durable isolated jobs, parse Surefire/coverage evidence, persist run observability, and evaluate retrieval/test quality against a pinned benchmark.
 
 The long-term product is a repository-driven, agentic testing platform: a user supplies a GitHub repository, specialized LangGraph workflows plan unit, module/component, and integration tests, isolated workers run them against an immutable revision, and a measured RAG pipeline supplies project and framework context.
 
@@ -20,7 +20,7 @@ System and end-to-end testing are explicitly outside the project scope. TestPilo
 | Retrieval | Versioned symbol/section chunks, project-scoped pgvector plus lexical search, fusion, reranking, token packing, exact traces, and citations | Benchmark-driven tuning and provider contract tests |
 | AI provider | Separate deterministic/OpenAI-compatible generation and embedding interfaces | Additional provider adapters and measured model comparisons |
 | Execution | Leased/idempotent jobs and a non-root Maven worker with offline execution, read-only root, no capabilities/network, resource limits, cancellation, cleanup, and bounded evidence | External autoscaled workers and stronger platform sandboxing |
-| Evaluation | Application tests only | Retrieval, generation, coverage, mutation, latency, and cost benchmarks |
+| Evaluation | Pinned offline unit/module/integration benchmark with retrieval, compilation, coverage, seeded mutation, flakiness, latency, token, and cost evidence | Larger datasets and separately published live-provider comparisons |
 
 The detailed baseline assessment is in [PROJECT_DEEP_DIVE.md](PROJECT_DEEP_DIVE.md), and the approved implementation sequence is in [ROADMAP.md](ROADMAP.md).
 
@@ -46,6 +46,7 @@ flowchart LR
     RESOLVE --> WORKER["Offline non-root worker"]
     WORKER --> REPORTS["Surefire + coverage parser"]
     REPORTS --> FAILURE["Failure and fix prompts"]
+    REPORTS --> OBSERVE["Persisted run observability"]
     AUTH --> DB["PostgreSQL or H2"]
     DATA --> DB
     CATALOG --> DB
@@ -53,6 +54,7 @@ flowchart LR
     QUEUE --> DB
     REPORTS --> DB
     FAILURE --> DB
+    OBSERVE --> DB
 ```
 
 LangGraph owns typed workflow state, conditional routing, retry policy, checkpoints, and human interrupts. Spring owns authentication, authorization, repository state, model calls, execution, and audit records. Agents cannot choose arbitrary tools or execute shell commands: every node maps to a compiled, authenticated Spring tool with an idempotency key and input hash.
@@ -139,6 +141,8 @@ Run the same quality gates used by CI:
 
 ```bash
 ./mvnw --batch-mode test
+python -m unittest discover -s evaluation/tests -v
+python evaluation/run_evaluation.py --check
 cd orchestrator
 python -m pip install -r requirements.lock
 python -m compileall -q app tests
@@ -170,6 +174,7 @@ CI configuration lives in [.github/workflows/ci.yml](.github/workflows/ci.yml).
 | `BOOTSTRAP_ADMIN_EMAIL` | Empty | Bootstrap administrator email |
 | `BOOTSTRAP_ADMIN_PASSWORD` | Empty | Bootstrap administrator password; at least 12 characters |
 | `AI_PROVIDER` | `mock` | Use `mock` or `openai` |
+| `AI_MODEL` | Provider client default | Generation model identifier stored with invocation evidence |
 | `AI_API_KEY` | Empty | Credential for the OpenAI-compatible provider |
 | `AI_EMBEDDING_PROVIDER` | `mock` | Embedding provider, independently selected from generation |
 | `AI_EMBEDDING_MODEL` | `text-embedding-3-small` | Versioned embedding model metadata and OpenAI model |
@@ -191,6 +196,9 @@ CI configuration lives in [.github/workflows/ci.yml](.github/workflows/ci.yml).
 | `RAG_INGESTION_VERSION` | `rag-v2` | Idempotent index format/version identity |
 | `RAG_RELEVANCE_THRESHOLD` | `0.08` | Minimum deterministic reranker score |
 | `RAG_TOKEN_BUDGET` | `6000` | Maximum retrieved context budget |
+| `AI_INPUT_COST_PER_MILLION_TOKENS` | `0` | Configured estimate used for generation input cost evidence |
+| `AI_OUTPUT_COST_PER_MILLION_TOKENS` | `0` | Configured estimate used for generation output cost evidence |
+| `AI_EMBEDDING_COST_PER_MILLION_TOKENS` | `0` | Configured estimate used for query-embedding cost evidence |
 
 There is no production JWT fallback: `JWT_SECRET` must contain at least 32 UTF-8 bytes. The H2 profile supplies a test-only key.
 
@@ -229,6 +237,7 @@ The mock provider is deterministic and useful for offline workflow tests. Its em
 | Execution control | `/api/test-runs/{id}/execution/cancel` | Request cancellation of a queued or running leased job |
 | Project RAG | `/api/projects/{id}/rag/query` | Query one authorized project and immutable commit with hybrid retrieval |
 | RAG traces | `/api/test-runs/{id}/rag-traces` | Reproduce exact generated-test context and citations |
+| Run observability | `/api/test-runs/{id}/observability` | Inspect authorized workflow, model, RAG, queue, worker, token, cost, and timing evidence |
 | Failures | `/api/failures`, `/api/fix-suggestions` | Explain failures and review suggestions |
 | Knowledge | `/api/knowledge` | Administer globally scoped testing guidance |
 | Health | `/api/health`, `/actuator/health` | Local health endpoints |
@@ -245,16 +254,18 @@ src/main/java/com/testpilot/
   project/     projects and source-file storage
   repository/  connector contract, GitHub transports, immutable catalogs, and installation/webhook scope
   rag/         scoped ingestion, semantic chunks, hybrid retrieval, pgvector, traces, and citations
+  observability/ persisted model-usage evidence and TestRun metric aggregation
   testing/     orchestration, durable execution jobs, sandbox policy, and evidence parsing
 orchestrator/  Python LangGraph control plane, checkpoint runtime, and graph tests
 frontend/      React dashboard
 worker/        dedicated non-root Maven worker and isolation probe
+evaluation/    pinned dataset, retrieval experiments, Java fixtures, seeded defects, thresholds, and results
 docs/          architecture decisions and threat model
 ```
 
 ## Development roadmap
 
-Phases 1–6 establish the reproducible/security baseline, immutable GitHub ingestion, checkpointed agent workflow, isolated durable execution, and traceable production RAG design. The next approval gate is Phase 7, which measures whether the agentic and RAG systems improve test outcomes. See [ROADMAP.md](ROADMAP.md) for phase gates and deliverables.
+Phases 1–7 establish the reproducible/security baseline, immutable GitHub ingestion, checkpointed agent workflow, isolated durable execution, traceable RAG, and a measurable evaluation/observability layer. Phase 8 is the next implementation gate: reviewed GitHub branch and pull-request delivery. See [ROADMAP.md](ROADMAP.md) and [evaluation/README.md](evaluation/README.md).
 
 ## Contributing and security
 

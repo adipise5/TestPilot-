@@ -29,6 +29,16 @@ public class MockLlmClient implements LlmClient {
     }
 
     @Override
+    public String providerId() {
+        return "mock";
+    }
+
+    @Override
+    public String modelId() {
+        return "mock-structured-v1";
+    }
+
+    @Override
     @SuppressWarnings("unchecked")
     public <T> T generateStructured(String prompt, String systemInstruction, Class<T> responseType) {
         log.info("MockLlmClient generateStructured called for responseType: {}", responseType.getSimpleName());

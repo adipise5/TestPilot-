@@ -102,4 +102,14 @@ public class OpenAiGeminiLlmClient implements LlmClient {
         }
     }
 
+    @Override
+    public String providerId() {
+        return "openai-compatible";
+    }
+
+    @Override
+    public String modelId() {
+        return model;
+    }
+
 }

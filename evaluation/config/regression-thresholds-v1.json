@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "datasetId": "testpilot-java-testing",
+  "datasetVersion": "1.0.0",
+  "datasetSha256": "2f605c11919dc21f946ff3f6733fa02969f8f14f8764eb1294804af21e119e9a",
+  "topK": 3,
+  "embeddingDimensions": 256,
+  "repeatRuns": 2,
+  "minimums": {
+    "variants.hybrid.retrieval.recallAtK": 0.83,
+    "variants.hybrid.retrieval.mrr": 0.66,
+    "variants.hybrid_rerank.retrieval.ndcgAtK": 0.75,
+    "variants.hybrid.generation.compileRate": 1.0,
+    "variants.hybrid.generation.seededDefectDetectionRate": 1.0,
+    "variants.hybrid_rerank.generation.seededDefectDetectionRate": 1.0
+  },
+  "maximums": {
+    "variants.no_rag.retrieval.recallAtK": 0.0,
+    "variants.no_rag.generation.seededDefectDetectionRate": 0.34,
+    "variants.hybrid.generation.flakinessRate": 0.0,
+    "variants.hybrid_rerank.generation.flakinessRate": 0.0
+  }
+}

@@ -27,6 +27,7 @@ public class HybridRetrievalService {
     private final ObjectMapper objectMapper;
     private final double relevanceThreshold;
     private final int defaultTokenBudget;
+    private final double embeddingCostPerMillionTokens;
 
     public HybridRetrievalService(
             ScopedChunkSearchService search,
@@ -34,13 +35,15 @@ public class HybridRetrievalService {
             RagRetrievalTraceRepository traces,
             ObjectMapper objectMapper,
             @Value("${testpilot.rag.relevance-threshold:0.08}") double relevanceThreshold,
-            @Value("${testpilot.rag.token-budget:6000}") int defaultTokenBudget) {
+            @Value("${testpilot.rag.token-budget:6000}") int defaultTokenBudget,
+            @Value("${testpilot.observability.embedding-cost-per-million:0}") double embeddingCostPerMillionTokens) {
         this.search = search;
         this.embeddings = embeddings;
         this.traces = traces;
         this.objectMapper = objectMapper;
         this.relevanceThreshold = relevanceThreshold;
         this.defaultTokenBudget = defaultTokenBudget;
+        this.embeddingCostPerMillionTokens = Math.max(0, embeddingCostPerMillionTokens);
     }
 
     @Transactional
@@ -50,6 +53,7 @@ public class HybridRetrievalService {
             int topK,
             Integer tokenBudget,
             Long testRunId) {
+        long started = System.nanoTime();
         String boundedQuery = query == null ? "" : query.substring(0, Math.min(query.length(), 20_000));
         int safeTopK = Math.max(1, Math.min(topK, 20));
         int budget = Math.max(256, Math.min(tokenBudget == null ? defaultTokenBudget : tokenBudget, 20_000));
@@ -95,9 +99,14 @@ public class HybridRetrievalService {
                 embeddings.modelId(), Integer.toString(safeTopK), Integer.toString(budget)));
         String config = "hybrid-rrf-v1;threshold=" + relevanceThreshold + ";topK=" + safeTopK
                 + ";budget=" + budget + ";embedding=" + embeddings.modelId();
+        int queryTokens = boundedQuery.isBlank() ? 0 : Math.max(1, (boundedQuery.length() + 3) / 4);
+        long latencyMs = java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started);
+        double embeddingCost = Math.round(
+                queryTokens * embeddingCostPerMillionTokens / 1_000_000.0 * 100_000_000.0) / 100_000_000.0;
         RagRetrievalTrace trace = traces.save(new RagRetrievalTrace(
                 testRunId, scope.tenantId(), scope.projectId(), scope.commitSha(), queryHash,
-                boundedQuery, context, usedTokens, config, writeCitations(citations)));
+                boundedQuery, context, usedTokens, queryTokens, latencyMs, dense.size(), lexical.size(),
+                embeddings.modelId(), embeddingCost, config, writeCitations(citations)));
         return new RagRetrievalResult(
                 trace.getId(), queryHash, context, usedTokens, List.copyOf(packed), List.copyOf(citations));
     }

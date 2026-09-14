@@ -1,0 +1,100 @@
+{
+  "schemaVersion": 1,
+  "datasetId": "testpilot-java-testing",
+  "datasetVersion": "1.0.0",
+  "description": "Offline benchmark for unit, module/component, and controlled integration test generation.",
+  "documents": [
+    {
+      "id": "unit-calculator-source",
+      "source": "src/main/java/benchmark/unit/Calculator.java",
+      "symbol": "Calculator.divide",
+      "content": "Calculator.divide divides integer values and rejects a zero denominator with ArithmeticException. Calculator.add uses exact arithmetic."
+    },
+    {
+      "id": "unit-boundary-guide",
+      "source": "guides/unit-boundaries.md",
+      "symbol": "division boundary",
+      "content": "A unit test for integer division must assert that denominator zero throws ArithmeticException and should include negative operands."
+    },
+    {
+      "id": "module-pricing-source",
+      "source": "src/main/java/benchmark/module/PricingService.java",
+      "symbol": "PricingService.total",
+      "content": "PricingService collaborates with PriceSource. total must aggregate every price returned by the collaborator and return zero for an empty collection."
+    },
+    {
+      "id": "module-collaboration-guide",
+      "source": "guides/module-collaboration.md",
+      "symbol": "module collaboration",
+      "content": "Module tests should use multiple collaborator values so truncated aggregation is detected, while remaining inside the module boundary."
+    },
+    {
+      "id": "integration-repository-source",
+      "source": "src/main/java/benchmark/integration/UserRepository.java",
+      "symbol": "UserRepository.countByDomain",
+      "content": "UserRepository persists users through JDBC and countByDomain must bind a domain filter in SQL rather than count every stored user."
+    },
+    {
+      "id": "integration-database-guide",
+      "source": "guides/integration-database.md",
+      "symbol": "database integration boundary",
+      "content": "A controlled integration test should use an isolated H2 database, insert users from at least two domains, and verify filtered database results."
+    },
+    {
+      "id": "distractor-http-retry",
+      "source": "guides/http-retries.md",
+      "symbol": "HTTP retry",
+      "content": "HTTP clients may retry idempotent requests after transient gateway failures with exponential backoff."
+    },
+    {
+      "id": "distractor-json-schema",
+      "source": "guides/json-schema.md",
+      "symbol": "JSON serialization",
+      "content": "Serialization tests validate required JSON properties, enum names, and unknown field behavior."
+    },
+    {
+      "id": "distractor-clock",
+      "source": "guides/time.md",
+      "symbol": "Clock",
+      "content": "Time-dependent code should inject a Clock and cover daylight-saving transitions without sleeping."
+    }
+  ],
+  "cases": [
+    {
+      "id": "unit-zero-denominator",
+      "level": "UNIT",
+      "query": "Generate isolated Calculator divide tests for zero denominator and negative operands",
+      "relevance": {
+        "unit-boundary-guide": 3,
+        "unit-calculator-source": 2
+      },
+      "testClass": "benchmark.unit.CalculatorGeneratedTest",
+      "assertionTerms": ["divide", "assertThrows", "ArithmeticException", "0"],
+      "mutantId": "unit-zero-guard"
+    },
+    {
+      "id": "module-truncated-aggregation",
+      "level": "MODULE",
+      "query": "Test PricingService total collaboration with multiple PriceSource values and empty output",
+      "relevance": {
+        "module-collaboration-guide": 3,
+        "module-pricing-source": 2
+      },
+      "testClass": "benchmark.module.PricingServiceGeneratedTest",
+      "assertionTerms": ["total", "List.of", "10, 15", "assertEquals"],
+      "mutantId": "module-truncated-sum"
+    },
+    {
+      "id": "integration-domain-filter",
+      "level": "INTEGRATION",
+      "query": "Verify UserRepository countByDomain using H2 users from two database domains",
+      "relevance": {
+        "integration-database-guide": 3,
+        "integration-repository-source": 2
+      },
+      "testClass": "benchmark.integration.UserRepositoryGeneratedTest",
+      "assertionTerms": ["countByDomain", "example.com", "other.test", "assertEquals"],
+      "mutantId": "integration-unscoped-query"
+    }
+  ]
+}

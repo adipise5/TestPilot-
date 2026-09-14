@@ -16,6 +16,12 @@ public record RagRetrievalTraceResponse(
         String queryText,
         String packedContext,
         int packedTokens,
+        int queryTokens,
+        long latencyMs,
+        int denseCandidates,
+        int lexicalCandidates,
+        String embeddingModel,
+        double estimatedEmbeddingCostUsd,
         String retrievalConfig,
         List<RagCitation> citations,
         LocalDateTime createdAt
@@ -27,6 +33,8 @@ public record RagRetrievalTraceResponse(
             return new RagRetrievalTraceResponse(
                     trace.getId(), trace.getTestRunId(), trace.getProjectId(), trace.getCommitSha(),
                     trace.getQueryHash(), trace.getQueryText(), trace.getPackedContext(), trace.getPackedTokens(),
+                    trace.getQueryTokens(), trace.getLatencyMs(), trace.getDenseCandidates(),
+                    trace.getLexicalCandidates(), trace.getEmbeddingModel(), trace.getEstimatedEmbeddingCostUsd(),
                     trace.getRetrievalConfig(), citations, trace.getCreatedAt());
         } catch (Exception e) {
             throw new IllegalStateException("Stored RAG citation trace could not be decoded", e);

@@ -1,6 +1,6 @@
 # TestPilot threat model
 
-Status: updated through Phase 6. Security controls are implemented for the repository, workflow, retrieval, and container-execution boundaries, but this document does not certify any particular deployment for public use.
+Status: updated through Phase 7. Security controls are implemented for the repository, workflow, retrieval, container-execution, evaluation, and observability boundaries, but this document does not certify any particular deployment for public use.
 
 ## Assets
 
@@ -89,6 +89,14 @@ Execution jobs are unique per TestRun. Database leases, heartbeats, persisted ca
 - Dense and lexical lists are fused and reranked only after storage-level scope filtering.
 - Retrieved content remains untrusted prompt data and cannot select tools or authorize execution.
 - Every generated test stores a trace ID whose record contains the exact packed context, ordered citations, query hash, retrieval configuration, and content hashes.
+
+## Evaluation and observability rules
+
+- The deterministic CI dataset is versioned and SHA-256 pinned; changing cases or relevance judgments requires an explicit configuration update and review.
+- Regression thresholds fail closed. A result must not be improved by deleting difficult cases, weakening a seeded defect, or mixing fixture and live-provider experiments.
+- Benchmark Java executes through temporary Maven workspaces and contains only repository-owned fixtures. It is not an authorization to execute arbitrary external repositories outside the Phase 5 worker boundary.
+- The TestRun observability endpoint uses project read authorization. It exposes aggregate metadata and trace identifiers, not prompts, retrieved source bodies, model responses, credentials, or environment values.
+- Token counts and prices are estimates unless provider-reported usage is explicitly stored; zero-cost mock runs must not be presented as production cost measurements.
 
 ## Abuse cases to test
 

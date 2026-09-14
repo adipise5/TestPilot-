@@ -1,0 +1,205 @@
+{
+  "configuration": {
+    "embeddingDimensions": 256,
+    "generator": "deterministic-fixture-v1",
+    "repeatRuns": 2,
+    "topK": 3
+  },
+  "dataset": {
+    "id": "testpilot-java-testing",
+    "sha256": "2f605c11919dc21f946ff3f6733fa02969f8f14f8764eb1294804af21e119e9a",
+    "version": "1.0.0"
+  },
+  "environment": {
+    "platform": "macOS-26.5.1-arm64-arm-64bit-Mach-O",
+    "python": "3.14.7"
+  },
+  "generatedAtUtc": "2026-09-14T05:11:39Z",
+  "regressionGate": {
+    "failures": [],
+    "passed": true
+  },
+  "schemaVersion": 1,
+  "variants": {
+    "dense_only": {
+      "generation": {
+        "assertionRelevance": 0.583333,
+        "compileRate": 1.0,
+        "coverageDelta": 0.217391,
+        "flakinessRate": 0.0,
+        "lineCoverage": 0.913043,
+        "mutationScore": 0.0,
+        "schemaValidityRate": 1.0,
+        "seededDefectDetectionRate": 0.0
+      },
+      "operational": {
+        "baselineTestCount": 3,
+        "durationMs": 9635.484,
+        "estimatedModelCostUsd": 0.0,
+        "repeatRuns": 2,
+        "retrievedContextTokens": 295,
+        "retrievedDocumentIds": {
+          "integration-domain-filter": [
+            "integration-database-guide",
+            "integration-repository-source",
+            "unit-calculator-source"
+          ],
+          "module-truncated-aggregation": [
+            "module-pricing-source",
+            "distractor-http-retry",
+            "unit-calculator-source"
+          ],
+          "unit-zero-denominator": [
+            "unit-boundary-guide",
+            "unit-calculator-source",
+            "integration-database-guide"
+          ]
+        },
+        "seededDefects": {
+          "integration-domain-filter": false,
+          "module-truncated-aggregation": false,
+          "unit-zero-denominator": false
+        }
+      },
+      "retrieval": {
+        "contextPrecision": 0.555556,
+        "meanLatencyMs": 0.694472,
+        "mrr": 1.0,
+        "ndcgAtK": 0.779117,
+        "recallAtK": 0.833333
+      }
+    },
+    "hybrid": {
+      "generation": {
+        "assertionRelevance": 1.0,
+        "compileRate": 1.0,
+        "coverageDelta": 0.217391,
+        "flakinessRate": 0.0,
+        "lineCoverage": 0.913043,
+        "mutationScore": 1.0,
+        "schemaValidityRate": 1.0,
+        "seededDefectDetectionRate": 1.0
+      },
+      "operational": {
+        "baselineTestCount": 3,
+        "durationMs": 10296.319,
+        "estimatedModelCostUsd": 0.0,
+        "repeatRuns": 2,
+        "retrievedContextTokens": 304,
+        "retrievedDocumentIds": {
+          "integration-domain-filter": [
+            "integration-database-guide",
+            "integration-repository-source",
+            "unit-calculator-source"
+          ],
+          "module-truncated-aggregation": [
+            "module-pricing-source",
+            "unit-calculator-source",
+            "unit-boundary-guide"
+          ],
+          "unit-zero-denominator": [
+            "unit-boundary-guide",
+            "unit-calculator-source",
+            "module-pricing-source"
+          ]
+        },
+        "seededDefects": {
+          "integration-domain-filter": true,
+          "module-truncated-aggregation": true,
+          "unit-zero-denominator": true
+        }
+      },
+      "retrieval": {
+        "contextPrecision": 0.555556,
+        "meanLatencyMs": 0.646542,
+        "mrr": 1.0,
+        "ndcgAtK": 0.779117,
+        "recallAtK": 0.833333
+      }
+    },
+    "hybrid_rerank": {
+      "generation": {
+        "assertionRelevance": 1.0,
+        "compileRate": 1.0,
+        "coverageDelta": 0.26087,
+        "flakinessRate": 0.0,
+        "lineCoverage": 0.956522,
+        "mutationScore": 1.0,
+        "schemaValidityRate": 1.0,
+        "seededDefectDetectionRate": 1.0
+      },
+      "operational": {
+        "baselineTestCount": 3,
+        "durationMs": 10374.215,
+        "estimatedModelCostUsd": 0.0,
+        "repeatRuns": 2,
+        "retrievedContextTokens": 305,
+        "retrievedDocumentIds": {
+          "integration-domain-filter": [
+            "integration-database-guide",
+            "integration-repository-source",
+            "unit-calculator-source"
+          ],
+          "module-truncated-aggregation": [
+            "module-pricing-source",
+            "unit-calculator-source",
+            "module-collaboration-guide"
+          ],
+          "unit-zero-denominator": [
+            "unit-boundary-guide",
+            "unit-calculator-source",
+            "module-pricing-source"
+          ]
+        },
+        "seededDefects": {
+          "integration-domain-filter": true,
+          "module-truncated-aggregation": true,
+          "unit-zero-denominator": true
+        }
+      },
+      "retrieval": {
+        "contextPrecision": 0.666667,
+        "meanLatencyMs": 0.658459,
+        "mrr": 1.0,
+        "ndcgAtK": 0.91031,
+        "recallAtK": 1.0
+      }
+    },
+    "no_rag": {
+      "generation": {
+        "assertionRelevance": 0.416667,
+        "compileRate": 1.0,
+        "coverageDelta": 0.0,
+        "flakinessRate": 0.0,
+        "lineCoverage": 0.695652,
+        "mutationScore": 0.0,
+        "schemaValidityRate": 1.0,
+        "seededDefectDetectionRate": 0.0
+      },
+      "operational": {
+        "baselineTestCount": 3,
+        "durationMs": 9927.302,
+        "estimatedModelCostUsd": 0.0,
+        "repeatRuns": 2,
+        "retrievedContextTokens": 0,
+        "retrievedDocumentIds": {
+          "integration-domain-filter": [],
+          "module-truncated-aggregation": [],
+          "unit-zero-denominator": []
+        },
+        "seededDefects": {
+          "integration-domain-filter": false,
+          "module-truncated-aggregation": false,
+          "unit-zero-denominator": false
+        }
+      },
+      "retrieval": {
+        "contextPrecision": 0.0,
+        "meanLatencyMs": 0.000347,
+        "mrr": 0.0,
+        "ndcgAtK": 0.0,
+        "recallAtK": 0.0
+      }
+    }
+  }
+}

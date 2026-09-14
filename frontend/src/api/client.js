@@ -83,6 +83,7 @@ export const api = {
   decideWorkflow: (id, approved, comment = '') => apiRequest(
     `/test-runs/${id}/workflow/decision`, 'POST', { approved, comment }),
   getRagTraces: (id) => apiRequest(`/test-runs/${id}/rag-traces`),
+  getObservability: (id) => apiRequest(`/test-runs/${id}/observability`),
   cancelExecution: (id) => apiRequest(`/test-runs/${id}/execution/cancel`, 'POST'),
   queryProjectRag: (projectId, data) => apiRequest(`/projects/${projectId}/rag/query`, 'POST', data),
   getProjectTestRuns: (projectId) => apiRequest(`/projects/${projectId}/test-runs`),

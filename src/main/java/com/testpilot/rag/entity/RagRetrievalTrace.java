@@ -38,6 +38,24 @@ public class RagRetrievalTrace {
     @Column(name = "packed_tokens", nullable = false)
     private int packedTokens;
 
+    @Column(name = "query_tokens", nullable = false)
+    private int queryTokens;
+
+    @Column(name = "latency_ms", nullable = false)
+    private long latencyMs;
+
+    @Column(name = "dense_candidates", nullable = false)
+    private int denseCandidates;
+
+    @Column(name = "lexical_candidates", nullable = false)
+    private int lexicalCandidates;
+
+    @Column(name = "embedding_model", nullable = false, length = 120)
+    private String embeddingModel;
+
+    @Column(name = "estimated_embedding_cost_usd", nullable = false)
+    private double estimatedEmbeddingCostUsd;
+
     @Column(name = "retrieval_config", length = 500, nullable = false)
     private String retrievalConfig;
 
@@ -58,6 +76,12 @@ public class RagRetrievalTrace {
             String queryText,
             String packedContext,
             int packedTokens,
+            int queryTokens,
+            long latencyMs,
+            int denseCandidates,
+            int lexicalCandidates,
+            String embeddingModel,
+            double estimatedEmbeddingCostUsd,
             String retrievalConfig,
             String citationsJson) {
         this.testRunId = testRunId;
@@ -68,6 +92,12 @@ public class RagRetrievalTrace {
         this.queryText = queryText;
         this.packedContext = packedContext;
         this.packedTokens = packedTokens;
+        this.queryTokens = queryTokens;
+        this.latencyMs = latencyMs;
+        this.denseCandidates = denseCandidates;
+        this.lexicalCandidates = lexicalCandidates;
+        this.embeddingModel = embeddingModel;
+        this.estimatedEmbeddingCostUsd = estimatedEmbeddingCostUsd;
         this.retrievalConfig = retrievalConfig;
         this.citationsJson = citationsJson;
     }
@@ -84,6 +114,12 @@ public class RagRetrievalTrace {
     public String getQueryText() { return queryText; }
     public String getPackedContext() { return packedContext; }
     public int getPackedTokens() { return packedTokens; }
+    public int getQueryTokens() { return queryTokens; }
+    public long getLatencyMs() { return latencyMs; }
+    public int getDenseCandidates() { return denseCandidates; }
+    public int getLexicalCandidates() { return lexicalCandidates; }
+    public String getEmbeddingModel() { return embeddingModel; }
+    public double getEstimatedEmbeddingCostUsd() { return estimatedEmbeddingCostUsd; }
     public String getRetrievalConfig() { return retrievalConfig; }
     public String getCitationsJson() { return citationsJson; }
     public LocalDateTime getCreatedAt() { return createdAt; }

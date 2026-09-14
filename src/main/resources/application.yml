@@ -86,6 +86,10 @@ testpilot:
     ingestion-version: ${RAG_INGESTION_VERSION:rag-v2}
     relevance-threshold: ${RAG_RELEVANCE_THRESHOLD:0.08}
     token-budget: ${RAG_TOKEN_BUDGET:6000}
+  observability:
+    llm-input-cost-per-million: ${AI_INPUT_COST_PER_MILLION_TOKENS:0}
+    llm-output-cost-per-million: ${AI_OUTPUT_COST_PER_MILLION_TOKENS:0}
+    embedding-cost-per-million: ${AI_EMBEDDING_COST_PER_MILLION_TOKENS:0}
 
 server:
   port: ${PORT:8080}

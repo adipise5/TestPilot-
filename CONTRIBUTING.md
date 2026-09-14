@@ -24,6 +24,8 @@ npm run build
 npm audit --audit-level=high
 cd ..
 docker build -t testpilot-worker:local -f worker/Dockerfile .
+python -m unittest discover -s evaluation/tests -v
+python evaluation/run_evaluation.py --check
 ```
 
 ## Design expectations
@@ -36,6 +38,8 @@ docker build -t testpilot-worker:local -f worker/Dockerfile .
 - Prefer typed agent state and deterministic tools over hidden prompt behavior.
 - Add an architecture decision record when changing a security boundary, storage model, workflow model, or integration strategy.
 - Do not describe a filesystem directory as a sandbox or a fixed prompt chain as an autonomous multi-agent system.
+- Keep the evaluation dataset hash-pinned. Threshold changes require reviewed evidence and must never hide a regression by silently replacing the baseline.
+- Label deterministic fixture results and live-provider experiments separately; always record model, prompt/configuration, tokens, cost assumptions, and dataset version.
 
 ## Commit ownership
 

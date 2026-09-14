@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { api } from '../api/client';
-import { CheckCircle2, XCircle, Code, ArrowRight, GitBranch, ShieldCheck, Database, Ban } from 'lucide-react';
+import { CheckCircle2, XCircle, Code, ArrowRight, GitBranch, ShieldCheck, Database, Ban, Activity } from 'lucide-react';
 
 export default function TestRunDetails() {
   const { id } = useParams();
   const [testRun, setTestRun] = useState(null);
   const [workflow, setWorkflow] = useState(null);
   const [ragTraces, setRagTraces] = useState([]);
+  const [observability, setObservability] = useState(null);
   const [loading, setLoading] = useState(true);
   const [decisionPending, setDecisionPending] = useState(false);
 
@@ -24,6 +25,11 @@ export default function TestRunDetails() {
         setRagTraces(await api.getRagTraces(id));
       } catch {
         setRagTraces([]);
+      }
+      try {
+        setObservability(await api.getObservability(id));
+      } catch {
+        setObservability(null);
       }
     } catch (err) {
       console.error(err);
@@ -239,6 +245,49 @@ export default function TestRunDetails() {
             <button className="btn-danger flex items-center gap-2" disabled={decisionPending} onClick={cancelExecution}>
               <Ban className="w-4 h-4" /> Cancel execution
             </button>
+          )}
+        </div>
+      )}
+
+      {observability && (
+        <div className="card space-y-4">
+          <h2 className="text-lg font-bold flex items-center gap-2">
+            <Activity className="w-5 h-5 text-amber-400" /> Run observability
+          </h2>
+          <div className="grid md:grid-cols-4 gap-3 text-sm">
+            <div className="p-3 bg-slate-900 rounded border border-slate-800">
+              <div className="text-xs text-slate-500">Workflow</div>
+              <div className="font-mono text-slate-200">{observability.workflow?.durationMs ?? 0} ms</div>
+              <div className="text-xs text-slate-500">{observability.workflow?.totalRetries ?? 0} retries</div>
+            </div>
+            <div className="p-3 bg-slate-900 rounded border border-slate-800">
+              <div className="text-xs text-slate-500">Worker</div>
+              <div className="font-mono text-slate-200">{observability.execution?.executionTimeMs ?? 0} ms</div>
+              <div className="text-xs text-slate-500">queue {observability.execution?.queueTimeMs ?? 0} ms</div>
+            </div>
+            <div className="p-3 bg-slate-900 rounded border border-slate-800">
+              <div className="text-xs text-slate-500">RAG</div>
+              <div className="font-mono text-slate-200">{observability.rag.totalPackedTokens} context tokens</div>
+              <div className="text-xs text-slate-500">{observability.rag.totalLatencyMs} ms · {observability.rag.traceCount} traces</div>
+            </div>
+            <div className="p-3 bg-slate-900 rounded border border-slate-800">
+              <div className="text-xs text-slate-500">Generation models</div>
+              <div className="font-mono text-slate-200">${observability.models.estimatedCostUsd.toFixed(6)}</div>
+              <div className="text-xs text-slate-500">{observability.models.inputTokens + observability.models.outputTokens} estimated tokens</div>
+            </div>
+          </div>
+          {observability.workflow?.nodes?.length > 0 && (
+            <details>
+              <summary className="cursor-pointer text-sm text-slate-400">Node timing details</summary>
+              <div className="mt-3 grid md:grid-cols-2 gap-2">
+                {observability.workflow.nodes.map((node, index) => (
+                  <div key={`${node.node}-${index}`} className="flex justify-between p-2 bg-slate-900 rounded text-xs font-mono">
+                    <span>{node.node} · {node.attempts} attempt(s)</span>
+                    <span className="text-slate-500">{node.durationMs} ms</span>
+                  </div>
+                ))}
+              </div>
+            </details>
           )}
         </div>
       )}
