@@ -97,8 +97,8 @@ public class GitHubPullRequestGateway implements GitHubDeliveryGateway {
                     "base", baseBranch,
                     "body", request.pullRequestBody()));
             long number = pullRequest.path("number").asLong(0);
-            String url = pullRequest.path("html_url").asText();
-            if (number <= 0 || url.isBlank() || url.length() > 1000) {
+            String url = requireSafePullRequestUrl(pullRequest.path("html_url").asText());
+            if (number <= 0) {
                 throw new ExternalServiceException("GitHub returned an invalid pull request response");
             }
             return new GitHubDeliveryResult(number, url, headSha);
@@ -117,8 +117,14 @@ public class GitHubPullRequestGateway implements GitHubDeliveryGateway {
         if (request.changes() == null || request.changes().isEmpty() || request.changes().size() > MAX_FILES) {
             throw new InvalidRequestException("GitHub delivery must contain between 1 and 100 files");
         }
-        int totalChars = request.changes().stream().mapToInt(change ->
-                change.content() == null ? 0 : change.content().length()).sum();
+        long totalChars = 0;
+        for (DeliveryChange change : request.changes()) {
+            if (change == null || change.content() == null || change.content().isBlank()) {
+                throw new InvalidRequestException("GitHub delivery contains an empty file change");
+            }
+            pathPolicy.validateRepositoryPath(change.path());
+            totalChars += change.content().length();
+        }
         if (totalChars <= 0 || totalChars > MAX_TOTAL_CONTENT_CHARS) {
             throw new InvalidRequestException("GitHub delivery content exceeds the 2,000,000 character limit");
         }
@@ -183,6 +189,21 @@ public class GitHubPullRequestGateway implements GitHubDeliveryGateway {
             httpClient.send(request, HttpResponse.BodyHandlers.discarding());
         } catch (Exception ignored) {
             // The persisted rollback path tells a reviewer how to remove any surviving branch.
+        }
+    }
+
+    private String requireSafePullRequestUrl(String value) {
+        try {
+            URI uri = URI.create(value);
+            if (value.length() > 1000
+                    || !"https".equalsIgnoreCase(uri.getScheme())
+                    || uri.getHost() == null
+                    || uri.getUserInfo() != null) {
+                throw new ExternalServiceException("GitHub returned an invalid pull request response");
+            }
+            return value;
+        } catch (IllegalArgumentException error) {
+            throw new ExternalServiceException("GitHub returned an invalid pull request response", error);
         }
     }
 

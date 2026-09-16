@@ -40,6 +40,7 @@ class RepositoryIntakeIntegrationTest {
     @Autowired ObjectMapper objectMapper;
     @Autowired AuthService authService;
     @Autowired RepositoryAuditEventRepository auditEventRepository;
+    @Autowired com.testpilot.repository.repository.RepositoryIngestionRepository ingestionRepository;
 
     @MockBean RepositoryConnectorRegistry connectorRegistry;
 
@@ -87,7 +88,7 @@ class RepositoryIntakeIntegrationTest {
     @Test
     void shouldIngestExactCommitWithAllowlistAndRemainIdempotent() throws Exception {
         String request = """
-                {"transport":"GITHUB_MCP","owner":"octocat","name":"sample","revision":"main"}
+                {"transport":"GITHUB_MCP","repositoryUrl":"https://github.com/octocat/sample.git"}
                 """;
         String connectJson = mockMvc.perform(post("/api/projects/" + projectId + "/repository")
                         .header("Authorization", ownerToken)
@@ -104,6 +105,19 @@ class RepositoryIntakeIntegrationTest {
 
         long repositoryId = objectMapper.readTree(connectJson).path("repository").path("id").asLong();
         long ingestionId = objectMapper.readTree(connectJson).path("ingestion").path("id").asLong();
+
+        verify(connector).getRepository(eq(new RepositoryCoordinates("octocat", "sample")), any());
+        verify(connector).resolveRevision(any(), eq("main"), any());
+        mockMvc.perform(get("/api/repositories/" + repositoryId + "/selection")
+                        .header("Authorization", ownerToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.commitSha").value(COMMIT_SHA))
+                .andExpect(jsonPath("$.files.length()").value(5))
+                .andExpect(jsonPath("$.files[0].path").value(".env"))
+                .andExpect(jsonPath("$.files[0].disposition").value("EXCLUDED"))
+                .andExpect(jsonPath("$.files[0].content").doesNotExist());
+        mockMvc.perform(get("/api/repositories/" + repositoryId + "/selection")
+                        .header("Authorization", otherToken)).andExpect(status().isForbidden());
 
         mockMvc.perform(get("/api/repositories/" + repositoryId + "/catalog")
                         .header("Authorization", ownerToken))
@@ -153,6 +167,45 @@ class RepositoryIntakeIntegrationTest {
                 .andExpect(jsonPath("$.error").value("ACCESS_DENIED"));
 
         org.junit.jupiter.api.Assertions.assertEquals(auditCountBefore + 1, auditEventRepository.count());
+    }
+
+    @Test
+    void shouldUpgradeLegacyCatalogOnRefresh() throws Exception {
+        String response = mockMvc.perform(post("/api/projects/" + projectId + "/repository")
+                        .header("Authorization", ownerToken).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"transport\":\"GITHUB_MCP\",\"owner\":\"octocat\",\"name\":\"sample\"}"))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        var json = objectMapper.readTree(response);
+        long repositoryId = json.path("repository").path("id").asLong();
+        var legacy = ingestionRepository.findById(json.path("ingestion").path("id").asLong()).orElseThrow();
+        legacy.setSelectionReport(null);
+        ingestionRepository.saveAndFlush(legacy);
+        mockMvc.perform(post("/api/repositories/" + repositoryId + "/ingestions")
+                        .header("Authorization", ownerToken).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"revision\":\"main\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.fileCount").value(3));
+        mockMvc.perform(get("/api/repositories/" + repositoryId + "/selection").header("Authorization", ownerToken))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.files.length()").value(5));
+        verify(connector, times(2)).listTree(any(), any(), any());
+    }
+
+    @Test
+    void shouldCatalogPythonWithoutSendingItToJavaRunner() throws Exception {
+        when(connector.listTree(any(), any(), any())).thenReturn(List.of(
+                new RepositoryTreeEntry("app.py", "py-sha", 20, "blob")));
+        when(connector.readFile(any(), any(), any(), any())).thenReturn(
+                new RepositoryFileContent("app.py", "py-sha", "def add(a, b): return a + b".getBytes(StandardCharsets.UTF_8)));
+        String response = mockMvc.perform(post("/api/projects/" + projectId + "/repository")
+                        .header("Authorization", ownerToken).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"transport\":\"GITHUB_MCP\",\"repositoryUrl\":\"https://github.com/octocat/sample\"}"))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.ingestion.fileCount").value(1))
+                .andReturn().getResponse().getContentAsString();
+        long repositoryId = objectMapper.readTree(response).path("repository").path("id").asLong();
+        mockMvc.perform(get("/api/repositories/" + repositoryId + "/selection").header("Authorization", ownerToken))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.files[0].language").value("Python"))
+                .andExpect(jsonPath("$.files[0].disposition").value("SOURCE_CODE"));
+        mockMvc.perform(get("/api/projects/" + projectId + "/files").header("Authorization", ownerToken))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(0));
     }
 
     private Long createProject(String name, String token) throws Exception {

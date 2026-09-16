@@ -47,7 +47,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("h2")
-@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class DeliveryIntegrationTest {
 
     private static final String BASE_SHA = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
@@ -186,7 +186,8 @@ class DeliveryIntegrationTest {
         assertTrue(request.deliveryBranch().startsWith("testpilot/"));
         assertTrue(request.pullRequestBody().contains("guides/unit.md"));
         assertTrue(request.pullRequestBody().contains("BUILD SUCCESS"));
-        assertTrue(request.pullRequestBody().contains("System and browser end-to-end testing are outside"));
+        assertTrue(request.pullRequestBody().contains("system and browser end-to-end testing are outside"));
+        assertTrue(request.pullRequestBody().contains("Coverage change: `not collected`"));
     }
 
     @Test

@@ -22,6 +22,8 @@ public class DeliveryEvidenceBuilder {
 
     private static final int MAX_LOG_CHARS = 8_000;
     private static final int MAX_BODY_CHARS = 60_000;
+    private static final int MAX_LISTED_TESTS = 25;
+    private static final int MAX_LISTED_CITATIONS = 25;
 
     private final ObjectMapper objectMapper;
 
@@ -54,26 +56,38 @@ public class DeliveryEvidenceBuilder {
                 .append("- Patch SHA-256: `").append(patchSha256).append("`\n")
                 .append("- Validation: **PASSED** — ").append(validationSummary).append("\n")
                 .append("- Worker backend: `").append(safe(job.getIsolationBackend())).append("`\n")
-                .append("- Worker attempts: `").append(job.getAttempts()).append("`\n\n")
+                .append("- Worker attempts: `").append(job.getAttempts()).append("`\n")
+                .append("- Coverage change: `not collected`; post-generation line coverage: `")
+                .append(value(job.getLineCoveragePercent(), job.getCoverageStatus())).append("`\n")
+                .append("- Mutation change: `not collected`; post-generation mutation score: `")
+                .append(value(job.getMutationScorePercent(), job.getMutationStatus())).append("`\n\n")
                 .append("### Generated tests\n\n");
-        for (GeneratedTest test : generatedTests) {
+        for (GeneratedTest test : generatedTests.stream().limit(MAX_LISTED_TESTS).toList()) {
             body.append("- `src/test/java/")
                     .append(test.getTestClass().replace('.', '/')).append(".java` — ")
                     .append(test.getTestLevel()).append("; source `")
-                    .append(safe(test.getSourceFile())).append('`');
+                    .append(safe(test.getSourceFile(), 180)).append('`');
             if (test.getRagTraceId() != null) {
                 body.append("; RAG trace `#").append(test.getRagTraceId()).append('`');
             }
             body.append('\n');
         }
+        if (generatedTests.size() > MAX_LISTED_TESTS) {
+            body.append("- … and ").append(generatedTests.size() - MAX_LISTED_TESTS)
+                    .append(" additional generated files in this patch.\n");
+        }
 
         body.append("\n### Retrieval citations\n\n");
         Set<String> citations = new LinkedHashSet<>();
         for (RagRetrievalTrace trace : traces) {
-            RagRetrievalTraceResponse.from(trace, objectMapper).citations().forEach(citation -> citations.add(
-                    "- `" + safe(citation.source()) + "` lines " + citation.startLine() + "–"
-                            + citation.endLine() + "; `" + safe(citation.uri()) + "`; chunk `"
-                            + safe(citation.chunkKey()) + "`"));
+            RagRetrievalTraceResponse.from(trace, objectMapper).citations().forEach(citation -> {
+                if (citations.size() < MAX_LISTED_CITATIONS) {
+                    citations.add("- `" + safe(citation.source(), 180) + "` lines "
+                            + citation.startLine() + "–" + citation.endLine() + "; `"
+                            + safe(citation.uri(), 400) + "`; chunk `"
+                            + safe(citation.chunkKey(), 180) + "`");
+                }
+            });
         }
         if (citations.isEmpty()) {
             body.append("- No retrieval citations were attached to this run.\n");
@@ -88,7 +102,10 @@ public class DeliveryEvidenceBuilder {
                 .append("\n\n### Rollback\n\n")
                 .append(rollbackPath)
                 .append("\n");
-        return body.substring(0, Math.min(body.length(), MAX_BODY_CHARS));
+        if (body.length() > MAX_BODY_CHARS) {
+            throw new IllegalStateException("Pull request evidence exceeds the GitHub body limit");
+        }
+        return body.toString();
     }
 
     private String sanitizeLog(String value) {
@@ -102,7 +119,12 @@ public class DeliveryEvidenceBuilder {
     }
 
     private String safe(String value) {
+        return safe(value, 500);
+    }
+
+    private String safe(String value, int max) {
         if (value == null || value.isBlank()) return "not-collected";
-        return value.replace("`", "'").replace("\n", " ").replace("\r", " ");
+        String sanitized = value.replace("`", "'").replace("\n", " ").replace("\r", " ");
+        return sanitized.substring(0, Math.min(sanitized.length(), max));
     }
 }

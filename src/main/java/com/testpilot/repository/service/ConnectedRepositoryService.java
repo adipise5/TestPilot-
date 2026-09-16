@@ -43,6 +43,7 @@ public class ConnectedRepositoryService {
             ConnectRepositoryRequest request,
             UserPrincipal currentUser) {
         projectService.findProjectAndVerifyWriteAccess(projectId, currentUser);
+        request = request.normalized();
         RepositoryCoordinates coordinates = new RepositoryCoordinates(request.owner(), request.name());
         RepositoryAccessContext accessContext = new RepositoryAccessContext(request.installationId(), currentUser.getId());
         if (request.transport() == RepositoryTransport.GITHUB_APP_REST) {

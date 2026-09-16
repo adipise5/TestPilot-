@@ -1,8 +1,8 @@
 # TestPilot
 
-TestPilot is a full-stack prototype for repository-driven, AI-assisted Java test generation and execution. The current application can connect an allowlisted GitHub repository through MCP or a least-privilege GitHub App, resolve an immutable commit, build a safe text catalog, run a checkpointed LangGraph workflow with specialized test agents and human approval, retrieve project-scoped hybrid RAG context, execute Maven through durable isolated jobs, parse Surefire/coverage evidence, persist run observability, and evaluate retrieval/test quality against a pinned benchmark.
+TestPilot is a full-stack prototype for repository-driven, AI-assisted Java test generation and execution. The current application can connect an allowlisted GitHub repository through MCP or a least-privilege GitHub App, resolve an immutable commit, build a safe text catalog, run a checkpointed LangGraph workflow with specialized test agents and human approval, retrieve project-scoped hybrid RAG context, execute Maven through durable isolated jobs, persist evaluation and observability evidence, and turn a successful run into a separately approved GitHub branch and pull request.
 
-The long-term product is a repository-driven, agentic testing platform: a user supplies a GitHub repository, specialized LangGraph workflows plan unit, module/component, and integration tests, isolated workers run them against an immutable revision, and a measured RAG pipeline supplies project and framework context.
+The product is a repository-driven, agentic testing platform: a user supplies a GitHub repository, specialized LangGraph workflows plan unit, module/component, and integration tests, isolated workers run them against an immutable revision, a measured RAG pipeline supplies project and framework context, and an approved delivery workflow publishes evidence-backed test changes for normal GitHub review.
 
 System and end-to-end testing are explicitly outside the project scope. TestPilot will stop at integration testing and will not provision or validate a complete deployed application environment.
 
@@ -10,6 +10,14 @@ System and end-to-end testing are explicitly outside the project scope. TestPilo
 > The H2 profile intentionally runs Maven locally for trusted development and application tests. It is not a sandbox. Repository code in the PostgreSQL/dev profile defaults to the container backend; do not expose TestPilot publicly unless the Docker daemon, worker image, dependency-egress network, database, quotas, and secrets have been reviewed for that deployment.
 
 ## Project status
+
+The revised multi-language product starts with [Phase 1: URL intake and file selection](docs/REVISED_PHASE_1.md).
+It adds a single GitHub URL form, a multi-language catalog, excluded-file evidence,
+and read-only manifest hints. [Revised Phase 2](docs/REVISED_PHASE_2.md) adds
+Java/Python/JS/TS planning, framework-specific generation, static validation and saved
+drafts. Multilingual execution and the separate AI code reviewer are not implemented;
+the existing runner remains Java-only. Mock-provider drafts are skipped scaffolds,
+not behavioral tests.
 
 | Capability | Current implementation | Target implementation |
 |---|---|---|
@@ -21,6 +29,7 @@ System and end-to-end testing are explicitly outside the project scope. TestPilo
 | AI provider | Separate deterministic/OpenAI-compatible generation and embedding interfaces | Additional provider adapters and measured model comparisons |
 | Execution | Leased/idempotent jobs and a non-root Maven worker with offline execution, read-only root, no capabilities/network, resource limits, cancellation, cleanup, and bounded evidence | External autoscaled workers and stronger platform sandboxing |
 | Evaluation | Pinned offline unit/module/integration benchmark with retrieval, compilation, coverage, seeded mutation, flakiness, latency, token, and cost evidence | Larger datasets and separately published live-provider comparisons |
+| Delivery | Frozen SHA-256 patch, separate approval, repository-scoped GitHub App write token, dedicated branch, evidence-rich PR, audit trail, and rollback path | Live GitHub sandbox/provider conformance testing and deployment migration tooling |
 
 The detailed baseline assessment is in [PROJECT_DEEP_DIVE.md](PROJECT_DEEP_DIVE.md), and the approved implementation sequence is in [ROADMAP.md](ROADMAP.md).
 
@@ -47,6 +56,8 @@ flowchart LR
     WORKER --> REPORTS["Surefire + coverage parser"]
     REPORTS --> FAILURE["Failure and fix prompts"]
     REPORTS --> OBSERVE["Persisted run observability"]
+    REPORTS --> DELIVER["Frozen patch + delivery approval"]
+    DELIVER --> PR["Dedicated GitHub branch + pull request"]
     AUTH --> DB["PostgreSQL or H2"]
     DATA --> DB
     CATALOG --> DB
@@ -55,6 +66,7 @@ flowchart LR
     REPORTS --> DB
     FAILURE --> DB
     OBSERVE --> DB
+    DELIVER --> DB
 ```
 
 LangGraph owns typed workflow state, conditional routing, retry policy, checkpoints, and human interrupts. Spring owns authentication, authorization, repository state, model calls, execution, and audit records. Agents cannot choose arbitrary tools or execute shell commands: every node maps to a compiled, authenticated Spring tool with an idempotency key and input hash.
@@ -204,7 +216,7 @@ There is no production JWT fallback: `JWT_SECRET` must contain at least 32 UTF-8
 
 ### GitHub repository access
 
-For the production path, register a GitHub App with read-only repository Contents permission and configure its setup callback and webhook URL. TestPilot exchanges the app JWT for short-lived installation tokens scoped to the selected repository.
+For the production path, register a GitHub App with repository **Contents: read and write** and **Pull requests: read and write**, then configure its setup callback and webhook URL. TestPilot does not hold a broad reusable write token: ingestion requests a short-lived contents-read token, while an approved delivery requests a separate short-lived token narrowed to one repository with contents-write and pull-request-write permissions.
 
 | Environment variable | Purpose |
 |---|---|
@@ -217,7 +229,7 @@ For the production path, register a GitHub App with read-only repository Content
 | `GITHUB_MCP_ENDPOINT` | Streamable HTTP MCP endpoint |
 | `GITHUB_MCP_ALLOWED_REPOSITORIES` | Comma-separated `owner/repository` allowlist enforced before MCP calls |
 
-The MCP adapter invokes only repository read tools. The GitHub App adapter is the preferred multi-user production boundary because installation grants are bound to a TestPilot user through a one-time installation state.
+The MCP adapter invokes only repository read tools and can never deliver a patch. The GitHub App adapter is the multi-user write boundary because installation grants are bound to a TestPilot user through a one-time state. TestPilot creates only `testpilot/...` branches from the analyzed commit; it never updates the default/protected branch directly.
 
 The mock provider is deterministic and useful for offline workflow tests. Its embeddings are not semantic, and its generated test is intentionally trivial; it does not demonstrate real test-generation quality.
 
@@ -238,6 +250,7 @@ The mock provider is deterministic and useful for offline workflow tests. Its em
 | Project RAG | `/api/projects/{id}/rag/query` | Query one authorized project and immutable commit with hybrid retrieval |
 | RAG traces | `/api/test-runs/{id}/rag-traces` | Reproduce exact generated-test context and citations |
 | Run observability | `/api/test-runs/{id}/observability` | Inspect authorized workflow, model, RAG, queue, worker, token, cost, and timing evidence |
+| Reviewed delivery | `/api/test-runs/{id}/delivery` | Freeze a validated patch, review/approve it, then create a dedicated GitHub branch and pull request |
 | Failures | `/api/failures`, `/api/fix-suggestions` | Explain failures and review suggestions |
 | Knowledge | `/api/knowledge` | Administer globally scoped testing guidance |
 | Health | `/api/health`, `/actuator/health` | Local health endpoints |
@@ -250,6 +263,7 @@ Public registration always creates a developer. Reviewer and admin roles can onl
 src/main/java/com/testpilot/
   ai/          LLM clients and task-specific prompt components
   auth/        users, JWT authentication, and authorization
+  delivery/    immutable patches, approval records, GitHub branch/PR delivery, and rollback evidence
   failure/     failure analysis and fix-review state
   project/     projects and source-file storage
   repository/  connector contract, GitHub transports, immutable catalogs, and installation/webhook scope
@@ -265,7 +279,7 @@ docs/          architecture decisions and threat model
 
 ## Development roadmap
 
-Phases 1–7 establish the reproducible/security baseline, immutable GitHub ingestion, checkpointed agent workflow, isolated durable execution, traceable RAG, and a measurable evaluation/observability layer. Phase 8 is the next implementation gate: reviewed GitHub branch and pull-request delivery. See [ROADMAP.md](ROADMAP.md) and [evaluation/README.md](evaluation/README.md).
+Phases 1–8 establish the reproducible/security baseline, immutable GitHub ingestion, checkpointed agent workflow, isolated durable execution, traceable RAG, measurable evaluation/observability, and reviewed GitHub delivery. Remaining work is deployment hardening, larger/live-provider evaluation, shared production infrastructure, and provider conformance—not system or browser E2E testing. See [ROADMAP.md](ROADMAP.md), [evaluation/README.md](evaluation/README.md), and [ADR 0007](docs/adr/0007-reviewed-github-delivery.md).
 
 ## Contributing and security
 

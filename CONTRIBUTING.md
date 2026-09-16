@@ -40,6 +40,8 @@ python evaluation/run_evaluation.py --check
 - Do not describe a filesystem directory as a sandbox or a fixed prompt chain as an autonomous multi-agent system.
 - Keep the evaluation dataset hash-pinned. Threshold changes require reviewed evidence and must never hide a regression by silently replacing the baseline.
 - Label deterministic fixture results and live-provider experiments separately; always record model, prompt/configuration, tokens, cost assumptions, and dataset version.
+- Treat repository delivery as a separate human-approved capability. A proposal must pin the analyzed commit and patch hash before approval; MCP must remain read-only.
+- Never add a GitHub operation that writes directly to a default/protected branch. Delivery changes belong on a dedicated `testpilot/...` branch and must carry validation evidence and a rollback path.
 
 ## Commit ownership
 

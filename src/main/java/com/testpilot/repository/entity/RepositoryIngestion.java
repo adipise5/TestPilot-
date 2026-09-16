@@ -36,6 +36,12 @@ public class RepositoryIngestion {
     @Column(name = "catalog_hash", length = 64)
     private String catalogHash;
 
+    @Column(name = "selection_report", columnDefinition = "TEXT")
+    private String selectionReport;
+
+    public String getSelectionReport() { return selectionReport; }
+    public void setSelectionReport(String report) { this.selectionReport = report; }
+
     @Column(name = "failure_reason", length = 500)
     private String failureReason;
 

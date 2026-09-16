@@ -1,10 +1,10 @@
 # TestPilot threat model
 
-Status: updated through Phase 7. Security controls are implemented for the repository, workflow, retrieval, container-execution, evaluation, and observability boundaries, but this document does not certify any particular deployment for public use.
+Status: updated through Phase 8. Security controls are implemented for the repository, workflow, retrieval, container-execution, evaluation, observability, and reviewed-delivery boundaries, but this document does not certify any particular deployment for public use.
 
 ## Assets
 
-- GitHub installation credentials and repository contents.
+- GitHub installation credentials, repository contents, delivery branches, and pull requests.
 - User identities, JWT signing material, and authorization decisions.
 - Source code, build files, generated tests, retrieved knowledge, prompts, and model responses.
 - Worker capacity, execution logs, test results, failure reports, and review decisions.
@@ -26,6 +26,9 @@ flowchart LR
     WORKER --> OFFLINE["Offline test container"]
     OFFLINE --> OUT["Typed results and bounded logs"]
     OUT --> API
+    API --> REVIEW["Human delivery approval"]
+    REVIEW --> WRITE["Repository-scoped GitHub App write token"]
+    WRITE --> PR["Dedicated branch and pull request"]
 ```
 
 All data crossing a boundary must be authenticated where applicable, authorized to a tenant/project, size limited, validated, and traceable.
@@ -47,8 +50,8 @@ Untrusted content is data, never instruction. A model response cannot authorize 
 |---|---|---|
 | Host code execution | Production defaults to a constrained non-root container; H2 retains an explicit trusted local backend | Keep the local backend inaccessible in public deployments and continuously verify the worker policy |
 | Path traversal | Supplied file paths reach workspace resolution | Canonical relative-path allowlist, symlink rejection, and root containment check |
-| Privilege escalation | Public registration accepts a requested role | Force the public default role and protect role administration |
-| Object authorization | Some ID-based reads do not verify project access | Central authorization policy and cross-user endpoint tests |
+| Privilege escalation | Public registration is forced to developer; reviewer/admin creation is protected | Preserve role-administration tests and fail closed on unknown roles |
+| Object authorization | Central project authorization and cross-user negative tests cover run, RAG, repository, observability, and delivery endpoints | Apply the same policy to every future ID-based endpoint |
 | False success | Nonzero Maven outcomes can produce no reports and still complete | Capture bounded logs/exit code and model typed terminal outcomes |
 | Secret exposure | Development JWT fallback and repository/model credentials | Secret manager/environment requirements, redaction, rotation, and fail-fast production config |
 | Prompt injection | Repository and knowledge text is interpolated into prompts | Trust delimiters, deterministic tools, output schemas, scoped retrieval, and human write gates |
@@ -56,12 +59,18 @@ Untrusted content is data, never instruction. A model response cannot authorize 
 | Dependency-stage egress | Maven dependencies require network access before offline execution | Route only the dependency container through a deployment-controlled allowlisted network; never attach the test container |
 | Denial of service | User code and LLM calls consume CPU, memory, time, and cost | Current worker limits, timeouts, cancellation, retrieval budgets, plus deployment quotas and queue backpressure |
 
-## GitHub and MCP rules
+## GitHub, MCP, and delivery rules
 
-- Request read-only metadata/content permissions until the reviewed-delivery phase.
+- Use contents-read tokens for discovery and immutable ingestion. Do not reuse them for delivery.
+- Request a repository-narrowed token with `contents:write` and `pull_requests:write` only after a persisted proposal receives a project-authorized human approval.
 - Store installation identifiers, not long-lived personal access tokens.
 - Resolve branch/tag input to a commit SHA before ingestion or execution.
 - Re-authorize every repository operation against the installation scope.
+- Freeze delivery files, patch SHA-256, evidence, limitations, and base commit before review; later source/model changes must require a new TestRun and proposal.
+- Permit only dedicated `testpilot/...` branches whose commit parent is the analyzed SHA. Never update the default/protected branch ref.
+- Reject delivery when execution did not succeed, tests failed, the target test path already exists, the repository connection changed, or transport is MCP.
+- Persist reviewer identity/decision, validation time, delivery attempts, PR/head identity, failure details, audit events, and a close-PR/delete-branch rollback path.
+- If PR creation fails after TestPilot creates its branch, attempt compensating deletion of only that dedicated branch; retain the failure and manual rollback instructions.
 - Exclude Git metadata, binaries, generated outputs, vendor directories, and suspected secrets from model and embedding calls.
 - Treat MCP tool results as untrusted remote data and validate them through the same connector contract.
 - Never expose a repository token, Docker socket, host home directory, or application environment to a test worker.
@@ -106,6 +115,7 @@ Execution jobs are unique per TestRun. Database leases, heartbeats, persisted ca
 - Repository instructions that ask the model to ignore policies, reveal secrets, or write to GitHub.
 - Malformed/oversized Surefire XML, missing reports, compiler errors, dependency failures, and worker termination.
 - Duplicate webhooks, repeated graph nodes, application restarts, lease expiry, and concurrent retries.
+- Replayed delivery requests, approval bypasses, stale or changed repository connections, pre-existing test paths, unsafe refs, branch collisions, partial GitHub failures, and attempts to deliver through MCP or the default branch.
 
 ## Security release gate
 

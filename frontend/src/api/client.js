@@ -72,9 +72,13 @@ export const api = {
   refreshRepository: (repositoryId, revision) => apiRequest(
     `/repositories/${repositoryId}/ingestions`, 'POST', { revision }),
   getRepositoryCatalog: (repositoryId) => apiRequest(`/repositories/${repositoryId}/catalog`),
+  getRepositorySelection: (repositoryId) => apiRequest(`/repositories/${repositoryId}/selection`),
   disconnectRepository: (repositoryId) => apiRequest(`/repositories/${repositoryId}`, 'DELETE'),
 
   // AI & Testing
+  getTestPlan: (projectId) => apiRequest(`/projects/${projectId}/test-plan`),
+  getTestDrafts: (projectId) => apiRequest(`/projects/${projectId}/test-drafts`),
+  generateTestDraft: (projectId, snapshotId, planId) => apiRequest(`/projects/${projectId}/test-drafts`, 'POST', { snapshotId, planId }),
   analyzeProject: (projectId) => apiRequest(`/projects/${projectId}/analyze`, 'POST'),
   createTestRun: (projectId) => apiRequest(`/projects/${projectId}/test-runs`, 'POST'),
   startAutomatedTestRun: (projectId) => apiRequest(`/projects/${projectId}/test-runs/auto`, 'POST'),

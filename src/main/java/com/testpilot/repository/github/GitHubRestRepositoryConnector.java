@@ -118,7 +118,7 @@ public class GitHubRestRepositoryConnector implements RepositoryConnector {
                     entry.path("path").asText(),
                     entry.path("sha").asText(),
                     entry.path("size").asLong(0),
-                    entry.path("type").asText()));
+                    "120000".equals(entry.path("mode").asText()) ? "symlink" : entry.path("type").asText()));
         }
         return List.copyOf(entries);
     }

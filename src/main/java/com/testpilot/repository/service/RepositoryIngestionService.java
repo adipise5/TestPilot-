@@ -7,6 +7,8 @@ import com.testpilot.project.service.ProjectService;
 import com.testpilot.repository.connector.*;
 import com.testpilot.repository.dto.RepositoryArtifactResponse;
 import com.testpilot.repository.dto.RepositoryIngestionResponse;
+import com.testpilot.repository.dto.RepositorySelectionResponse;
+import com.testpilot.repository.dto.RepositorySelectionResponse.FileDecision;
 import com.testpilot.repository.entity.*;
 import com.testpilot.repository.repository.ConnectedRepositoryRepository;
 import com.testpilot.repository.repository.RepositoryArtifactRepository;
@@ -68,7 +70,18 @@ public class RepositoryIngestionService {
         }
 
         try {
-            List<ClassifiedEntry> candidates = connector.listTree(coordinates, commitSha, accessContext).stream()
+            var tree = connector.listTree(coordinates, commitSha, accessContext);
+            if (tree.size() > 50_000) throw new InvalidRequestException("Repository exceeds the 50,000-entry inventory limit");
+            List<FileDecision> decisions = new ArrayList<>();
+            for (var entry : tree) {
+                if ("tree".equals(entry.type())) continue;
+                if (catalogPolicy.classify(entry).isEmpty()) {
+                    String reason = catalogPolicy.exclusionReason(entry);
+                    decisions.add(new FileDecision(entry.path(), RepositoryCatalogPolicy.language(entry.path()),
+                            "EXCLUDED", reason == null ? "Unrecognized source extension or non-source asset" : reason));
+                }
+            }
+            List<ClassifiedEntry> candidates = tree.stream()
                     .map(entry -> catalogPolicy.classify(entry)
                             .map(kind -> new ClassifiedEntry(entry, kind))
                             .orElse(null))
@@ -90,6 +103,8 @@ public class RepositoryIngestionService {
                     artifact = catalogPolicy.decode(file, candidate.kind());
                 } catch (InvalidRequestException excluded) {
                     excludedFiles++;
+                    decisions.add(new FileDecision(candidate.entry().path(), RepositoryCatalogPolicy.language(candidate.entry().path()),
+                            "EXCLUDED", excluded.getMessage()));
                     continue;
                 }
                 if (totalBytes + artifact.sizeBytes() > RepositoryCatalogPolicy.MAX_CATALOG_BYTES) {
@@ -97,6 +112,13 @@ public class RepositoryIngestionService {
                 }
                 totalBytes += artifact.sizeBytes();
                 artifacts.add(artifact);
+                decisions.add(new FileDecision(artifact.path(), RepositoryCatalogPolicy.language(artifact.path()),
+                        artifact.kind().name(), switch (artifact.kind()) {
+                            case BUILD_MANIFEST, BUILD_CONFIGURATION -> "Read-only dependency/test configuration; not executed";
+                            case DOCUMENTATION -> "Repository documentation context";
+                            case EXISTING_TEST -> "Existing test context";
+                            default -> "Source code selected for analysis";
+                        }));
             }
 
             BuildSystem buildSystem = catalogPolicy.detectBuildSystem(artifacts);
@@ -106,7 +128,9 @@ public class RepositoryIngestionService {
                     commitSha,
                     buildSystem,
                     catalogPolicy.catalogHash(artifacts),
-                    artifacts);
+                    artifacts, encodeSelection(new RepositorySelectionResponse(commitSha,
+                            decisions.stream().sorted(Comparator.comparing(FileDecision::path)).toList(),
+                            catalogPolicy.buildContexts(artifacts))));
             auditService.record(
                     repositoryId,
                     currentUser.getId(),
@@ -148,6 +172,29 @@ public class RepositoryIngestionService {
         return artifactRepository.findByIngestionIdOrderByPath(ingestion.getId()).stream()
                 .map(RepositoryArtifactResponse::fromEntity)
                 .toList();
+    }
+
+    public RepositorySelectionResponse getSelection(Long repositoryId, UserPrincipal currentUser) {
+        ConnectedRepository repository = requireReadable(repositoryId, currentUser);
+        var ingestion = ingestionRepository.findByConnectedRepositoryIdAndCommitSha(repositoryId, repository.getSelectedCommitSha())
+                .filter(item -> item.getStatus() == RepositoryIngestionStatus.COMPLETED)
+                .orElseThrow(() -> new ResourceNotFoundException("No completed selection exists for this commit"));
+        if (ingestion.getSelectionReport() == null) {
+            throw new ResourceNotFoundException("Legacy catalog: refresh the branch to generate file-selection evidence");
+        }
+        try {
+            return new com.fasterxml.jackson.databind.ObjectMapper().readValue(ingestion.getSelectionReport(), RepositorySelectionResponse.class);
+        } catch (java.io.IOException ex) {
+            throw new IllegalStateException("Stored selection evidence could not be read", ex);
+        }
+    }
+
+    private String encodeSelection(RepositorySelectionResponse selection) {
+        try {
+            return new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(selection);
+        } catch (java.io.IOException ex) {
+            throw new IllegalStateException("Selection evidence could not be saved", ex);
+        }
     }
 
     private ConnectedRepository requireWritable(Long repositoryId, UserPrincipal currentUser) {

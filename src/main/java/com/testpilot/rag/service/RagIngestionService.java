@@ -98,7 +98,8 @@ public class RagIngestionService {
         int createdChunks = 0;
         for (RepositoryArtifact artifact : artifacts) {
             RagDocumentType type = switch (artifact.getKind()) {
-                case JAVA_SOURCE -> RagDocumentType.PROJECT_CODE;
+                case JAVA_SOURCE, SOURCE_CODE -> RagDocumentType.PROJECT_CODE;
+                case DOCUMENTATION -> RagDocumentType.REPOSITORY_DOCUMENTATION;
                 case EXISTING_TEST -> RagDocumentType.PROJECT_TEST;
                 case BUILD_MANIFEST, BUILD_CONFIGURATION -> RagDocumentType.BUILD_MANIFEST;
             };

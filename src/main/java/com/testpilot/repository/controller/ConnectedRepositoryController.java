@@ -80,4 +80,10 @@ public class ConnectedRepositoryController {
         connectedRepositoryService.disconnect(repositoryId, currentUser);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/repositories/{repositoryId}/selection")
+    public RepositorySelectionResponse selection(@PathVariable Long repositoryId,
+            @AuthenticationPrincipal UserPrincipal currentUser) {
+        return ingestionService.getSelection(repositoryId, currentUser);
+    }
 }

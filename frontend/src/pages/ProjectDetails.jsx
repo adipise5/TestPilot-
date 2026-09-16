@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { api } from '../api/client';
+import TestPlanning from '../components/TestPlanning';
 import { FileCode, Play, Cpu, Plus, Clock, Github, RefreshCw, Unplug } from 'lucide-react';
 
 export default function ProjectDetails() {
@@ -12,13 +13,16 @@ export default function ProjectDetails() {
   const [analysis, setAnalysis] = useState(null);
   const [repository, setRepository] = useState(null);
   const [catalog, setCatalog] = useState([]);
+  const [selection, setSelection] = useState(null);
+  const [selectionError, setSelectionError] = useState('');
+  const [fileFilter, setFileFilter] = useState('');
+  const [repositoryError, setRepositoryError] = useState('');
   const [loading, setLoading] = useState(true);
   const [showFileModal, setShowFileModal] = useState(false);
   const [showRepositoryModal, setShowRepositoryModal] = useState(false);
   const [repositoryTransport, setRepositoryTransport] = useState('GITHUB_MCP');
-  const [repositoryOwner, setRepositoryOwner] = useState('');
-  const [repositoryName, setRepositoryName] = useState('');
-  const [repositoryRevision, setRepositoryRevision] = useState('main');
+  const [repositoryUrl, setRepositoryUrl] = useState('');
+  const [repositoryRevision, setRepositoryRevision] = useState('');
   const [installationId, setInstallationId] = useState('');
   const [fileName, setFileName] = useState('');
   const [filePath, setFilePath] = useState('');
@@ -40,8 +44,16 @@ export default function ProjectDetails() {
       if (repositoryData?.status === 'CONNECTED') {
         const catalogData = await api.getRepositoryCatalog(repositoryData.id);
         setCatalog(catalogData);
+        setSelection(null);
+        setSelectionError('');
+        try {
+          setSelection(await api.getRepositorySelection(repositoryData.id));
+        } catch (err) {
+          setSelectionError(err.message);
+        }
       } else {
         setCatalog([]);
+        setSelection(null);
       }
     } catch (err) {
       console.error(err);
@@ -93,19 +105,19 @@ export default function ProjectDetails() {
 
   const handleConnectRepository = async (e) => {
     e.preventDefault();
+    setRepositoryError('');
     setActionLoading(true);
     try {
       await api.connectRepository(id, {
         transport: repositoryTransport,
-        owner: repositoryOwner,
-        name: repositoryName,
+        repositoryUrl: repositoryUrl.trim(),
         revision: repositoryRevision,
         installationId: repositoryTransport === 'GITHUB_APP_REST' ? Number(installationId) : null,
       });
       setShowRepositoryModal(false);
       await loadProjectData();
     } catch (err) {
-      alert(err.message);
+      setRepositoryError(err.message);
     } finally {
       setActionLoading(false);
     }
@@ -149,7 +161,7 @@ export default function ProjectDetails() {
               <Cpu className="w-4 h-4 text-purple-400" /> AI Code Analysis
             </button>
             <button onClick={handleStartAutoRun} disabled={actionLoading || files.length === 0} className="btn-primary">
-              <Play className="w-4 h-4" /> Run AI Test Orchestrator
+              <Play className="w-4 h-4" /> Run Java Test Orchestrator
             </button>
           </div>
         </div>
@@ -188,11 +200,42 @@ export default function ProjectDetails() {
         )}
       </div>
 
+      {repository?.status === 'CONNECTED' && (
+        <div className="card space-y-3">
+          <h2 className="text-lg font-bold">Repository file selection</h2>
+          <p className="text-sm text-slate-400">Multi-language intake only. The current test runner still accepts Java source under src/main/java. Other languages are cataloged, not executed. System testing is out of scope.</p>
+          {selectionError && <p role="alert" className="text-amber-300 text-sm">{selectionError}</p>}
+          {selection && <>
+            <p className="text-sm">{selection.files.filter(f => f.disposition !== 'EXCLUDED').length} included · {selection.files.filter(f => f.disposition === 'EXCLUDED').length} excluded</p>
+            <p className="text-sm text-slate-400">Detected languages: {[...new Set(selection.files.filter(f => ['JAVA_SOURCE', 'SOURCE_CODE', 'EXISTING_TEST'].includes(f.disposition)).map(f => f.language))].sort().join(', ') || 'No recognized source files'}</p>
+            <details className="text-sm text-slate-400">
+              <summary className="cursor-pointer">Build and test configuration (read-only)</summary>
+              <p className="my-2">Hints are not execution results. Repository commands remain untrusted and are never run during intake.</p>
+              {(selection.buildContexts || []).map(context => <p key={context.path} className="my-1"><code>{context.path}</code> · {context.ecosystem} · {context.testCommandHint}</p>)}
+            </details>
+            <input aria-label="Filter repository files" className="input-field" placeholder="Filter files, languages or exclusion reasons" value={fileFilter} onChange={e => setFileFilter(e.target.value)} />
+            <div className="max-h-96 overflow-auto">
+              <table className="w-full text-xs text-left">
+                <thead><tr><th className="p-2">Path</th><th className="p-2">Language</th><th className="p-2">Selection</th><th className="p-2">Reason</th></tr></thead>
+                <tbody>{selection.files.filter(f => `${f.path} ${f.language} ${f.disposition} ${f.reason}`.toLowerCase().includes(fileFilter.toLowerCase())).map(f => (
+                  <tr key={f.path} className="border-t border-slate-800"><td className="p-2 font-mono break-all">{f.path}</td><td className="p-2">{f.language}</td><td className="p-2">{f.disposition}</td><td className="p-2">{f.reason}</td></tr>
+                ))}</tbody>
+              </table>
+            </div>
+          </>}
+        </div>
+      )}
+
       {showRepositoryModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
           <div className="card max-w-xl w-full space-y-4">
             <h2 className="text-xl font-bold">Connect GitHub repository</h2>
             <form onSubmit={handleConnectRepository} className="space-y-4">
+              {repositoryError && <p role="alert" className="text-red-300 text-sm">{repositoryError}</p>}
+              <label className="block text-sm">GitHub repository URL
+                <input type="url" required value={repositoryUrl} onChange={e => setRepositoryUrl(e.target.value)} className="input-field mt-1" placeholder="https://github.com/adipise5/TestPilot-.git" />
+              </label>
+              <p className="text-xs text-slate-400">Credentials stay on the server. MCP access requires a configured token and repository allowlist; a URL does not bypass authorization.</p>
               <div>
                 <label className="block text-xs font-semibold uppercase text-slate-400 mb-1">Transport</label>
                 <select value={repositoryTransport} onChange={(e) => setRepositoryTransport(e.target.value)} className="input-field">
@@ -200,11 +243,9 @@ export default function ProjectDetails() {
                   <option value="GITHUB_APP_REST">GitHub App REST</option>
                 </select>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <input required value={repositoryOwner} onChange={(e) => setRepositoryOwner(e.target.value)} className="input-field" placeholder="owner" />
-                <input required value={repositoryName} onChange={(e) => setRepositoryName(e.target.value)} className="input-field" placeholder="repository" />
-              </div>
-              <input required value={repositoryRevision} onChange={(e) => setRepositoryRevision(e.target.value)} className="input-field" placeholder="branch, tag, or commit" />
+              <label className="block text-sm">Revision (optional)
+                <input value={repositoryRevision} onChange={(e) => setRepositoryRevision(e.target.value)} className="input-field mt-1" placeholder="Default branch, or enter a branch, tag or commit" />
+              </label>
               {repositoryTransport === 'GITHUB_APP_REST' && (
                 <div className="space-y-2">
                   <input type="number" min="1" required value={installationId} onChange={(e) => setInstallationId(e.target.value)} className="input-field" placeholder="GitHub App installation ID" />
@@ -213,12 +254,14 @@ export default function ProjectDetails() {
               )}
               <div className="flex justify-end gap-3">
                 <button type="button" onClick={() => setShowRepositoryModal(false)} className="btn-secondary">Cancel</button>
-                <button type="submit" disabled={actionLoading} className="btn-primary">Resolve SHA and ingest</button>
+                <button type="submit" disabled={actionLoading} className="btn-primary">{actionLoading ? 'Reading repository…' : 'Connect and scan files'}</button>
               </div>
             </form>
           </div>
         </div>
       )}
+
+      <TestPlanning key={`${id}:${repository?.selectedCommitSha || 'manual'}`} projectId={id} />
 
       {/* Code Analysis Result */}
       {analysis && (

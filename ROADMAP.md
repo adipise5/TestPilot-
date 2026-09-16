@@ -10,6 +10,16 @@ Every phase has a review gate. A later phase starts only after the current phase
 
 ## Progress
 
+**Revised product plan:** [Phase 1 — GitHub URL and multi-language intake](docs/REVISED_PHASE_1.md)
+is implemented for review. This is a new iteration, separate from the original
+eight-phase milestones below. It does not imply multilingual test execution or
+the new AI code reviewer is complete.
+
+[Revised Phase 2 — multi-language planning and generation](docs/REVISED_PHASE_2.md)
+is implemented for review: Java/Python/JS/TS adapters, three-level plans, unique
+names, framework prompts, static checks and saved non-executable drafts. Execution
+for other languages and the new reviewer remain future approved phases.
+
 | Phase | Status |
 |---|---|
 | Phase 1 — reproducible foundation | Complete |
@@ -18,8 +28,8 @@ Every phase has a review gate. A later phase starts only after the current phase
 | Phase 4 — LangGraph agentic workflow | Complete |
 | Phase 5 — isolated multi-level test execution | Complete |
 | Phase 6 — production RAG | Complete |
-| Phase 7 — evaluation and observability | Implemented; awaiting owner review and commit |
-| Phase 8 — reviewed GitHub delivery | Approved; not started |
+| Phase 7 — evaluation and observability | Complete |
+| Phase 8 — reviewed GitHub delivery | Implemented; awaiting owner review and final commit |
 
 ## Phase 1 — reproducible foundation
 
@@ -203,6 +213,15 @@ Exit gate:
 
 - Every created PR is reproducible from a TestPilot run and contains validation evidence.
 - The system never writes directly to a protected/default branch.
+
+Implementation note:
+
+- A successful TestRun can be frozen into one immutable delivery proposal containing a deterministic new-file patch, patch SHA-256, analyzed commit, generated-file payload, validation evidence, limitations, and rollback path.
+- Proposal creation is side-effect free. A project-authorized human must record an approval before the delivery endpoint can request any GitHub write credential.
+- Delivery is available only for a user-bound GitHub App installation. MCP remains read-only. The app token is narrowed to one repository and requests `contents:write` plus `pull_requests:write` only for the approved delivery operation.
+- GitHub delivery creates a tree and commit whose sole parent is the analyzed SHA, creates only a dedicated `testpilot/...` branch, and opens a pull request against the recorded default branch. Direct default/protected-branch writes are rejected by policy.
+- The pull request includes bounded execution logs, citations, coverage and mutation evidence (and explicitly marks unavailable deltas), limitations, patch identity, and rollback instructions. Reviewer, decision, timestamps, delivery attempts, head SHA, PR identity, and failures are persisted and audited.
+- Contract and integration tests cover approval-before-write, cross-project denial, MCP write denial, patch determinism, existing-file protection, repeat delivery, dedicated-branch enforcement, and cleanup after pull-request creation failure.
 
 ## Portfolio completion criteria
 

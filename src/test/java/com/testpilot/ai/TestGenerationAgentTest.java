@@ -25,7 +25,8 @@ class TestGenerationAgentTest {
         TestGenerationResponse response = agent.generateTests(List.of(codeFile), analysis, null);
 
         assertNotNull(response);
-        assertEquals("com.example.CalculatorTest", response.testClass());
-        assertTrue(response.fullTestCode().contains("CalculatorTest"));
+        assertTrue(response.testClass().matches("com\\.example\\.TpCalculator_unit_[a-f0-9]{16}Test"));
+        assertTrue(response.fullTestCode().contains(response.testClass().substring("com.example.".length())));
+        assertTrue(response.fullTestCode().contains("@Disabled"));
     }
 }

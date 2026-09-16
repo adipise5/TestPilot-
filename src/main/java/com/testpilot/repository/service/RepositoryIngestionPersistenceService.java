@@ -41,11 +41,10 @@ public class RepositoryIngestionPersistenceService {
         }
 
         RepositoryIngestion ingestion = existing.get();
-        if (ingestion.getStatus() == RepositoryIngestionStatus.COMPLETED
+        if ((ingestion.getStatus() == RepositoryIngestionStatus.COMPLETED && ingestion.getSelectionReport() != null)
                 || ingestion.getStatus() == RepositoryIngestionStatus.RUNNING) {
             return new BeginIngestionResult(ingestion, false);
         }
-        artifactRepository.deleteByIngestionId(ingestion.getId());
         ingestion.retry();
         return new BeginIngestionResult(ingestionRepository.save(ingestion), true);
     }
@@ -58,9 +57,17 @@ public class RepositoryIngestionPersistenceService {
             BuildSystem buildSystem,
             String catalogHash,
             List<RepositoryCatalogPolicy.CatalogArtifact> artifacts) {
+        return complete(ingestionId, repositoryId, commitSha, buildSystem, catalogHash, artifacts, null);
+    }
+
+    @Transactional
+    public RepositoryIngestion complete(Long ingestionId, Long repositoryId, String commitSha,
+            BuildSystem buildSystem, String catalogHash,
+            List<RepositoryCatalogPolicy.CatalogArtifact> artifacts, String selectionReport) {
         RepositoryIngestion ingestion = ingestionRepository.findById(ingestionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Repository ingestion not found: " + ingestionId));
         artifactRepository.deleteByIngestionId(ingestionId);
+        artifactRepository.flush();
         List<RepositoryArtifact> entities = artifacts.stream()
                 .map(artifact -> new RepositoryArtifact(
                         ingestionId,
@@ -73,6 +80,7 @@ public class RepositoryIngestionPersistenceService {
                 .toList();
         artifactRepository.saveAll(entities);
         ingestion.complete(buildSystem, entities.size(), catalogHash);
+        ingestion.setSelectionReport(selectionReport);
 
         ConnectedRepository repository = connectedRepositoryRepository.findById(repositoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("Connected repository not found: " + repositoryId));
@@ -80,6 +88,7 @@ public class RepositoryIngestionPersistenceService {
         connectedRepositoryRepository.save(repository);
 
         codeFileRepository.deleteByProjectIdAndOrigin(repository.getProjectId(), CodeFileOrigin.REPOSITORY);
+        codeFileRepository.flush();
         List<CodeFile> repositorySources = artifacts.stream()
                 .filter(artifact -> artifact.kind() == RepositoryArtifactKind.JAVA_SOURCE)
                 .map(artifact -> CodeFile.fromRepository(

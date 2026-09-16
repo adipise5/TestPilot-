@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
+import com.testpilot.common.exception.ExternalServiceException;
 import com.testpilot.common.validation.RepositoryPathPolicy;
 import com.testpilot.delivery.github.*;
 import com.testpilot.delivery.service.GitBranchPolicy;
@@ -34,6 +35,8 @@ class GitHubPullRequestGatewayTest {
     private final List<RequestEvidence> requests = new ArrayList<>();
     private HttpServer server;
     private GitHubPullRequestGateway gateway;
+    private boolean failPullRequest;
+    private String pullRequestUrl = "https://github.example/octocat/sample/pull/91";
 
     @BeforeEach
     void setUp() throws Exception {
@@ -85,6 +88,38 @@ class GitHubPullRequestGatewayTest {
         assertNotEquals(pull.path("base").asText(), pull.path("head").asText());
     }
 
+    @Test
+    void removesItsDedicatedBranchWhenPullRequestCreationFails() {
+        failPullRequest = true;
+
+        assertThrows(ExternalServiceException.class, () -> gateway.deliver(new GitHubDeliveryRequest(
+                "octocat", "sample", 42L, BASE, "main", "testpilot/run-8-feedface",
+                "Add generated tests", "TestPilot tests", "evidence body",
+                List.of(new DeliveryChange(
+                        "src/test/java/example/AppTest.java",
+                        "package example; class AppTest {}\n")))));
+
+        assertTrue(requests.stream().anyMatch(item ->
+                item.method().equals("DELETE")
+                        && item.path().endsWith("/git/refs/heads/testpilot/run-8-feedface")));
+    }
+
+    @Test
+    void rejectsUnsafePullRequestUrlAndRemovesItsDedicatedBranch() {
+        pullRequestUrl = "javascript:alert(1)";
+
+        assertThrows(ExternalServiceException.class, () -> gateway.deliver(new GitHubDeliveryRequest(
+                "octocat", "sample", 42L, BASE, "main", "testpilot/run-9-cafebabe",
+                "Add generated tests", "TestPilot tests", "evidence body",
+                List.of(new DeliveryChange(
+                        "src/test/java/example/AppTest.java",
+                        "package example; class AppTest {}\n")))));
+
+        assertTrue(requests.stream().anyMatch(item ->
+                item.method().equals("DELETE")
+                        && item.path().endsWith("/git/refs/heads/testpilot/run-9-cafebabe")));
+    }
+
     private JsonNode bodyFor(String suffix) throws Exception {
         return requests.stream()
                 .filter(item -> item.path().endsWith(suffix))
@@ -105,6 +140,11 @@ class GitHubPullRequestGatewayTest {
         String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
         requests.add(new RequestEvidence(exchange.getRequestMethod(), exchange.getRequestURI().getPath(), body));
         String path = exchange.getRequestURI().getPath();
+        if (exchange.getRequestMethod().equals("DELETE") && path.contains("/git/refs/heads/testpilot/")) {
+            exchange.sendResponseHeaders(204, -1);
+            exchange.close();
+            return;
+        }
         String response;
         if (path.endsWith("/git/commits/" + BASE)) {
             response = "{\"sha\":\"" + BASE + "\",\"tree\":{\"sha\":\"" + BASE_TREE + "\"}}";
@@ -115,7 +155,14 @@ class GitHubPullRequestGatewayTest {
         } else if (path.endsWith("/git/refs")) {
             response = "{\"ref\":\"refs/heads/testpilot/run-7-deadbeef\"}";
         } else if (path.endsWith("/pulls")) {
-            response = "{\"number\":91,\"html_url\":\"https://github.example/octocat/sample/pull/91\"}";
+            if (failPullRequest) {
+                byte[] bytes = "{\"message\":\"temporary failure\"}".getBytes(StandardCharsets.UTF_8);
+                exchange.sendResponseHeaders(500, bytes.length);
+                exchange.getResponseBody().write(bytes);
+                exchange.close();
+                return;
+            }
+            response = "{\"number\":91,\"html_url\":\"" + pullRequestUrl + "\"}";
         } else {
             exchange.sendResponseHeaders(404, -1);
             exchange.close();

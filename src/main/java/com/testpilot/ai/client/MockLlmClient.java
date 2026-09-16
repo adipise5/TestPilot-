@@ -56,11 +56,12 @@ public class MockLlmClient implements LlmClient {
         }
 
         if (responseType.equals(TestGenerationResponse.class)) {
+            if (prompt.startsWith("TESTPILOT_CONTROL: ")) return (T) adapterFixture(prompt);
             String className = extractClassNameFromPrompt(prompt);
-            String levelSuffix = prompt.contains("TEST_LEVEL: INTEGRATION") ? "IntegrationTest"
-                    : prompt.contains("TEST_LEVEL: MODULE") ? "ModuleTest" : "Test";
-            String levelTag = prompt.contains("TEST_LEVEL: INTEGRATION") ? "integration"
-                    : prompt.contains("TEST_LEVEL: MODULE") ? "module" : "unit";
+            String levelSuffix = prompt.startsWith("TEST_LEVEL: INTEGRATION\n") ? "IntegrationTest"
+                    : prompt.startsWith("TEST_LEVEL: MODULE\n") ? "ModuleTest" : "Test";
+            String levelTag = prompt.startsWith("TEST_LEVEL: INTEGRATION\n") ? "integration"
+                    : prompt.startsWith("TEST_LEVEL: MODULE\n") ? "module" : "unit";
             String testClassName = className.endsWith(levelSuffix) ? className : className + levelSuffix;
             String packageName = extractPackageNameFromPrompt(prompt);
 
@@ -92,6 +93,33 @@ public class MockLlmClient implements LlmClient {
         }
 
         throw new IllegalArgumentException("Unsupported responseType for MockLlmClient: " + responseType.getName());
+    }
+
+    private TestGenerationResponse adapterFixture(String prompt) {
+        try {
+            var plan = objectMapper.readTree(prompt.substring("TESTPILOT_CONTROL: ".length(), prompt.indexOf('\n')));
+            String name = plan.path("testName").asText();
+            String level = plan.path("level").asText().toLowerCase(java.util.Locale.ROOT);
+            String code;
+            if (plan.path("language").asText().equals("Java")) {
+                int dot = name.lastIndexOf('.');
+                String pkg = dot < 0 ? "" : "package " + name.substring(0, dot) + ";\n";
+                code = pkg + "import org.junit.jupiter.api.Test;\nimport org.junit.jupiter.api.Tag;\nimport org.junit.jupiter.api.Disabled;\n"
+                        + "import static org.junit.jupiter.api.Assertions.fail;\npublic class " + name.substring(dot + 1)
+                        + " {\n @Tag(\"" + level + "\")\n @Disabled(\"Mock provider scaffold; not a real test\")\n @Test\n void test_mock_scaffold() { fail(\"Configure a real provider\"); }\n}\n";
+            } else if (plan.path("language").asText().equals("Python")) {
+                code = "import pytest\npytestmark = pytest.mark." + level
+                        + "\n@pytest.mark.skip(reason=\"Mock provider scaffold; not a real test\")\ndef test_mock_scaffold():\n    assert False, \"Configure a real provider\"\n";
+            } else {
+                String module = plan.path("framework").asText().equals("Jest") ? "@jest/globals" : "vitest";
+                code = "import { describe, test, expect } from '" + module + "';\ndescribe('" + name + " [" + level
+                        + "]', () => {\n  test.skip('test_mock_scaffold', () => { expect(false).toBe(true); });\n});\n";
+            }
+            return new TestGenerationResponse(name, "MOCK SCAFFOLD ONLY: intentionally skipped; no behavioral testing was generated.",
+                    List.of(new TestCaseDto("test_mock_scaffold", "Mock scaffold; see fullTestCode")), code);
+        } catch (java.io.IOException ex) {
+            throw new IllegalArgumentException("Invalid server generation control header", ex);
+        }
     }
 
     private String extractClassNameFromPrompt(String prompt) {
