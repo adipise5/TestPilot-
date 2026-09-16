@@ -84,6 +84,11 @@ export const api = {
     `/test-runs/${id}/workflow/decision`, 'POST', { approved, comment }),
   getRagTraces: (id) => apiRequest(`/test-runs/${id}/rag-traces`),
   getObservability: (id) => apiRequest(`/test-runs/${id}/observability`),
+  getDelivery: (id) => apiRequest(`/test-runs/${id}/delivery`),
+  createDeliveryProposal: (id) => apiRequest(`/test-runs/${id}/delivery`, 'POST'),
+  decideDelivery: (id, approved, comment = '') => apiRequest(
+    `/test-runs/${id}/delivery/decision`, 'POST', { approved, comment }),
+  deliverPullRequest: (id) => apiRequest(`/test-runs/${id}/delivery/deliver`, 'POST'),
   cancelExecution: (id) => apiRequest(`/test-runs/${id}/execution/cancel`, 'POST'),
   queryProjectRag: (projectId, data) => apiRequest(`/projects/${projectId}/rag/query`, 'POST', data),
   getProjectTestRuns: (projectId) => apiRequest(`/projects/${projectId}/test-runs`),

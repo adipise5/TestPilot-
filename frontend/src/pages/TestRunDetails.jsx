@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { api } from '../api/client';
-import { CheckCircle2, XCircle, Code, ArrowRight, GitBranch, ShieldCheck, Database, Ban, Activity } from 'lucide-react';
+import { CheckCircle2, XCircle, Code, ArrowRight, GitBranch, ShieldCheck, Database, Ban, Activity, GitPullRequest, ExternalLink } from 'lucide-react';
 
 export default function TestRunDetails() {
   const { id } = useParams();
@@ -9,8 +9,11 @@ export default function TestRunDetails() {
   const [workflow, setWorkflow] = useState(null);
   const [ragTraces, setRagTraces] = useState([]);
   const [observability, setObservability] = useState(null);
+  const [delivery, setDelivery] = useState(null);
   const [loading, setLoading] = useState(true);
   const [decisionPending, setDecisionPending] = useState(false);
+  const [deliveryPending, setDeliveryPending] = useState(false);
+  const [deliveryError, setDeliveryError] = useState('');
 
   const loadTestRun = useCallback(async () => {
     try {
@@ -30,6 +33,11 @@ export default function TestRunDetails() {
         setObservability(await api.getObservability(id));
       } catch {
         setObservability(null);
+      }
+      try {
+        setDelivery(await api.getDelivery(id));
+      } catch {
+        setDelivery(null);
       }
     } catch (err) {
       console.error(err);
@@ -79,6 +87,53 @@ export default function TestRunDetails() {
       console.error(err);
     } finally {
       setDecisionPending(false);
+    }
+  };
+
+  const createDeliveryProposal = async () => {
+    setDeliveryPending(true);
+    setDeliveryError('');
+    try {
+      setDelivery(await api.createDeliveryProposal(id));
+    } catch (err) {
+      setDeliveryError(err.message);
+    } finally {
+      setDeliveryPending(false);
+    }
+  };
+
+  const decideDelivery = async (approved) => {
+    const comment = window.prompt(
+      approved ? 'Approval comment (optional)' : 'Reason for rejection (optional)',
+      approved ? 'Reviewed validation evidence and generated patch' : '',
+    );
+    if (comment === null) return;
+    setDeliveryPending(true);
+    setDeliveryError('');
+    try {
+      setDelivery(await api.decideDelivery(id, approved, comment));
+    } catch (err) {
+      setDeliveryError(err.message);
+    } finally {
+      setDeliveryPending(false);
+    }
+  };
+
+  const deliverPullRequest = async () => {
+    if (!window.confirm(`Create branch ${delivery.deliveryBranch} and open the reviewed pull request?`)) return;
+    setDeliveryPending(true);
+    setDeliveryError('');
+    try {
+      setDelivery(await api.deliverPullRequest(id));
+    } catch (err) {
+      setDeliveryError(err.message);
+      try {
+        setDelivery(await api.getDelivery(id));
+      } catch {
+        // Keep the last proposal when the refresh itself fails.
+      }
+    } finally {
+      setDeliveryPending(false);
     }
   };
 
@@ -289,6 +344,87 @@ export default function TestRunDetails() {
               </div>
             </details>
           )}
+        </div>
+      )}
+
+      {testRun.status === 'COMPLETED' && testRun.executionOutcome === 'SUCCESS' && (
+        <div className="card space-y-4">
+          <div className="flex items-center justify-between gap-4">
+            <h2 className="text-lg font-bold flex items-center gap-2">
+              <GitPullRequest className="w-5 h-5 text-blue-400" /> Reviewed GitHub delivery
+            </h2>
+            {delivery && (
+              <span className="px-2 py-1 rounded border border-slate-700 font-mono text-xs">
+                {delivery.status}
+              </span>
+            )}
+          </div>
+
+          {!delivery ? (
+            <div className="space-y-3">
+              <p className="text-sm text-slate-400">
+                Freeze the generated tests, execution evidence, citations, limitations, and rollback path into a reviewable patch. This step does not write to GitHub.
+              </p>
+              <button className="btn-primary" disabled={deliveryPending} onClick={createDeliveryProposal}>
+                Create delivery proposal
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="grid md:grid-cols-2 gap-3 text-sm">
+                <div className="p-3 bg-slate-900 rounded border border-slate-800">
+                  <div className="text-xs text-slate-500">Analyzed revision</div>
+                  <div className="font-mono text-slate-200 break-all">{delivery.baseCommitSha}</div>
+                </div>
+                <div className="p-3 bg-slate-900 rounded border border-slate-800">
+                  <div className="text-xs text-slate-500">Dedicated branch</div>
+                  <div className="font-mono text-slate-200 break-all">{delivery.deliveryBranch}</div>
+                </div>
+              </div>
+              <div className="p-3 rounded border border-emerald-900 bg-emerald-950/30 text-sm">
+                <span className="font-semibold text-emerald-400">Validation {delivery.validationResult}</span>
+                <p className="mt-1 text-slate-300">{delivery.validationSummary}</p>
+              </div>
+              <details>
+                <summary className="cursor-pointer text-sm text-slate-400">Review frozen patch · SHA-256 {delivery.patchSha256.slice(0, 12)}</summary>
+                <pre className="code-block mt-3 max-h-96 overflow-auto">{delivery.patchText}</pre>
+              </details>
+              <details>
+                <summary className="cursor-pointer text-sm text-slate-400">Review pull-request evidence and limitations</summary>
+                <pre className="code-block mt-3 max-h-96 overflow-auto whitespace-pre-wrap">{delivery.pullRequestBody}</pre>
+              </details>
+
+              {delivery.status === 'AWAITING_APPROVAL' && (
+                <div className="flex flex-wrap gap-3">
+                  <button className="btn-primary" disabled={deliveryPending} onClick={() => decideDelivery(true)}>
+                    Approve GitHub delivery
+                  </button>
+                  <button className="btn-danger" disabled={deliveryPending} onClick={() => decideDelivery(false)}>
+                    Reject proposal
+                  </button>
+                </div>
+              )}
+              {['APPROVED', 'FAILED'].includes(delivery.status) && (
+                <button className="btn-primary" disabled={deliveryPending} onClick={deliverPullRequest}>
+                  {delivery.status === 'FAILED' ? 'Retry reviewed delivery' : 'Create branch and pull request'}
+                </button>
+              )}
+              {delivery.status === 'DELIVERED' && (
+                <a className="btn-primary inline-flex items-center gap-2" href={delivery.pullRequestUrl} target="_blank" rel="noreferrer">
+                  Open pull request #{delivery.pullRequestNumber} <ExternalLink className="w-4 h-4" />
+                </a>
+              )}
+              {delivery.reviewerName && (
+                <p className="text-xs text-slate-500">
+                  Reviewed by {delivery.reviewerName} ({delivery.reviewerEmail}) at {delivery.reviewedAt}
+                  {delivery.reviewComment ? ` · ${delivery.reviewComment}` : ''}
+                </p>
+              )}
+              {delivery.failureReason && <p className="text-sm text-red-400">{delivery.failureReason}</p>}
+              <p className="text-xs text-slate-500">Rollback: {delivery.rollbackPath}</p>
+            </div>
+          )}
+          {deliveryError && <p className="text-sm text-red-400">{deliveryError}</p>}
         </div>
       )}
 

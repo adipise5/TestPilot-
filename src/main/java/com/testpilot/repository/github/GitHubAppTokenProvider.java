@@ -48,21 +48,38 @@ public class GitHubAppTokenProvider {
     }
 
     public String getInstallationToken(long installationId, Optional<String> repositoryName) {
+        return getInstallationToken(installationId, repositoryName, TokenPermission.READ);
+    }
+
+    public String getDeliveryToken(long installationId, String repositoryName) {
+        if (repositoryName == null || repositoryName.isBlank()) {
+            throw new InvalidRequestException("A repository name is required for a delivery token");
+        }
+        return getInstallationToken(installationId, Optional.of(repositoryName), TokenPermission.DELIVERY);
+    }
+
+    private String getInstallationToken(
+            long installationId,
+            Optional<String> repositoryName,
+            TokenPermission permission) {
         if (installationId <= 0) {
             throw new InvalidRequestException("A valid GitHub App installation ID is required");
         }
-        TokenKey key = new TokenKey(installationId, repositoryName.orElse("*"));
+        TokenKey key = new TokenKey(installationId, repositoryName.orElse("*"), permission);
         CachedToken cached = cache.get(key);
         if (cached != null && cached.usable()) {
             return cached.value();
         }
 
-        CachedToken created = createInstallationToken(installationId, repositoryName);
+        CachedToken created = createInstallationToken(installationId, repositoryName, permission);
         cache.put(key, created);
         return created.value();
     }
 
-    private CachedToken createInstallationToken(long installationId, Optional<String> repositoryName) {
+    private CachedToken createInstallationToken(
+            long installationId,
+            Optional<String> repositoryName,
+            TokenPermission permission) {
         requireConfiguration();
         try {
             Instant now = Instant.now();
@@ -73,11 +90,14 @@ public class GitHubAppTokenProvider {
                     .signWith(parsePrivateKey())
                     .compact();
 
+            Map<String, String> permissions = permission == TokenPermission.DELIVERY
+                    ? Map.of("contents", "write", "pull_requests", "write")
+                    : Map.of("contents", "read");
             Map<String, Object> body = repositoryName
                     .<Map<String, Object>>map(name -> Map.of(
                             "repositories", new String[]{name},
-                            "permissions", Map.of("contents", "read")))
-                    .orElseGet(() -> Map.of("permissions", Map.of("contents", "read")));
+                            "permissions", permissions))
+                    .orElseGet(() -> Map.of("permissions", permissions));
 
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(apiBase + "/app/installations/" + installationId + "/access_tokens"))
@@ -130,7 +150,9 @@ public class GitHubAppTokenProvider {
         }
     }
 
-    private record TokenKey(long installationId, String repositoryName) {}
+    private enum TokenPermission { READ, DELIVERY }
+
+    private record TokenKey(long installationId, String repositoryName, TokenPermission permission) {}
 
     private record CachedToken(String value, Instant expiresAt) {
         private boolean usable() {
