@@ -23,7 +23,7 @@ testpilot:
   workflow:
     internal-token: ${WORKFLOW_INTERNAL_TOKEN:test-only-workflow-token-at-least-32-bytes}
   execution:
-    backend: local
+    backend: container
     recovery-enabled: false
   rag:
     vector-store: memory

@@ -69,9 +69,8 @@ testpilot:
     orchestrator-base-url: ${LANGGRAPH_ORCHESTRATOR_URL:http://localhost:8090}
     internal-token: ${WORKFLOW_INTERNAL_TOKEN:}
   execution:
-    backend: ${TEST_EXECUTION_BACKEND:container}
-    worker-image: ${TEST_WORKER_IMAGE:testpilot-worker:local}
-    dependency-network: ${TEST_DEPENDENCY_NETWORK:bridge}
+    backend: container
+    secure-worker-image: ${TEST_SECURE_WORKER_IMAGE:testpilot-polyglot:local}
     timeout-seconds: ${TEST_EXECUTION_TIMEOUT_SECONDS:60}
     await-seconds: ${TEST_EXECUTION_AWAIT_SECONDS:240}
     lease-seconds: ${TEST_EXECUTION_LEASE_SECONDS:30}

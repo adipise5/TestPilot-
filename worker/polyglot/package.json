@@ -1,0 +1,16 @@
+{
+  "name": "testpilot-reviewed-worker-tools",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "vitest": "3.2.4",
+    "jest": "30.2.0",
+    "typescript": "5.9.3",
+    "@types/node": "22.10.7",
+    "@types/jest": "30.0.0",
+    "babel-jest": "30.2.0",
+    "@babel/core": "7.28.0",
+    "@babel/preset-env": "7.28.0",
+    "@babel/preset-typescript": "7.27.1"
+  }
+}

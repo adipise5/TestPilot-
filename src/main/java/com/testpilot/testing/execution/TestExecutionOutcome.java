@@ -17,7 +17,7 @@ public record TestExecutionOutcome(
             List<TestResult> results,
             Integer processExitCode,
             String output) {
-        this(type, results, processExitCode, output, "local", TestExecutionMetrics.unavailable());
+        this(type, results, processExitCode, output, "not-recorded", TestExecutionMetrics.unavailable());
     }
 
     public boolean completedTestProcess() {

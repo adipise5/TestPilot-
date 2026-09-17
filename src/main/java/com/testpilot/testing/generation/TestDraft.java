@@ -15,6 +15,7 @@ public class TestDraft {
         this.projectId = projectId; this.snapshotId = snapshotId; this.resultJson = resultJson;
     }
     public Long getId() { return id; }
+    public Long getProjectId() { return projectId; }
     public String getSnapshotId() { return snapshotId; }
     public String getResultJson() { return resultJson; }
 }

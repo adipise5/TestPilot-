@@ -108,6 +108,25 @@ public class TestPlanningService {
         return drafts.findTop100ByProjectIdOrderByIdDesc(projectId).stream().map(this::saved).toList();
     }
 
+    public com.testpilot.testing.execution.sandbox.SandboxRequest executionInput(Long projectId, Long draftId, UserPrincipal user) {
+        projects.findProjectAndVerifyWriteAccess(projectId, user);
+        var draft = drafts.findById(draftId).filter(d -> d.getProjectId().equals(projectId))
+                .orElseThrow(() -> new com.testpilot.common.exception.ResourceNotFoundException("Draft not found in this project"));
+        var data = saved(draft).result();
+        if (!data.path("status").asText().equals("STRUCTURALLY_VALIDATED") || data.path("provider").asText().equals("mock"))
+            throw new InvalidRequestException("Mock scaffolds or unvalidated drafts cannot be executed; generate a real validated draft first");
+        Snapshot snapshot = snapshot(projectId);
+        if (!snapshot.id().equals(draft.getSnapshotId())) throw new InvalidRequestException("Draft snapshot is stale; regenerate against the current source");
+        var item = plan(snapshot).items().stream().filter(p -> p.id().equals(data.path("plan").path("id").asText())).findFirst()
+                .orElseThrow(() -> new InvalidRequestException("Draft has no matching current plan"));
+        try {
+            var generated = mapper.treeToValue(data.path("generated"), com.testpilot.ai.dto.TestGenerationResponse.class);
+            adapters.require(item.sourcePath()).validate(item, generated, false);
+            return new com.testpilot.testing.execution.sandbox.SandboxRequest(item.language(), item.framework(), item.sourcePath(),
+                    List.of(new com.testpilot.testing.execution.sandbox.SandboxRequest.TestFile(item.outputPath(), generated.fullTestCode())), snapshot.context());
+        } catch (com.fasterxml.jackson.core.JsonProcessingException ex) { throw new InvalidRequestException("Draft contains invalid generated-test data"); }
+    }
+
     private SavedDraft saved(TestDraft draft) {
         try { return new SavedDraft(draft.getId(), draft.getSnapshotId(), mapper.readTree(draft.getResultJson())); }
         catch (java.io.IOException ex) { throw new IllegalStateException("Stored draft is invalid", ex); }
