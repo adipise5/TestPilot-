@@ -31,6 +31,8 @@ class DraftExecutionIntegrationTest {
     @Autowired AuthService auth;
     @Autowired TestDraftRepository drafts;
     @MockBean ContainerProcess process;
+    @Autowired com.testpilot.testing.execution.sandbox.DraftExecutionRepository executions;
+    @Autowired com.testpilot.testing.execution.sandbox.DraftExecutionService executionService;
     private String owner, other;
     private long project;
 
@@ -107,4 +109,56 @@ class DraftExecutionIntegrationTest {
         mvc.perform(get(endpoint(draft)).header("Authorization", owner)).andExpect(status().isOk())
                 .andExpect(jsonPath("$.result.tests.length()").value(0));
     }
+    @Test void downloadsFrozenReportWithAuthorizationAndNoRerun() throws Exception {
+        long draft = draft("STRUCTURALLY_VALIDATED", "fixture", true);
+        mvc.perform(get(endpoint(draft) + "/report").header("Authorization", owner)).andExpect(status().isNotFound());
+        mvc.perform(post(endpoint(draft)).header("Authorization", owner)).andExpect(status().isOk());
+        var saved = mvc.perform(get(endpoint(draft) + "/report").header("Authorization", owner))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.schemaVersion").value("testpilot-report-v1"))
+                .andExpect(jsonPath("$.summary.passed").value(1))
+                .andExpect(jsonPath("$.coverage.status").value("UNAVAILABLE"))
+                .andExpect(jsonPath("$.coverage.linePercent").isEmpty())
+                .andReturn().getResponse().getContentAsString();
+        addSource("Changed", "public class Changed {}");
+        mvc.perform(get(endpoint(draft) + "/report/download").header("Authorization", owner))
+                .andExpect(status().isOk()).andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("attachment;")))
+                .andExpect(content().json(saved));
+        mvc.perform(get(endpoint(draft) + "/report").header("Authorization", other)).andExpect(status().isForbidden());
+        mvc.perform(get(endpoint(draft) + "/report/download").header("Authorization", other)).andExpect(status().isForbidden());
+        mvc.perform(get(endpoint(draft) + "/report/download")).andExpect(status().isUnauthorized());
+        verify(process, times(1)).run(argThat(c -> c.get(1).equals("run")), any(), any(), any());
+    }
+
+    @Test void retryReplacesReportAndFailureHasNoFabricatedCoverage() throws Exception {
+        long draft = draft("STRUCTURALLY_VALIDATED", "fixture", true);
+        mvc.perform(post(endpoint(draft)).header("Authorization", owner)).andExpect(status().isOk());
+        when(process.run(anyList(), any(), any(), any())).thenThrow(new java.io.IOException("Docker unavailable"));
+        mvc.perform(post(endpoint(draft)).header("Authorization", owner)).andExpect(status().isOk());
+        mvc.perform(get(endpoint(draft) + "/report").header("Authorization", owner)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.summary.classification").value("INFRASTRUCTURE_FAILURE"))
+                .andExpect(jsonPath("$.summary.passed").value(0))
+                .andExpect(jsonPath("$.coverage.linePercent").isEmpty());
+    }
+
+    @Test void oldAttemptsHaveNoInventedReportAndRecoveryUsesFrozenContext() throws Exception {
+        long draft = draft("STRUCTURALLY_VALIDATED", "fixture", true);
+        var old = new com.testpilot.testing.execution.sandbox.DraftExecution(project, draft);
+        old.finish(mapper.writeValueAsString(com.testpilot.testing.execution.sandbox.SandboxResult.failure("INFRASTRUCTURE_FAILURE", "old attempt")));
+        executions.saveAndFlush(old);
+        mvc.perform(get(endpoint(draft) + "/report").header("Authorization", owner)).andExpect(status().isNotFound());
+        mvc.perform(post(endpoint(draft)).header("Authorization", owner)).andExpect(status().isOk());
+        var saved = executions.findByDraftIdAndProjectId(draft, project).orElseThrow();
+        String context = saved.getReportContextJson();
+        saved.restart();
+        saved.freezeContext(context);
+        org.springframework.test.util.ReflectionTestUtils.setField(saved, "startedAt", java.time.LocalDateTime.now().minusMinutes(5));
+        executions.saveAndFlush(saved);
+        mvc.perform(get(endpoint(draft) + "/report").header("Authorization", owner)).andExpect(status().isNotFound());
+        executionService.recoverLostExecutions();
+        mvc.perform(get(endpoint(draft) + "/report").header("Authorization", owner)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.summary.classification").value("INFRASTRUCTURE_FAILURE"))
+                .andExpect(jsonPath("$.source.path").value("src/main/java/App.java"));
+    }
+
 }

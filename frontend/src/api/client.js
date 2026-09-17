@@ -81,6 +81,7 @@ export const api = {
   generateTestDraft: (projectId, snapshotId, planId) => apiRequest(`/projects/${projectId}/test-drafts`, 'POST', { snapshotId, planId }),
   executeTestDraft: (projectId, draftId) => apiRequest(`/projects/${projectId}/test-drafts/${draftId}/execution`, 'POST'),
   getDraftExecution: (projectId, draftId) => apiRequest(`/projects/${projectId}/test-drafts/${draftId}/execution`),
+  getDraftReport: (projectId, draftId, download = false) => apiRequest(`/projects/${projectId}/test-drafts/${draftId}/execution/report${download ? "/download" : ""}`),
   analyzeProject: (projectId) => apiRequest(`/projects/${projectId}/analyze`, 'POST'),
   createTestRun: (projectId) => apiRequest(`/projects/${projectId}/test-runs`, 'POST'),
   startAutomatedTestRun: (projectId) => apiRequest(`/projects/${projectId}/test-runs/auto`, 'POST'),

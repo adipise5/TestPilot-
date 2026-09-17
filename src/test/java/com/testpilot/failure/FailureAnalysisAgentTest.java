@@ -26,4 +26,14 @@ class FailureAnalysisAgentTest {
         assertNotNull(response.severity());
         assertNotNull(response.affectedMethod());
     }
+    @Test void providerFailureDoesNotInventRootCauseOrConfidence() {
+        var client = org.mockito.Mockito.mock(com.testpilot.ai.client.LlmClient.class);
+        org.mockito.Mockito.when(client.generateStructured(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.eq(FailureAnalysisResponse.class)))
+                .thenThrow(new IllegalStateException("offline"));
+        var result = new FailureAnalysisAgent(client).analyzeFailure("source", "test", "Class.test", "timeout", "", null);
+        assertEquals("Analysis unavailable", result.rootCause());
+        assertEquals("Unknown", result.affectedMethod());
+        assertEquals(0.0, result.confidence());
+    }
+
 }

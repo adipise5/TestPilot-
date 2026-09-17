@@ -11,6 +11,8 @@ System and end-to-end testing are explicitly outside the project scope. TestPilo
 > See [revised Phase 3](docs/REVISED_PHASE_3.md) for setup, support limits and
 > verification evidence. All 25 container acceptance cases passed locally.
 
+Phase 4 adds [saved test reports and source/test guidance](docs/REVISED_PHASE_4.md), selected-source line coverage for all four supported languages, and authenticated JSON downloads. Rebuild the worker image to enable coverage; pre-Phase-4 attempts require an explicit rerun. Suggestions are evidence-based review guidance, not verified fixes.
+
 ## Project status
 
 The revised multi-language product starts with [Phase 1: URL intake and file selection](docs/REVISED_PHASE_1.md).
@@ -19,7 +21,7 @@ and read-only manifest hints. [Revised Phase 2](docs/REVISED_PHASE_2.md) adds
 Java/Python/JS/TS planning, framework-specific generation, static validation and saved
 drafts. [Revised Phase 3](docs/REVISED_PHASE_3.md) completes the partial container-only
 execution path for Java/Python/JS/TS, adds validation and actual-worker CI checks.
-The separate AI code reviewer and revised structured report remain future phases.
+The [Phase 4 structured report](docs/REVISED_PHASE_4.md) adds failure classification, suggestions and selected-source coverage. The separate AI code reviewer remains a future phase.
 Mock-provider drafts are skipped scaffolds, not behavioral tests. The current
 [analysis and phase gates](docs/REVISED_PROJECT_ANALYSIS.md) distinguish this revised
 plan from the historical milestones below.

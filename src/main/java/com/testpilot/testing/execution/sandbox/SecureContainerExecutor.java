@@ -48,7 +48,11 @@ public class SecureContainerExecutor {
                 SandboxResult result = mapper.readerFor(SandboxResult.class)
                         .with(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
                         .readValue(process.output());
-                return validateResult(result);
+                SandboxResult validated = validateResult(result);
+                CoverageEvidence coverage = Set.of("SUCCESS", "TEST_FAILURE").contains(validated.outcome())
+                        ? CoverageEvidence.validate(validated.coverage(), request)
+                        : CoverageEvidence.unavailable("No completed test execution to measure");
+                return new SandboxResult(validated.outcome(), validated.exitCode(), validated.output(), validated.tests(), coverage);
             } catch (com.fasterxml.jackson.core.JsonProcessingException malformed) {
                 return SandboxResult.failure("INVALID_REPORT", "Worker did not return one valid execution result");
             }
@@ -131,7 +135,7 @@ public class SecureContainerExecutor {
             if (result.tests().stream().anyMatch(t -> t.status().equals("FAILED") || t.status().equals("ERROR"))) return SandboxResult.failure("INVALID_REPORT", "Success contradicts test failures");
             if (result.tests().stream().noneMatch(t -> t.status().equals("PASSED"))) return new SandboxResult("NO_TESTS", result.exitCode(), "No passing, non-skipped tests were reported", result.tests());
         }
-        return new SandboxResult(result.outcome(), result.exitCode(), bounded(result.output(), 65536), result.tests());
+        return new SandboxResult(result.outcome(), result.exitCode(), bounded(result.output(), 65536), result.tests(), result.coverage());
     }
     private String bounded(String value, int limit) { return value == null ? "" : value.substring(0, Math.min(limit, value.length())); }
 }

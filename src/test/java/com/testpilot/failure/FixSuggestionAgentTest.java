@@ -27,4 +27,14 @@ class FixSuggestionAgentTest {
         assertEquals(FixStatus.PENDING, response.status());
         assertNotNull(response.suggestedCode());
     }
+    @Test void providerFailurePreservesSourceAndDoesNotClaimAFix() {
+        var client = org.mockito.Mockito.mock(com.testpilot.ai.client.LlmClient.class);
+        org.mockito.Mockito.when(client.generateStructured(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.eq(FixSuggestionResponse.class)))
+                .thenThrow(new IllegalStateException("offline"));
+        var analysis = new FailureAnalysisResponse(1L, 1L, "Unknown", Severity.LOW, "Unknown", "", 0.0, null);
+        var result = new FixSuggestionAgent(client).generateFix("original", analysis, "", null);
+        assertEquals("original", result.suggestedCode());
+        assertTrue(result.explanation().contains("unavailable"));
+    }
+
 }

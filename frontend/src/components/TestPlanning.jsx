@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { api } from '../api/client';
+import TestReportView from './TestReportView';
 
 export default function TestPlanning({ projectId }) {
   const [plan, setPlan] = useState(null);
@@ -34,6 +35,7 @@ export default function TestPlanning({ projectId }) {
   async function execution(draft, start) {
     setBusy(true);
     setError('');
+    if (start) setExecutions(current => ({ ...current, [draft.id]: null }));
     try {
       const result = start ? await api.executeTestDraft(projectId, draft.id) : await api.getDraftExecution(projectId, draft.id);
       setExecutions(current => ({ ...current, [draft.id]: result }));
@@ -94,6 +96,7 @@ export default function TestPlanning({ projectId }) {
             </div>)}
           </>}
         </div>}
+        {executions[draft.id]?.status === 'COMPLETED' && <TestReportView key={`${draft.id}:${executions[draft.id].startedAt}`} projectId={projectId} draftId={draft.id} />}
       </details>)}
     </>}
   </section>;

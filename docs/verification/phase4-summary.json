@@ -1,0 +1,43 @@
+{
+  "phase": 4,
+  "status": "VERIFIED",
+  "verifiedAt": "2026-09-17T16:45:24.071173+00:00",
+  "platform": "linux/aarch64 via Lima on macOS",
+  "imageId": "sha256:4af3dc72f163d4813b4948b56f6f56ae5adea9a713d0d7206ac1297941bc2a0b",
+  "backend": {
+    "tests": 107,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 1
+  },
+  "workerUnitTests": 12,
+  "containerCases": 32,
+  "orchestratorTests": 4,
+  "evaluationUnitTests": 5,
+  "pinnedEvaluation": "PASSED",
+  "frontend": {
+    "lint": "PASSED",
+    "build": "PASSED",
+    "productionAuditVulnerabilities": 0
+  },
+  "remainingExecutionContainers": 0,
+  "sourceSha256": {
+    "worker/polyglot/Dockerfile": "dd53dde498c62fe9a174bdbe6c65443390c1839d1f6c971b0db6590dadca1a56",
+    "worker/polyglot/runner.py": "6025053cfc95287b5f62f464c1888972163a4867fe2c097a1605faba4c64c39a",
+    "worker/polyglot/package-lock.json": "1e6484b33a1f755958524e5b817d1d4e227d1f6671710bd3397ef5fcebf4b9cd",
+    "worker/polyglot/coverage.ini": "aa3b666cf2791b7dd6b2a2fe63f3e34ae44bf118dd9befcce29dfdd0f55fbf67",
+    "worker/polyglot/smoke.py": "af07af037d5315b482d796e5f0159cb798e8fcd09349444f9dedc7be6f7d51cd",
+    "src/main/java/com/testpilot/testing/execution/sandbox/SecureContainerExecutor.java": "28d43c6f1d66e0a988a1ab94476b1ddf8426fdc3ffb62694e288076fc48f1d8f",
+    "src/main/java/com/testpilot/testing/execution/sandbox/CoverageEvidence.java": "d871fd092fe43750dfbf664a5c7b3de9b850a66b1d86c1e434bb9b12b7504a0c",
+    "src/main/java/com/testpilot/testing/execution/sandbox/DraftExecutionService.java": "db738d4db996d8cb6a531b82e124228d14e61646f7d95de9c44edecdcc9e7c77",
+    "src/main/java/com/testpilot/testing/report/TestReportBuilder.java": "0a04e5efcb2b0b25bae98dee96362d6f1422423a3b42ee2decb06c8873894da4",
+    "frontend/src/components/TestReportView.jsx": "3f74e4cab80b008693ef93903934b7b867423115428bdbcfe911b17d24f1e3d6"
+  },
+  "limitations": [
+    "The optional PostgreSQL/pgvector integration test was skipped locally; its CI job remains configured.",
+    "Coverage and structured reports apply to explicit single-target draft executions, not aggregate legacy Java runs.",
+    "Findings are bounded deterministic heuristics and observed tool evidence, not validated fixes or a repository-wide reviewer.",
+    "Coverage files and test output can be falsified by code inside the container; shape/snapshot validation is not attestation.",
+    "No live LLM/GitHub tests or browser automation were performed for this phase."
+  ]
+}

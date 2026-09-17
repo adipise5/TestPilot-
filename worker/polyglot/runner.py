@@ -204,10 +204,10 @@ def commands_for(request, tests):
         # Offline, image-owned cache; no wrapper, user settings or network bootstrap.
         base = ["mvn", "-o", "-B", "--no-transfer-progress", "-Dmaven.repo.local=/opt/m2"]
         names = [str(Path(test).relative_to(REPO / "src/test/java")).removesuffix(".java").replace("/", ".") for test in tests]
-        return base + ["test-compile"], base + ["-Dtest=" + ",".join(names), "surefire:test"]
+        return base + ["test-compile"], base + ["-DargLine=-javaagent:/opt/coverage/org.jacoco.agent-0.8.12-runtime.jar=destfile=/work/jacoco.exec", "-Dtest=" + ",".join(names), "surefire:test"]
     if language == "Python":
         return [PYTHON, "-I", "-m", "compileall", "-q", str(REPO)], [
-            PYTHON, "-I", "-m", "pytest", "-c", str(TOOLS / "pytest.ini"), "--noconftest", "-p", "no:cacheprovider",
+            PYTHON, "-I", "-m", "coverage", "run", "--rcfile=/opt/testpilot/coverage.ini", "-m", "pytest", "-c", str(TOOLS / "pytest.ini"), "--noconftest", "-p", "no:cacheprovider",
             "-o", "pythonpath=/work/repo /work/repo/src", "--junitxml=/work/report.xml", *tests]
     (REPO / "node_modules").symlink_to(NODE_MODULES, target_is_directory=True)
     if language == "TypeScript":
@@ -219,19 +219,99 @@ def commands_for(request, tests):
         compile_command = [NODE, str(TOOLS / "syntax.cjs"), *tests]
     if request["framework"] == "Jest":
         test_command = [NODE, NODE_MODULES + "/jest/bin/jest.js", "--config", str(TOOLS / "jest.config.cjs"),
-                        "--runInBand", "--no-cache", "--json", "--outputFile=/work/report.json", "--runTestsByPath", *tests]
+                        "--runInBand", "--no-cache", "--coverage", "--coverageProvider=v8", "--coverageDirectory=/work/coverage", "--coverageReporters=json", "--collectCoverageFrom=" + request["sourcePath"], "--json", "--outputFile=/work/report.json", "--runTestsByPath", *tests]
     else:
         # Vite writes a bundled config beside the selected file. Keep the image
         # read-only and copy only our trusted config to the bounded tmpfs.
         config = WORK / "vitest.config.mjs"
         config.write_bytes((TOOLS / "vitest.config.mjs").read_bytes())
         test_command = [NODE, NODE_MODULES + "/vitest/vitest.mjs", "run", "--config", str(config),
-                        "--maxWorkers=1", "--no-file-parallelism", "--reporter=junit", "--outputFile=/work/report.xml", *tests]
+                        "--coverage", "--coverage.provider=v8", "--coverage.reportOnFailure", "--coverage.reporter=json", "--coverage.reportsDirectory=/work/coverage", "--coverage.include=" + request["sourcePath"], "--maxWorkers=1", "--no-file-parallelism", "--reporter=junit", "--outputFile=/work/report.xml", *tests]
     return compile_command, test_command
 
 
+
+def unavailable_coverage(note, status="UNAVAILABLE"):
+    return {"status": status, "tool": None, "sourcePath": None,
+            "executedLines": [], "missingLines": [], "note": note}
+
+
+def measured_coverage(request, tool, executed, missing):
+    source = next(f for f in request["files"] if f["path"] == request["sourcePath"])
+    limit = len(source["content"].splitlines())
+    if len(executed) + len(missing) > 50000:
+        raise ValueError("Too many coverage lines")
+    if any(type(n) is not int or n < 1 or n > limit for n in executed + missing):
+        raise ValueError("Coverage line outside source snapshot")
+    if len(set(executed)) != len(executed) or len(set(missing)) != len(missing) or set(executed) & set(missing):
+        raise ValueError("Contradictory coverage lines")
+    return {"status": "MEASURED" if executed or missing else "NO_EXECUTABLE_LINES", "tool": tool,
+            "sourcePath": source["path"], "executedLines": sorted(executed), "missingLines": sorted(missing),
+            "note": "Selected source only; line coverage is not assertion quality, branch coverage or a baseline delta."}
+
+
+def parse_coverage(request):
+    source = request["sourcePath"]
+    if request["language"] == "Java":
+        text = read_regular(WORK / "coverage.xml").decode("utf-8", errors="strict")
+        # Allow only JaCoCo's standard declaration; never resolve a DTD.
+        text = text.replace('<!DOCTYPE report PUBLIC "-//JACOCO//DTD Report 1.1//EN" "report.dtd">', '')
+        if "<!DOCTYPE" in text.upper() or "<!ENTITY" in text.upper():
+            raise ValueError("Coverage XML declarations prohibited")
+        root = ElementTree.fromstring(text)
+        matches = [f for pkg in root.findall('package') for f in pkg.findall('sourcefile')
+                   if 'src/main/java/' + (pkg.get('name') + '/' if pkg.get('name') else '') + f.get('name', '') == source]
+        if len(matches) != 1:
+            return unavailable_coverage("Selected Java source was not present in the JaCoCo report")
+        hits = {}
+        for line in matches[0].findall('line'):
+            number, covered, missed = int(line.get('nr')), int(line.get('ci')), int(line.get('mi'))
+            if covered < 0 or missed < 0 or number in hits:
+                raise ValueError("Invalid JaCoCo counters")
+            if covered + missed:
+                hits[number] = covered
+        return measured_coverage(request, "JaCoCo 0.8.12", [n for n,v in hits.items() if v > 0], [n for n,v in hits.items() if v == 0])
+    if request["language"] == "Python":
+        files = json.loads(read_regular(WORK / "coverage.json"))["files"]
+        matches = [v for k,v in files.items() if k == source or k == str(REPO / source)]
+        if len(matches) != 1:
+            return unavailable_coverage("Selected Python source was not present in the coverage report")
+        return measured_coverage(request, "coverage.py 7.10.6", matches[0]["executed_lines"], matches[0]["missing_lines"])
+    files = json.loads(read_regular(WORK / "coverage/coverage-final.json"))
+    matches = [v for k,v in files.items() if k == source or k == str(REPO / source)]
+    if len(matches) != 1:
+        return unavailable_coverage("Selected JS/TS source was not present in the coverage report")
+    entry, hits = matches[0], {}
+    for key, statement in entry["statementMap"].items():
+        number, count = statement["start"]["line"], entry["s"][key]
+        if type(number) is not int or type(count) not in (int, float) or not math.isfinite(count) or count < 0:
+            raise ValueError("Invalid Istanbul counters")
+        hits[number] = max(hits.get(number, 0), count)
+    return measured_coverage(request, request["framework"] + " / V8", [n for n,v in hits.items() if v > 0], [n for n,v in hits.items() if v == 0])
+
+
+def collect_coverage(request, deadline):
+    try:
+        if request["language"] == "Java":
+            command = ["java", "-jar", "/opt/coverage/org.jacoco.cli-0.8.12-nodeps.jar", "report", "/work/jacoco.exec",
+                       "--classfiles", str(REPO / "target/classes"), "--sourcefiles", str(REPO / "src/main/java"), "--xml", "/work/coverage.xml"]
+        elif request["language"] == "Python":
+            command = [PYTHON, "-I", "-m", "coverage", "json", "--rcfile=/opt/testpilot/coverage.ini", "-o", "/work/coverage.json"]
+        else:
+            command = None
+        if command:
+            code, _ = run_command(command, deadline)
+            if code != 0:
+                return unavailable_coverage("Coverage collector did not complete; test outcome is retained")
+        return parse_coverage(request)
+    except TimeoutError:
+        return unavailable_coverage("Coverage collection exhausted the remaining worker deadline")
+    except (ValueError, OSError, TypeError, KeyError, AttributeError, OverflowError, StopIteration, ElementTree.ParseError):
+        return unavailable_coverage("Coverage report is missing, malformed or outside the source snapshot", "INVALID")
+
 def main():
-    result = {"outcome": "INFRASTRUCTURE_FAILURE", "exitCode": None, "output": "", "tests": []}
+    result = {"outcome": "INFRASTRUCTURE_FAILURE", "exitCode": None, "output": "", "tests": [],
+              "coverage": unavailable_coverage("No completed test execution to measure")}
     try:
         request = json.loads(read_regular("/input/request.json", 12 * 1024 * 1024))
         tests = materialize(request)
@@ -258,6 +338,8 @@ def main():
                 result["outcome"] = ("DEPENDENCY_FAILURE" if code != 0 and dependency_failure(output) else
                                      "COMPILATION_FAILURE" if code != 0 and compilation_failure(output) else "INVALID_REPORT")
                 result["output"] = (result["output"] + "\nReport rejected: " + type(exc).__name__)[-65536:]
+        if result["outcome"] in ("SUCCESS", "TEST_FAILURE"):
+            result["coverage"] = collect_coverage(request, deadline)
     except UnsupportedExecution as exc:
         result.update(outcome="UNSUPPORTED", output=str(exc))
     except TimeoutError:

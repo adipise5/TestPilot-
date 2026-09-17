@@ -14,7 +14,7 @@ Every phase has a review gate. A later phase starts only after the current phase
 implementation gaps. [Revised Phase 3](docs/REVISED_PHASE_3.md) completes the
 partial offline polyglot path; all 25 real-container cases and the backend
 regression suite with Docker enabled passed locally. Revised
-Phases 4–6 remain separate owner-reviewed changes. Historical milestones below
+Phase 4 adds [saved suggestions and test reports](docs/REVISED_PHASE_4.md), including selected-source coverage and authenticated JSON downloads. Phases 5–6 remain separate owner-reviewed changes. Historical milestones below
 do not imply the new report/reviewer features are implemented.
 
 **Revised product plan:** [Phase 1 — GitHub URL and multi-language intake](docs/REVISED_PHASE_1.md)

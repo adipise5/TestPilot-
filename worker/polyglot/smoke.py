@@ -28,6 +28,12 @@ def fixtures():
                    "class AppTest { @Test void adds() { assertEquals(5, App.add(2, 3)); } }")
     python = request("Python", "pytest", "app.py", "def add(a, b): return a + b\n",
                      "tests/test_app.py", "from app import add\ndef test_add(): assert add(2, 3) == 5\n")
+    partial_python = json.loads(json.dumps(python))
+    partial_python["files"][0]["content"] = "def add(a, b):\n    if a < 0:\n        return 0\n    return a + b\n"
+    yield "Python partial coverage", partial_python, "SUCCESS"
+    partial_java = json.loads(json.dumps(java))
+    partial_java["files"][0]["content"] = "package example;\npublic class App {\n public static int add(int a, int b) {\n  if (a < 0) {\n   return 0;\n  }\n  return a + b;\n }\n}\n"
+    yield "Java partial coverage", partial_java, "SUCCESS"
     yield "Java passes", java, "SUCCESS"
     yield "Python passes", python, "SUCCESS"
     for language, ext in (("JavaScript", "js"), ("TypeScript", "ts")):
@@ -37,6 +43,9 @@ def fixtures():
                            f"import {{ test, expect }} from '{library}'; import {{ add }} from '../app'; "
                            "test('adds', () => { expect(add(2, 3)).toBe(5); });")
             yield f"{language} {framework} passes", node, "SUCCESS"
+            partial = json.loads(json.dumps(node))
+            partial["files"][0]["content"] = source.replace("return a + b;", "\nif (a < 0) {\nreturn 0;\n}\nreturn a + b;\n")
+            yield f"{language} {framework} partial coverage", partial, "SUCCESS"
             bad = json.loads(json.dumps(node))
             bad["tests"][0]["content"] = bad["tests"][0]["content"].replace("toBe(5)", "toBe(6)")
             yield f"{language} {framework} assertion", bad, "TEST_FAILURE"
@@ -50,6 +59,8 @@ def fixtures():
         syntax = json.loads(json.dumps(base))
         syntax["files"][0]["content"] += "\nnot valid syntax !"
         yield f"{base['language']} syntax", syntax, "COMPILATION_FAILURE"
+    yield "Python no executable source", request("Python", "pytest", "app.py", "# No executable statements\n", "tests/test_app.py",
+        "from pathlib import Path\ndef test_empty_source(): assert Path('app.py').read_text().startswith('#')\n"), "SUCCESS"
     yield "Python missing dependency", request("Python", "pytest", "app.py", "import testpilot_missing_dependency\n",
                                                "tests/test_app.py", "import app\ndef test_app(): assert app\n"), "DEPENDENCY_FAILURE"
     yield "Python all skipped", request("Python", "pytest", "app.py", "value = 1\n", "tests/test_app.py",
@@ -146,6 +157,17 @@ def main():
         valid = actual == expected
         if expected == "SUCCESS":
             valid = valid and result.get("exitCode") == 0 and any(c["status"] == "PASSED" for c in result.get("tests", []))
+        coverage = result.get("coverage", {})
+        if label.endswith(("passes", "assertion", "partial coverage")):
+            valid = valid and coverage.get("status") == "MEASURED" and bool(coverage.get("executedLines"))
+        if label.endswith("partial coverage"):
+            valid = valid and bool(coverage.get("missingLines"))
+        if label == "Python no executable source":
+            valid = valid and coverage.get("status") == "NO_EXECUTABLE_LINES" and not coverage.get("executedLines") and not coverage.get("missingLines")
+        if label == "Isolation boundary":
+            valid = valid and coverage.get("status") == "MEASURED" and not coverage.get("executedLines") and coverage.get("missingLines") == [1]
+        if expected not in ("SUCCESS", "TEST_FAILURE"):
+            valid = valid and coverage.get("status") == "UNAVAILABLE"
         evidence["cases"].append({"name": label, "expected": expected, "passed": valid,
                                   "durationSeconds": round(time.monotonic() - started, 3), "result": result})
         print(f"{'PASS' if valid else 'FAIL'}: {label}: {actual}", flush=True)

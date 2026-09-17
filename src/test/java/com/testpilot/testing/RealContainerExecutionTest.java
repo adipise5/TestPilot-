@@ -33,6 +33,9 @@ class RealContainerExecutionTest {
         assertEquals("SUCCESS", result.outcome(), result.output());
         assertEquals(0, result.exitCode());
         assertEquals("PASSED", result.tests().get(0).status());
+        assertEquals("MEASURED", result.coverage().status(), result.coverage().note());
+        assertEquals("app.py", result.coverage().sourcePath());
+        assertEquals(100.0, result.coverage().percent());
         assertContainerRemoved(name);
     }
 

@@ -89,7 +89,7 @@ class WorkerTests(unittest.TestCase):
                 runner.commands_for({"language": "Java", "framework": "JUnit 5 / Mockito"}, [])
             for language, framework in (("JavaScript", "Jest"), ("TypeScript", "Vitest")):
                 with patch.object(runner, "WORK", repo), patch.object(runner, "TOOLS", Path(__file__).parent):
-                    compile_cmd, test_cmd = runner.commands_for({"language": language, "framework": framework}, ["/work/repo/__testpilot__/app.test.js"])
+                    compile_cmd, test_cmd = runner.commands_for({"language": language, "framework": framework, "sourcePath": "app.js"}, ["/work/repo/__testpilot__/app.test.js"])
                 self.assertIn("--config", test_cmd)
                 self.assertTrue(all("npm" != arg and "npx" != arg for arg in compile_cmd + test_cmd))
                 (repo / "node_modules").unlink()
@@ -101,5 +101,32 @@ class WorkerTests(unittest.TestCase):
             with tempfile.TemporaryDirectory() as directory, patch.object(runner, "REPO", Path(directory) / "repo"):
                 with self.assertRaises(ValueError):
                     runner.materialize({"files": [{"path": path, "content": ""}], "tests": []})
+
+    def test_coverage_lines_are_bounded_unique_and_snapshot_scoped(self):
+        request = {"sourcePath": "app.py", "files": [{"path": "app.py", "content": "a = 1\nb = 2\n"}]}
+        valid = runner.measured_coverage(request, "coverage.py 7.10.6", [1], [2])
+        self.assertEqual(valid["status"], "MEASURED")
+        for executed, missing in (([0], []), ([3], []), ([1], [1]), ([True], []), ([1, 1], [])):
+            with self.subTest(executed=executed, missing=missing), self.assertRaises(ValueError):
+                runner.measured_coverage(request, "fixture", executed, missing)
+
+    def test_malformed_optional_coverage_cannot_erase_test_results(self):
+        with tempfile.TemporaryDirectory() as directory, patch.object(runner, "WORK", Path(directory)), patch.object(runner, "run_command", return_value=(0, "")):
+            (Path(directory) / "coverage.json").write_text('{"files": []}')
+            result = runner.collect_coverage({"language": "Python", "sourcePath": "app.py"}, 0)
+            self.assertEqual(result["status"], "INVALID")
+
+    def test_coverage_parser_requires_exact_source_and_rejects_symlinks(self):
+        with tempfile.TemporaryDirectory() as directory, patch.object(runner, "WORK", Path(directory)):
+            report = Path(directory) / "coverage.json"
+            request = {"language": "Python", "sourcePath": "app.py", "files": [{"path": "app.py", "content": "a = 1\nb = 2\n"}]}
+            report.write_text(json.dumps({"files": {"other/app.py": {"executed_lines": [1], "missing_lines": [2]}}}))
+            self.assertEqual(runner.parse_coverage(request)["status"], "UNAVAILABLE")
+            report.write_text(json.dumps({"files": {"app.py": {"executed_lines": [1], "missing_lines": [2]}}}))
+            self.assertEqual(runner.parse_coverage(request)["missingLines"], [2])
+            real = report.with_name("real.json")
+            report.rename(real)
+            report.symlink_to(real)
+            with self.assertRaises(OSError): runner.parse_coverage(request)
 
 if __name__ == "__main__": unittest.main()

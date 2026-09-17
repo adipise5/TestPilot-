@@ -15,10 +15,16 @@ public class DraftExecution {
     @Column(nullable = false) private String containerName;
     @Column(nullable = false) private LocalDateTime startedAt;
     @Column(columnDefinition = "TEXT") private String resultJson;
+    @Column(columnDefinition = "TEXT") private String reportContextJson;
+    @Column(columnDefinition = "TEXT") private String reportJson;
     protected DraftExecution() {}
     public DraftExecution(Long projectId, Long draftId) { this.projectId = projectId; this.draftId = draftId; restart(); }
-    public void restart() { status = "RUNNING"; containerName = "testpilot-secure-" + UUID.randomUUID(); startedAt = LocalDateTime.now(); resultJson = null; }
+    public void restart() { status = "RUNNING"; containerName = "testpilot-secure-" + UUID.randomUUID(); startedAt = LocalDateTime.now(); resultJson = null; reportContextJson = null; reportJson = null; }
     public void finish(String result) { status = "COMPLETED"; resultJson = result; }
+    public void freezeContext(String context) { reportContextJson = context; }
+    public void finish(String result, String report) { finish(result); reportJson = report; }
+    public String getReportContextJson() { return reportContextJson; }
+    public String getReportJson() { return reportJson; }
     public Long getId() { return id; }
     public Long getDraftId() { return draftId; }
     public Long getProjectId() { return projectId; }

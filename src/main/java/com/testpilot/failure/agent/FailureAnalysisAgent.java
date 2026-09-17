@@ -50,25 +50,10 @@ public class FailureAnalysisAgent {
         try {
             return llmClient.generateStructured(prompt.toString(), systemInstruction, FailureAnalysisResponse.class);
         } catch (Exception e) {
-            // Fallback for mock/resilience
-            return new FailureAnalysisResponse(
-                    null,
-                    null,
-                    "Assertion Failed: " + (errorMessage != null ? errorMessage : "Expected value mismatch"),
-                    Severity.HIGH,
-                    extractAffectedMethod(testName),
-                    "The test failed because the actual method output did not match expected test assertions.",
-                    0.88,
-                    null
-            );
+            // Provider failure supplies no evidence for a root cause or affected method.
+            return new FailureAnalysisResponse(null, null, "Analysis unavailable", Severity.LOW,
+                    "Unknown", "The analysis provider failed. Review the captured diagnostic manually; no root cause has been established.",
+                    0.0, null);
         }
-    }
-
-    private String extractAffectedMethod(String testName) {
-        if (testName != null && testName.contains(".")) {
-            String[] parts = testName.split("\\.");
-            return parts[parts.length - 1];
-        }
-        return "Unknown";
     }
 }

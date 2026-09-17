@@ -53,18 +53,18 @@ public class FixSuggestionAgent {
                     analysis.id(),
                     originalCode,
                     rawResponse.suggestedCode() != null ? rawResponse.suggestedCode() : originalCode,
-                    rawResponse.explanation() != null ? rawResponse.explanation() : "Updated implementation to fix test failure.",
+                    rawResponse.explanation() != null ? rawResponse.explanation() : "Provider supplied no explanation; any proposed code remains unverified.",
                     FixStatus.PENDING,
                     null
             );
         } catch (Exception e) {
-            // Fallback for mock/resilience
+            // Preserve the original source when the provider cannot propose a fix.
             return new FixSuggestionResponse(
                     null,
                     analysis.id(),
                     originalCode,
-                    originalCode + "\n// AI Suggested Fix Applied",
-                    "Added safety validation to prevent failure: " + analysis.rootCause(),
+                    originalCode,
+                    "Fix suggestion unavailable because the provider failed. Original source is unchanged; no fix has been verified.",
                     FixStatus.PENDING,
                     null
             );

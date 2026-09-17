@@ -83,6 +83,9 @@ cases plus the backend regression suite. See [Phase 3 evidence](verification/pha
 **Phase 4:** build the report around persisted execution evidence and snapshot
 identity; distinguish compile/dependency/infrastructure/test failures; preserve
 unavailable coverage and model states; expose authorized downloads and UI.
+Implemented in [Revised Phase 4](REVISED_PHASE_4.md): frozen draft reports,
+selected-source tool coverage, bounded findings, authorized downloads and honest
+provider-failure fallbacks. The numbered findings above describe the baseline.
 
 **Phase 5:** add a separately invoked reviewer, bounded repository traversal and
 coverage-of-review metadata. Persist actionable positive/negative findings,
