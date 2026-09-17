@@ -26,7 +26,7 @@ class TestExecutionServiceTest {
     @Test void rejectsTamperedCatalogWithoutStartingAnything() {
         var file = new RepositoryArtifact(1L, "pom.xml", "sha", "0".repeat(64), RepositoryArtifactKind.BUILD_MANIFEST, 10, "<project/>");
         var result = service.executeCatalog(1L, List.of(file), List.of(), () -> false, () -> {});
-        assertEquals(TestExecutionOutcomeType.INFRASTRUCTURE_FAILURE, result.type());
+        assertEquals(TestExecutionOutcomeType.INPUT_REJECTED, result.type());
         assertTrue(result.output().contains("content hash"));
         verifyNoInteractions(sandbox);
     }

@@ -124,29 +124,47 @@ jobs:
           if-no-files-found: warn
 
   worker-isolation:
-    name: Worker isolation contract
+    name: Offline polyglot execution and isolation
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Build non-root worker image
-        run: docker build --tag testpilot-worker:ci --file worker/Dockerfile .
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
 
-      - name: Verify worker restrictions
-        run: >-
-          docker run --rm
-          --user 10001:10001
-          --network none
-          --read-only
-          --cap-drop ALL
-          --security-opt no-new-privileges
-          --pids-limit 32
-          --memory 256m
-          --cpus 0.5
-          --tmpfs /tmp:rw,noexec,nosuid,nodev,size=16m
-          testpilot-worker:ci
-          testpilot-isolation-probe
+      - name: Test bounded worker parsers and commands
+        run: python -m unittest discover -s worker/polyglot -p 'test_*.py' -v
+
+      - name: Build the application execution image
+        run: docker build --tag testpilot-polyglot:ci --file worker/polyglot/Dockerfile .
+
+      - name: Verify languages, outcomes, timeout and isolation in real containers
+        run: python worker/polyglot/smoke.py --image testpilot-polyglot:ci --output /tmp/phase3-container-evidence.json
+
+      - name: Set up Java 17 for real executor integration
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Verify application executor and cancellation against Docker
+        env:
+          TEST_REAL_CONTAINER: 'true'
+          TEST_SECURE_WORKER_IMAGE: testpilot-polyglot:ci
+        run: ./mvnw --batch-mode --no-transfer-progress -Dtest=RealContainerExecutionTest test
+
+      - name: Upload container acceptance evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase3-container-evidence
+          path: /tmp/phase3-container-evidence.json
+          if-no-files-found: warn
 
   pgvector:
     name: PostgreSQL pgvector integration

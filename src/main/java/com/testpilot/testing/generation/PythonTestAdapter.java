@@ -22,7 +22,7 @@ public class PythonTestAdapter implements LanguageTestAdapter {
                 + ", def test_* functions, pytest.raises/parametrize and unittest.mock or monkeypatch for collaborators. "
                 + "Import actual production functions using the provided repository layout. Do not mutate sys.path, install dependencies, "
                 + "or invent APIs. Integration uses temporary local fixtures; unit/module must not open network or databases. "
-                + "The custom level marker will need registration when execution support is added.";
+                + "The offline worker registers unit, module and integration markers.";
     }
 
     public List<String> validate(TestPlanItem plan, TestGenerationResponse response, boolean mock) {

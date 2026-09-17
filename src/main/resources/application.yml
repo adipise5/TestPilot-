@@ -69,17 +69,11 @@ testpilot:
     orchestrator-base-url: ${LANGGRAPH_ORCHESTRATOR_URL:http://localhost:8090}
     internal-token: ${WORKFLOW_INTERNAL_TOKEN:}
   execution:
-    backend: container
     secure-worker-image: ${TEST_SECURE_WORKER_IMAGE:testpilot-polyglot:local}
-    timeout-seconds: ${TEST_EXECUTION_TIMEOUT_SECONDS:60}
     await-seconds: ${TEST_EXECUTION_AWAIT_SECONDS:240}
     lease-seconds: ${TEST_EXECUTION_LEASE_SECONDS:30}
     max-attempts: ${TEST_EXECUTION_MAX_ATTEMPTS:3}
-    memory-limit: ${TEST_EXECUTION_MEMORY:1g}
-    cpu-limit: ${TEST_EXECUTION_CPUS:1.0}
-    pid-limit: ${TEST_EXECUTION_PIDS:128}
     recovery-enabled: ${TEST_EXECUTION_RECOVERY_ENABLED:true}
-    mutation-enabled: ${TEST_MUTATION_ENABLED:false}
   rag:
     vector-store: ${RAG_VECTOR_STORE:pgvector}
     ingestion-version: ${RAG_INGESTION_VERSION:rag-v2}

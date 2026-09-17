@@ -1,8 +1,25 @@
 # TestPilot execution worker
 
-This image is the only production path allowed to compile or execute repository code. The Spring service invokes it in two separate stages:
+The application uses **`worker/polyglot/Dockerfile`** for Java, Python, JavaScript
+and TypeScript in every profile, including H2. There is no host fallback and no
+runtime dependency-download stage.
 
-1. dependency resolution with the configured dependency network;
-2. offline test execution with `--network none`, a read-only root filesystem, all Linux capabilities dropped, `no-new-privileges`, and PID/CPU/memory limits.
+```bash
+docker build -t testpilot-polyglot:local -f worker/polyglot/Dockerfile .
+python3 -m unittest discover -s worker/polyglot -p 'test_*.py' -v
+python3 worker/polyglot/smoke.py --image testpilot-polyglot:local
+```
 
-The worker runs as UID/GID `10001`, receives only a per-run workspace and dependency cache, and is removed after each command. `TEST_EXECUTION_BACKEND=local` is intended only for the H2 test profile and trusted developer verification.
+Set `TEST_SECURE_WORKER_IMAGE` to use another reviewed prebuilt image. It must
+honor the same runner protocol. The application uses `--pull=never`.
+
+The image preinstalls locked Node tools, pytest and a warmed Maven JUnit/Mockito
+cache. Missing project dependencies fail offline. No repository install scripts
+are used to prepare this image. Test processes run as UID/GID 10001, without
+network/capabilities, with a read-only root, bounded tmpfs and CPU/memory/PID/time
+limits. Only the snapshot JSON is mounted from the host, read-only.
+
+See [Phase 3](../docs/REVISED_PHASE_3.md) for supported layouts, exact limits,
+outcome semantics and verification status. `Dockerfile` and `isolation-probe.sh`
+in this directory describe the historical Maven-only image; the current
+application does not select it.

@@ -1,6 +1,7 @@
 # ADR 0004: Persist execution jobs and isolate repository code in containers
 
-- Status: Accepted
+- Status: Partially superseded by [ADR 0008](0008-offline-polyglot-execution.md).
+  The leased-job design remains; local H2 execution and runtime networked dependency resolution no longer apply.
 - Date: 2026-09-13
 
 ## Context

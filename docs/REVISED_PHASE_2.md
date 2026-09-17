@@ -2,6 +2,9 @@
 
 ## Scope
 
+Historical phase boundary: execution described below as future work is now
+implemented and locally verified by [revised Phase 3](REVISED_PHASE_3.md). Generation semantics in this document remain applicable.
+
 Implemented: adapter interface/registry, Java/JUnit 5 + Mockito, Python/pytest,
 JavaScript and TypeScript/Jest or Vitest, unit/module/integration plans,
 deterministic unique names, framework-specific prompts, static generated-test

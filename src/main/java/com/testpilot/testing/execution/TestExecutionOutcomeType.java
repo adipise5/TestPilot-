@@ -7,6 +7,8 @@ public enum TestExecutionOutcomeType {
     TIMEOUT,
     CANCELLED,
     UNSUPPORTED,
+    INPUT_REJECTED,
+    CAPACITY_EXCEEDED,
     DEPENDENCY_FAILURE,
     NO_TESTS,
     INVALID_REPORT,

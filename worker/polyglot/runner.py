@@ -16,11 +16,16 @@ import xml.etree.ElementTree as ElementTree
 
 MAX_REPORT = 1_000_000
 MAX_CASES = 1000
-REPO = Path("/work/repo")
+WORK = Path("/work")
+REPO = WORK / "repo"
 TOOLS = Path("/opt/testpilot")
 PYTHON = "/opt/python/bin/python"
 NODE = "/opt/node/bin/node"
 NODE_MODULES = "/opt/testpilot-js/node_modules"
+
+
+class UnsupportedExecution(ValueError):
+    """A recognized request that the installed worker cannot run faithfully."""
 
 
 def read_regular(path, limit=MAX_REPORT):
@@ -59,6 +64,8 @@ def parse_junit(paths):
                     state = label
                     message = child.get("message", "") + "\n" + (child.text or "")
                     break
+            if not node.get("name", "").strip():
+                raise ValueError("Missing test name")
             seconds = float(node.get("time", "0"))
             if not math.isfinite(seconds) or seconds < 0:
                 raise ValueError("Invalid test duration")
@@ -76,21 +83,36 @@ def parse_jest(path):
     cases = []
     statuses = {"passed": "PASSED", "failed": "FAILED", "pending": "SKIPPED", "todo": "SKIPPED", "disabled": "SKIPPED"}
     for suite in report["testResults"]:
-        for test in suite.get("assertionResults", []):
+        if not isinstance(suite, dict) or not isinstance(suite.get("assertionResults"), list):
+            raise ValueError("Invalid Jest suite")
+        for test in suite["assertionResults"]:
+            if not isinstance(test, dict):
+                raise ValueError("Invalid Jest case")
+            name = test.get("fullName", test.get("title"))
+            messages = test.get("failureMessages", [])
+            if not isinstance(name, str) or not name.strip() or not isinstance(messages, list) or any(not isinstance(m, str) for m in messages):
+                raise ValueError("Invalid Jest case metadata")
             if test.get("status") not in statuses:
                 raise ValueError("Unknown Jest test status")
-            duration = (test.get("duration") or 0) / 1000
+            raw_duration = test.get("duration")
+            if raw_duration is not None and (isinstance(raw_duration, bool) or not isinstance(raw_duration, (int, float))):
+                raise ValueError("Invalid test duration")
+            duration = (raw_duration or 0) / 1000
             if not math.isfinite(duration) or duration < 0:
                 raise ValueError("Invalid test duration")
-            cases.append({"name": str(test.get("fullName", test.get("title", "")))[:512],
+            cases.append({"name": name[:512],
                           "status": statuses[test["status"]],
-                          "message": "\n".join(test.get("failureMessages", []))[:4096], "seconds": duration})
+                          "message": "\n".join(messages)[:4096], "seconds": duration})
             if len(cases) > MAX_CASES:
                 raise ValueError("Too many test cases")
     return cases
 
 
 def classify(exit_code, cases, output=""):
+    if exit_code != 0 and dependency_failure(output):
+        return "DEPENDENCY_FAILURE"
+    if exit_code != 0 and compilation_failure(output):
+        return "COMPILATION_FAILURE"
     if any(case["status"] in ("FAILED", "ERROR") for case in cases):
         return "TEST_FAILURE"
     if exit_code != 0:
@@ -104,6 +126,12 @@ def dependency_failure(output):
     return any(term in output.lower() for term in (
         "modulenotfounderror", "cannot find module", "could not resolve", "could not find artifact",
         "has not been downloaded", "err_module_not_found", "no module named", "failed to resolve import"))
+
+
+def compilation_failure(output):
+    return any(term in output.lower() for term in (
+        "syntaxerror", "transform failed", "compilation error", "unexpected token",
+        "parsing error", "error ts"))
 
 
 def run_command(command, deadline):
@@ -147,7 +175,7 @@ def materialize(request):
         raise ValueError("Too many files")
     for file in files:
         relative = PurePosixPath(file["path"])
-        if relative.is_absolute() or ".." in relative.parts or not relative.parts or "\\" in file["path"] or file["path"] in seen:
+        if relative.is_absolute() or ".." in relative.parts or not relative.parts or str(relative) != file["path"] or "\\" in file["path"] or file["path"] in seen:
             raise ValueError("Unsafe or duplicate source path")
         seen.add(file["path"])
         path = REPO.joinpath(*relative.parts)
@@ -159,16 +187,27 @@ def materialize(request):
 
 def commands_for(request, tests):
     language = request["language"]
+    frameworks = {"Java": {"JUnit 5 / Mockito"}, "Python": {"pytest"},
+                  "JavaScript": {"Jest", "Vitest", "Vitest (proposed)"},
+                  "TypeScript": {"Jest", "Vitest", "Vitest (proposed)"}}
+    if language not in frameworks or request.get("framework") not in frameworks[language]:
+        raise UnsupportedExecution("No installed adapter for this language/framework")
     if language == "Java":
         if not (REPO / "pom.xml").exists():
             (REPO / "pom.xml").write_bytes((TOOLS / "default-pom.xml").read_bytes())
+        pom = read_regular(REPO / "pom.xml").decode("utf-8")
+        if "<!DOCTYPE" in pom.upper() or "<!ENTITY" in pom.upper():
+            raise UnsupportedExecution("Maven DTD/entity declarations are unsupported")
+        model = ElementTree.fromstring(pom)
+        if any(node.tag.split("}")[-1] == "modules" for node in model.iter()):
+            raise UnsupportedExecution("Multi-module Maven execution is not supported by this worker")
         # Offline, image-owned cache; no wrapper, user settings or network bootstrap.
         base = ["mvn", "-o", "-B", "--no-transfer-progress", "-Dmaven.repo.local=/opt/m2"]
-        names = [Path(test).stem for test in tests]
+        names = [str(Path(test).relative_to(REPO / "src/test/java")).removesuffix(".java").replace("/", ".") for test in tests]
         return base + ["test-compile"], base + ["-Dtest=" + ",".join(names), "surefire:test"]
     if language == "Python":
         return [PYTHON, "-I", "-m", "compileall", "-q", str(REPO)], [
-            PYTHON, "-m", "pytest", "-c", str(TOOLS / "pytest.ini"), "--noconftest", "-p", "no:cacheprovider",
+            PYTHON, "-I", "-m", "pytest", "-c", str(TOOLS / "pytest.ini"), "--noconftest", "-p", "no:cacheprovider",
             "-o", "pythonpath=/work/repo /work/repo/src", "--junitxml=/work/report.xml", *tests]
     (REPO / "node_modules").symlink_to(NODE_MODULES, target_is_directory=True)
     if language == "TypeScript":
@@ -182,7 +221,11 @@ def commands_for(request, tests):
         test_command = [NODE, NODE_MODULES + "/jest/bin/jest.js", "--config", str(TOOLS / "jest.config.cjs"),
                         "--runInBand", "--no-cache", "--json", "--outputFile=/work/report.json", "--runTestsByPath", *tests]
     else:
-        test_command = [NODE, NODE_MODULES + "/vitest/vitest.mjs", "run", "--config", str(TOOLS / "vitest.config.mjs"),
+        # Vite writes a bundled config beside the selected file. Keep the image
+        # read-only and copy only our trusted config to the bounded tmpfs.
+        config = WORK / "vitest.config.mjs"
+        config.write_bytes((TOOLS / "vitest.config.mjs").read_bytes())
+        test_command = [NODE, NODE_MODULES + "/vitest/vitest.mjs", "run", "--config", str(config),
                         "--maxWorkers=1", "--no-file-parallelism", "--reporter=junit", "--outputFile=/work/report.xml", *tests]
     return compile_command, test_command
 
@@ -209,12 +252,14 @@ def main():
                 else:
                     cases = parse_junit([Path("/work/report.xml")])
                 result["tests"] = cases
-                result["outcome"] = classify(code, cases, output)
-                if code != 0 and not cases and ("SyntaxError" in output or "Transform failed" in output):
-                    result["outcome"] = "COMPILATION_FAILURE"
+                result["outcome"] = ("NO_TESTS" if request["language"] == "Python" and code == 5 and not cases
+                                     else classify(code, cases, output))
             except (ValueError, OSError, TypeError, KeyError, ElementTree.ParseError) as exc:
-                result["outcome"] = "DEPENDENCY_FAILURE" if dependency_failure(output) else "INVALID_REPORT"
+                result["outcome"] = ("DEPENDENCY_FAILURE" if code != 0 and dependency_failure(output) else
+                                     "COMPILATION_FAILURE" if code != 0 and compilation_failure(output) else "INVALID_REPORT")
                 result["output"] = (result["output"] + "\nReport rejected: " + type(exc).__name__)[-65536:]
+    except UnsupportedExecution as exc:
+        result.update(outcome="UNSUPPORTED", output=str(exc))
     except TimeoutError:
         result.update(outcome="TIMEOUT", output="Container compilation/test deadline exceeded")
     except Exception as exc:

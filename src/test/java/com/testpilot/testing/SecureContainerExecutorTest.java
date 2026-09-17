@@ -33,9 +33,9 @@ class SecureContainerExecutorTest {
     @Test void unsupportedLanguageAndUnsafePathsNeverLaunchProcesses() {
         assertEquals("UNSUPPORTED", executor.execute(request("Go"), name, () -> false, () -> {}).outcome());
         var unsafe = new SandboxRequest("Python", "pytest", "app.py", request("Python").tests(), List.of(new SourceInput("../escape.py", "")));
-        assertEquals("UNSUPPORTED", executor.execute(unsafe, name, () -> false, () -> {}).outcome());
+        assertEquals("INPUT_REJECTED", executor.execute(unsafe, name, () -> false, () -> {}).outcome());
         var collision = new SandboxRequest("Python", "pytest", "app.py", List.of(new SandboxRequest.TestFile("app.py", "")), request("Python").files());
-        assertEquals("UNSUPPORTED", executor.execute(collision, name, () -> false, () -> {}).outcome());
+        assertEquals("INPUT_REJECTED", executor.execute(collision, name, () -> false, () -> {}).outcome());
         verifyNoInteractions(process);
     }
     @Test void noDockerAndTimeoutNeverFallBackToHostAndAlwaysRequestCleanup() throws Exception {
@@ -57,4 +57,27 @@ class SecureContainerExecutorTest {
         var pass = new SandboxResult.CaseResult("pass", "PASSED", "", 0.1);
         assertEquals("SUCCESS", executor.validateResult(new SandboxResult("SUCCESS", 0, "", List.of(pass))).outcome());
     }
+    @Test void rejectsMalformedReportFieldsWithoutThrowing() {
+        assertEquals("INVALID_REPORT", executor.validateResult(new SandboxResult(null, 0, "", List.of())).outcome());
+        for (var test : List.of(new SandboxResult.CaseResult("test", null, "", 0),
+                new SandboxResult.CaseResult("", "PASSED", "", 0),
+                new SandboxResult.CaseResult("test", "PASSED", "", Double.NaN))) {
+            assertEquals("INVALID_REPORT", executor.validateResult(new SandboxResult("SUCCESS", 0, "", List.of(test))).outcome());
+        }
+        assertEquals("INVALID_REPORT", executor.validateResult(new SandboxResult("TEST_FAILURE", 1, "", List.of())).outcome());
+    }
+    @Test void cancellationAndMissingSourceDoNotLaunchDocker() {
+        assertEquals("CANCELLED", executor.execute(request("Python"), name, () -> true, () -> {}).outcome());
+        var missing = new SandboxRequest("Python", "pytest", "missing.py", request("Python").tests(), request("Python").files());
+        assertEquals("INPUT_REJECTED", executor.execute(missing, name, () -> false, () -> {}).outcome());
+        verifyNoInteractions(process);
+    }
+
+    @Test void rejectsMalformedAndTrailingWorkerProtocolData() throws Exception {
+        for (String output : List.of("not json", "{} {}", "{\"outcome\":\"SUCCESS\",\"exitCode\":0,\"output\":\"\",\"tests\":[]} {}")) {
+            when(process.run(anyList(), any(), any(), any())).thenReturn(new ContainerProcess.Result(0, false, false, output));
+            assertEquals("INVALID_REPORT", executor.execute(request("Python"), name, () -> false, () -> {}).outcome());
+        }
+    }
+
 }

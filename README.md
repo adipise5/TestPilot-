@@ -1,13 +1,15 @@
 # TestPilot
 
-TestPilot is a full-stack prototype for repository-driven, AI-assisted Java test generation and execution. The current application can connect an allowlisted GitHub repository through MCP or a least-privilege GitHub App, resolve an immutable commit, build a safe text catalog, run a checkpointed LangGraph workflow with specialized test agents and human approval, retrieve project-scoped hybrid RAG context, execute Maven through durable isolated jobs, persist evaluation and observability evidence, and turn a successful run into a separately approved GitHub branch and pull request.
+TestPilot is a full-stack prototype for repository-driven, AI-assisted Java test generation and execution. The current application can connect an allowlisted GitHub repository through MCP or a least-privilege GitHub App, resolve an immutable commit, build a safe text catalog, run a checkpointed LangGraph workflow with specialized test agents and human approval, retrieve project-scoped hybrid RAG context, execute Java through durable isolated jobs and multilingual drafts through explicit offline container attempts, persist evaluation and observability evidence, and turn a successful run into a separately approved GitHub branch and pull request.
 
 The product is a repository-driven, agentic testing platform: a user supplies a GitHub repository, specialized LangGraph workflows plan unit, module/component, and integration tests, isolated workers run them against an immutable revision, a measured RAG pipeline supplies project and framework context, and an approved delivery workflow publishes evidence-backed test changes for normal GitHub review.
 
 System and end-to-end testing are explicitly outside the project scope. TestPilot will stop at integration testing and will not provision or validate a complete deployed application environment.
 
-> [!WARNING]
-> The H2 profile intentionally runs Maven locally for trusted development and application tests. It is not a sandbox. Repository code in the PostgreSQL/dev profile defaults to the container backend; do not expose TestPilot publicly unless the Docker daemon, worker image, dependency-egress network, database, quotas, and secrets have been reviewed for that deployment.
+> All application test execution requires the prebuilt offline polyglot Docker
+> worker, including H2. There is no host fallback or runtime dependency download.
+> See [revised Phase 3](docs/REVISED_PHASE_3.md) for setup, support limits and
+> verification evidence. All 25 container acceptance cases passed locally.
 
 ## Project status
 
@@ -15,9 +17,12 @@ The revised multi-language product starts with [Phase 1: URL intake and file sel
 It adds a single GitHub URL form, a multi-language catalog, excluded-file evidence,
 and read-only manifest hints. [Revised Phase 2](docs/REVISED_PHASE_2.md) adds
 Java/Python/JS/TS planning, framework-specific generation, static validation and saved
-drafts. Multilingual execution and the separate AI code reviewer are not implemented;
-the existing runner remains Java-only. Mock-provider drafts are skipped scaffolds,
-not behavioral tests.
+drafts. [Revised Phase 3](docs/REVISED_PHASE_3.md) completes the partial container-only
+execution path for Java/Python/JS/TS, adds validation and actual-worker CI checks.
+The separate AI code reviewer and revised structured report remain future phases.
+Mock-provider drafts are skipped scaffolds, not behavioral tests. The current
+[analysis and phase gates](docs/REVISED_PROJECT_ANALYSIS.md) distinguish this revised
+plan from the historical milestones below.
 
 | Capability | Current implementation | Target implementation |
 |---|---|---|
@@ -27,7 +32,7 @@ not behavioral tests.
 | Code analysis | Deterministic repository metadata plus bounded LLM analysis | Build-aware and Java symbol/AST analysis |
 | Retrieval | Versioned symbol/section chunks, project-scoped pgvector plus lexical search, fusion, reranking, token packing, exact traces, and citations | Benchmark-driven tuning and provider contract tests |
 | AI provider | Separate deterministic/OpenAI-compatible generation and embedding interfaces | Additional provider adapters and measured model comparisons |
-| Execution | Leased/idempotent jobs and a non-root Maven worker with offline execution, read-only root, no capabilities/network, resource limits, cancellation, cleanup, and bounded evidence | External autoscaled workers and stronger platform sandboxing |
+| Execution | Leased Java jobs and persisted draft attempts share an offline polyglot worker, bounded tmpfs/resources, read-only root, no capabilities/network, cleanup and bounded evidence | External autoscaled workers and stronger platform sandboxing |
 | Evaluation | Pinned offline unit/module/integration benchmark with retrieval, compilation, coverage, seeded mutation, flakiness, latency, token, and cost evidence | Larger datasets and separately published live-provider comparisons |
 | Delivery | Frozen SHA-256 patch, separate approval, repository-scoped GitHub App write token, dedicated branch, evidence-rich PR, audit trail, and rollback path | Live GitHub sandbox/provider conformance testing and deployment migration tooling |
 
@@ -51,8 +56,7 @@ flowchart LR
     RETRIEVE --> REVIEW["Deterministic test reviewer"]
     REVIEW --> APPROVAL["Conditional human approval"]
     APPROVAL --> QUEUE["Leased execution job"]
-    QUEUE --> RESOLVE["Constrained dependency stage"]
-    RESOLVE --> WORKER["Offline non-root worker"]
+    QUEUE --> WORKER["Offline non-root polyglot worker"]
     WORKER --> REPORTS["Surefire + coverage parser"]
     REPORTS --> FAILURE["Failure and fix prompts"]
     REPORTS --> OBSERVE["Persisted run observability"]
@@ -79,7 +83,7 @@ LangGraph owns typed workflow state, conditional routing, retry policy, checkpoi
 - React 18, React Router, Vite 7, and Tailwind CSS 3
 - JUnit 5, Spring Security Test, MockMvc, and Surefire
 - Python 3.12+, LangGraph 1.2, FastAPI, HTTPX, and a SQLite checkpointer
-- Docker Engine for the isolated Maven worker
+- Docker Engine for the isolated polyglot worker in every profile
 
 ## Prerequisites
 
@@ -87,7 +91,7 @@ LangGraph owns typed workflow state, conditional routing, retry policy, checkpoi
 - Node.js 22 (the repository includes `.nvmrc`)
 - npm 10 or newer
 - Python 3.12 or newer
-- Docker Engine and PostgreSQL with pgvector when using the production-style `dev` profile; H2 needs no external database
+- Docker Engine for test execution in every profile; PostgreSQL with pgvector for `dev` (H2 needs no external database)
 
 Maven does not need to be installed globally because the repository includes `mvnw` and `mvnw.cmd`.
 
@@ -134,14 +138,14 @@ Start pgvector and build the execution worker, then supply configuration through
 
 ```bash
 docker compose up -d postgres
-docker build -t testpilot-worker:local -f worker/Dockerfile .
+docker build -t testpilot-polyglot:local -f worker/polyglot/Dockerfile .
 export SPRING_PROFILES_ACTIVE=dev
 export DB_URL=jdbc:postgresql://localhost:5432/testpilot_db
 export DB_USERNAME=testpilot
 export DB_PASSWORD=testpilot
 export JWT_SECRET=replace-with-a-long-random-secret
 export WORKFLOW_INTERNAL_TOKEN=replace-with-another-long-random-secret
-export TEST_EXECUTION_BACKEND=container
+export TEST_SECURE_WORKER_IMAGE=testpilot-polyglot:local
 ./mvnw spring-boot:run
 ```
 
@@ -165,7 +169,9 @@ npm run lint
 npm run build
 npm audit --audit-level=high
 cd ..
-docker build -t testpilot-worker:local -f worker/Dockerfile .
+docker build -t testpilot-polyglot:local -f worker/polyglot/Dockerfile .
+python3 -m unittest discover -s worker/polyglot -p 'test_*.py' -v
+python3 worker/polyglot/smoke.py --image testpilot-polyglot:local
 ```
 
 CI configuration lives in [.github/workflows/ci.yml](.github/workflows/ci.yml).
@@ -195,15 +201,9 @@ CI configuration lives in [.github/workflows/ci.yml](.github/workflows/ci.yml).
 | `WORKFLOW_INTERNAL_TOKEN` | None outside H2 | Shared Spring/LangGraph credential; at least 32 UTF-8 bytes |
 | `TESTPILOT_API_BASE` | `http://localhost:8080` | Spring workflow-tool base URL used by LangGraph |
 | `LANGGRAPH_CHECKPOINT_PATH` | `orchestrator/data/checkpoints.sqlite3` | Local durable checkpoint database |
-| `TEST_EXECUTION_BACKEND` | `container` (`local` in H2) | Selects isolated Docker or trusted local execution |
-| `TEST_WORKER_IMAGE` | `testpilot-worker:local` | Dedicated non-root execution image |
-| `TEST_DEPENDENCY_NETWORK` | `bridge` | Network used only by dependency resolution; production should supply an egress-controlled network |
-| `TEST_EXECUTION_TIMEOUT_SECONDS` | `60` | Test/mutation stage wall-clock timeout |
-| `TEST_EXECUTION_MEMORY` | `1g` | Worker memory limit |
-| `TEST_EXECUTION_CPUS` | `1.0` | Worker CPU quota |
-| `TEST_EXECUTION_PIDS` | `128` | Worker process limit |
-| `TEST_EXECUTION_MAX_ATTEMPTS` | `3` | Durable infrastructure retry budget |
-| `TEST_MUTATION_ENABLED` | `false` | Opt-in PIT mutation collection where the workspace supports it |
+| `TEST_SECURE_WORKER_IMAGE` | `testpilot-polyglot:local` | Reviewed prebuilt offline image; runtime pulls are disabled |
+| `TEST_EXECUTION_MAX_ATTEMPTS` | `3` | Legacy Java durable infrastructure retry budget |
+| Worker resource limits | Fixed policy | 768 MiB RAM, 1 CPU, 128 PIDs, bounded tmpfs, 55-second worker / 70-second host deadline; see Phase 3 |
 | `RAG_VECTOR_STORE` | `pgvector` (`memory` in H2) | Dense storage/query backend |
 | `RAG_INGESTION_VERSION` | `rag-v2` | Idempotent index format/version identity |
 | `RAG_RELEVANCE_THRESHOLD` | `0.08` | Minimum deterministic reranker score |
@@ -244,6 +244,7 @@ The mock provider is deterministic and useful for offline workflow tests. Its em
 | Repository intake | `/api/projects/{id}/repository`, `/api/repositories` | Connect, refresh, inspect, and disconnect immutable repository catalogs |
 | GitHub webhooks | `/api/integrations/github/webhooks` | Verify and apply installation-scope events |
 | AI analysis | `/api/projects/{id}/analyze` | Analyze stored source text |
+| Draft execution | `/api/projects/{id}/test-drafts/{draftId}/execution` | Execute/retrieve a snapshot-bound draft in an offline container |
 | Test runs | `/api/projects/{id}/test-runs`, `/api/test-runs` | Generate, execute, and inspect runs |
 | Workflow review | `/api/test-runs/{id}/workflow` | Inspect node traces and approve/reject paused integration plans |
 | Execution control | `/api/test-runs/{id}/execution/cancel` | Request cancellation of a queued or running leased job |
@@ -272,7 +273,7 @@ src/main/java/com/testpilot/
   testing/     orchestration, durable execution jobs, sandbox policy, and evidence parsing
 orchestrator/  Python LangGraph control plane, checkpoint runtime, and graph tests
 frontend/      React dashboard
-worker/        dedicated non-root Maven worker and isolation probe
+worker/        offline polyglot worker, parser tests and container smoke suite
 evaluation/    pinned dataset, retrieval experiments, Java fixtures, seeded defects, thresholds, and results
 docs/          architecture decisions and threat model
 ```

@@ -24,6 +24,9 @@ public class SecureContainerExecutor {
     public SandboxResult execute(SandboxRequest request, String containerName, BooleanSupplier cancelled, Runnable heartbeat) {
         String unsupported = unsupported(request);
         if (unsupported != null) return SandboxResult.failure("UNSUPPORTED", unsupported);
+        String invalid = invalidInput(request);
+        if (invalid != null) return SandboxResult.failure("INPUT_REJECTED", invalid);
+        if (cancelled.getAsBoolean()) return SandboxResult.failure("CANCELLED", "Execution cancelled before launch");
         if (!capacity.tryAcquire()) return SandboxResult.failure("CAPACITY_EXCEEDED", "Two sandbox executions are already running; retry later");
         Path workspace = null;
         try {
@@ -41,8 +44,14 @@ public class SecureContainerExecutor {
             if (process.timedOut()) return SandboxResult.failure("TIMEOUT", "Container exceeded the 70-second host deadline");
             if (process.exitCode() == null || process.exitCode() != 0) return SandboxResult.failure("INFRASTRUCTURE_FAILURE",
                     "Worker/image/Docker failed (no host fallback). " + bounded(process.output(), 4096));
-            SandboxResult result = mapper.readValue(process.output(), SandboxResult.class);
-            return validateResult(result);
+            try {
+                SandboxResult result = mapper.readerFor(SandboxResult.class)
+                        .with(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
+                        .readValue(process.output());
+                return validateResult(result);
+            } catch (com.fasterxml.jackson.core.JsonProcessingException malformed) {
+                return SandboxResult.failure("INVALID_REPORT", "Worker did not return one valid execution result");
+            }
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
             return SandboxResult.failure("CANCELLED", "Execution interrupted");
@@ -66,13 +75,23 @@ public class SecureContainerExecutor {
     }
 
     public String unsupported(SandboxRequest request) {
-        if (request == null || request.files() == null || request.tests() == null || request.tests().isEmpty()) return "No source/test snapshot supplied";
+        if (request == null) return "No execution request supplied";
         if (request.language() == null || !Set.of("Java", "Python", "JavaScript", "TypeScript").contains(request.language())) return "No execution adapter for " + request.language();
         if (request.language().equals("Java") && (!"JUnit 5 / Mockito".equals(request.framework())
                 || request.sourcePath() == null || !request.sourcePath().startsWith("src/main/java/"))) return "Java execution currently supports root Maven/standard src/main/java layouts only; Gradle and nested modules are unsupported";
         if (request.language().equals("Python") && !"pytest".equals(request.framework())) return "Only pytest is supported for Python";
         if ((request.language().equals("JavaScript") || request.language().equals("TypeScript"))
                 && (request.framework() == null || !Set.of("Jest", "Vitest", "Vitest (proposed)").contains(request.framework()))) return "Only Jest and Vitest are supported for JS/TS";
+        if (request.language().equals("Java") && request.files() != null
+                && request.files().stream().filter(Objects::nonNull).anyMatch(f -> f.path() != null && (f.path().endsWith("build.gradle") || f.path().endsWith("build.gradle.kts")))
+                && request.files().stream().filter(Objects::nonNull).noneMatch(f -> "pom.xml".equals(f.path()))) return "Gradle execution is unsupported; no Maven fallback is attempted";
+        return null;
+    }
+
+    private String invalidInput(SandboxRequest request) {
+        if (request.files() == null || request.tests() == null || request.tests().isEmpty()) return "No source/test snapshot supplied";
+        if (request.sourcePath() == null || request.files().stream().filter(Objects::nonNull)
+                .noneMatch(f -> request.sourcePath().equals(f.path()))) return "Selected source is absent from the snapshot";
         if (request.files().size() > 1000 || request.tests().size() > 20) return "Execution input exceeds file/test limits";
         var policy = new RepositoryPathPolicy();
         Set<String> paths = new HashSet<>();
@@ -91,19 +110,21 @@ public class SecureContainerExecutor {
                 if (!test.path().endsWith(extension)) return "Test extension does not match its execution language";
             }
         } catch (RuntimeException ex) { return "Invalid execution input"; }
-        if (request.language().equals("Java") && request.files().stream().anyMatch(f -> f.path().endsWith("build.gradle") || f.path().endsWith("build.gradle.kts"))
-                && request.files().stream().noneMatch(f -> f.path().equals("pom.xml"))) return "Gradle execution is unsupported; no Maven fallback is attempted";
         return null;
     }
 
     public SandboxResult validateResult(SandboxResult result) {
-        Set<String> outcomes = Set.of("SUCCESS", "TEST_FAILURE", "COMPILATION_FAILURE", "DEPENDENCY_FAILURE", "NO_TESTS", "INVALID_REPORT", "TIMEOUT", "INFRASTRUCTURE_FAILURE");
-        if (result == null || !outcomes.contains(result.outcome()) || result.output() == null || result.tests() == null || result.tests().size() > 1000)
+        Set<String> outcomes = Set.of("SUCCESS", "TEST_FAILURE", "COMPILATION_FAILURE", "DEPENDENCY_FAILURE", "NO_TESTS", "INVALID_REPORT", "TIMEOUT", "UNSUPPORTED", "INFRASTRUCTURE_FAILURE");
+        if (result == null || result.outcome() == null || !outcomes.contains(result.outcome()) || result.output() == null || result.tests() == null || result.tests().size() > 1000)
             return SandboxResult.failure("INVALID_REPORT", "Malformed worker result");
         for (var test : result.tests()) {
-            if (test == null || test.name() == null || test.name().length() > 512 || test.message() == null || test.message().length() > 4096
-                    || !Set.of("PASSED", "FAILED", "ERROR", "SKIPPED").contains(test.status()) || !Double.isFinite(test.seconds()) || test.seconds() < 0)
+            if (test == null || test.name() == null || test.name().isBlank() || test.name().length() > 512 || test.message() == null || test.message().length() > 4096
+                    || test.status() == null || !Set.of("PASSED", "FAILED", "ERROR", "SKIPPED").contains(test.status()) || !Double.isFinite(test.seconds()) || test.seconds() < 0)
                 return SandboxResult.failure("INVALID_REPORT", "Malformed test case");
+        }
+        if (result.outcome().equals("TEST_FAILURE") && result.tests().stream()
+                .noneMatch(t -> t.status().equals("FAILED") || t.status().equals("ERROR"))) {
+            return SandboxResult.failure("INVALID_REPORT", "Test failure has no failing case evidence");
         }
         if (result.outcome().equals("SUCCESS")) {
             if (!Integer.valueOf(0).equals(result.exitCode())) return SandboxResult.failure("INVALID_REPORT", "Success contradicts worker exit code");

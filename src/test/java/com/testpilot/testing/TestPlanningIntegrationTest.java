@@ -57,8 +57,10 @@ class TestPlanningIntegrationTest {
         add("tests/test_existing.py", RepositoryArtifactKind.EXISTING_TEST, "def test_old(): assert 1 == 1");
     }
 
-    private void add(String path, RepositoryArtifactKind kind, String content) {
-        artifacts.saveAndFlush(new RepositoryArtifact(ingestion, path, "a".repeat(40), "b".repeat(64), kind, content.length(), content));
+    private void add(String path, RepositoryArtifactKind kind, String content) throws Exception {
+        String hash = java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256")
+                .digest(content.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+        artifacts.saveAndFlush(new RepositoryArtifact(ingestion, path, "a".repeat(40), hash, kind, content.length(), content));
     }
 
     @Test void plansMultipleLanguagesPersistsDraftsAndNeverCreatesExecutableTests() throws Exception {
@@ -103,4 +105,11 @@ class TestPlanningIntegrationTest {
         mvc.perform(get("/api/projects/" + project + "/test-drafts").header("Authorization", token))
                 .andExpect(jsonPath("$.length()").value(0));
     }
+    @Test void rejectsCatalogWithInvalidContentHash() throws Exception {
+        artifacts.saveAndFlush(new RepositoryArtifact(ingestion, "tampered.py", "a".repeat(40), "0".repeat(64),
+                RepositoryArtifactKind.SOURCE_CODE, 9, "value = 1"));
+        mvc.perform(get("/api/projects/" + project + "/test-plan").header("Authorization", token))
+                .andExpect(status().isBadRequest());
+    }
+
 }

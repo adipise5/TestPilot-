@@ -151,6 +151,9 @@ public class TestPlanningService {
                     .filter(i -> i.getStatus() == RepositoryIngestionStatus.COMPLETED)
                     .orElseThrow(() -> new InvalidRequestException("Complete repository intake before test planning"));
             var catalog = artifacts.findByIngestionIdOrderByPath(ingestion.getId());
+            if (catalog.stream().anyMatch(a -> a.getContent() == null || !AdapterSupport.hash(a.getContent()).equals(a.getContentHash()))) {
+                throw new InvalidRequestException("Catalog content hash mismatch; refresh repository intake");
+            }
             context = catalog.stream().map(a -> new SourceInput(a.getPath(), a.getContent())).toList();
             targets = catalog.stream().filter(a -> a.getKind() == RepositoryArtifactKind.JAVA_SOURCE
                     || a.getKind() == RepositoryArtifactKind.SOURCE_CODE).map(a -> new SourceInput(a.getPath(), a.getContent())).toList();

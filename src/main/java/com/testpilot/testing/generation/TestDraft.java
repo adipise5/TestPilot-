@@ -2,7 +2,7 @@ package com.testpilot.testing.generation;
 
 import jakarta.persistence.*;
 
-/** Kept separate from executable GeneratedTest records until language runners exist. */
+/** Snapshot-bound proposal; execution evidence is stored separately in DraftExecution. */
 @Entity
 @Table(name = "test_generation_drafts")
 public class TestDraft {

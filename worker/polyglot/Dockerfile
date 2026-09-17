@@ -1,5 +1,5 @@
-FROM node:22-bookworm-slim AS node
-FROM maven:3.9-eclipse-temurin-17
+FROM node:22-bookworm-slim@sha256:83f487e0a63425e5b4d146fb5e5be574bcbe1b7b843d3ebafdd95eaf7767a7e5 AS node
+FROM maven:3.9-eclipse-temurin-17@sha256:1e539ad894cb86c5b87a9c81223732a90c6cb7c23e4ac206c2cea892538fd8d7
 
 COPY --from=node /usr/local/ /opt/node/
 ENV PATH="/opt/python/bin:/opt/node/bin:${PATH}"

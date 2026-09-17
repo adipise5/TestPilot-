@@ -1,0 +1,7 @@
+# The image build needs only reviewed worker files, never application secrets,
+# Git metadata, node_modules, or host-generated outputs.
+**
+!worker/
+!worker/polyglot/
+!worker/polyglot/**
+worker/polyglot/__pycache__/

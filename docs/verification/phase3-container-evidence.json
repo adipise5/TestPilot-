@@ -1,0 +1,406 @@
+{
+  "image": "testpilot-polyglot:local",
+  "imageId": "sha256:5c0cbeba35560069bae5f30a64c192ca21cb7db687b02729c27cf6bf95fed700",
+  "verifiedAt": "2026-09-17T11:40:31.161543+00:00",
+  "cases": [
+    {
+      "name": "Java passes",
+      "expected": "SUCCESS",
+      "passed": true,
+      "durationSeconds": 6.534,
+      "result": {
+        "outcome": "SUCCESS",
+        "exitCode": 0,
+        "output": "Failed to load native library:jansi-2.4.3-5d57609d60fb2ded-libjansi.so. The native library file at /tmp/jansi-2.4.3-5d57609d60fb2ded-libjansi.so is not executable, make sure that the directory is mounted on a partition without the noexec flag, or set the jansi.tmpdir system property to point to a proper location.  osinfo: Linux/arm64\njava.lang.UnsatisfiedLinkError: /tmp/jansi-2.4.3-5d57609d60fb2ded-libjansi.so: /tmp/jansi-2.4.3-5d57609d60fb2ded-libjansi.so: failed to map segment from shared object\n[INFO] Scanning for projects...\n[INFO] \n[INFO] ------------------< testpilot.sandbox:offline-tests >-------------------\n[INFO] Building offline-tests 1\n[INFO]   from pom.xml\n[INFO] --------------------------------[ jar ]---------------------------------\n[INFO] \n[INFO] --- resources:3.4.0:resources (default-resources) @ offline-tests ---\n[INFO] skip non existing resourceDirectory /work/repo/src/main/resources\n[INFO] \n[INFO] --- compiler:3.11.0:compile (default-compile) @ offline-tests ---\n[INFO] Changes detected - recompiling the module! :source\n[INFO] Compiling 1 source file with javac [debug release 17] to target/classes\n[INFO] \n[INFO] --- resources:3.4.0:testResources (default-testResources) @ offline-tests ---\n[INFO] skip non existing resourceDirectory /work/repo/src/test/resources\n[INFO] \n[INFO] --- compiler:3.11.0:testCompile (default-testCompile) @ offline-tests ---\n[INFO] Changes detected - recompiling the module! :dependency\n[INFO] Compiling 1 source file with javac [debug release 17] to target/test-classes\n[INFO] ------------------------------------------------------------------------\n[INFO] BUILD SUCCESS\n[INFO] ------------------------------------------------------------------------\n[INFO] Total time:  1.689 s\n[INFO] Finished at: 2026-09-17T11:40:34Z\n[INFO] ------------------------------------------------------------------------\n\nFailed to load native library:jansi-2.4.3-6d1f64bcee9ce3ed-libjansi.so. The native library file at /tmp/jansi-2.4.3-6d1f64bcee9ce3ed-libjansi.so is not executable, make sure that the directory is mounted on a partition without the noexec flag, or set the jansi.tmpdir system property to point to a proper location.  osinfo: Linux/arm64\njava.lang.UnsatisfiedLinkError: /tmp/jansi-2.4.3-6d1f64bcee9ce3ed-libjansi.so: /tmp/jansi-2.4.3-6d1f64bcee9ce3ed-libjansi.so: failed to map segment from shared object\n[INFO] Scanning for projects...\n[INFO] \n[INFO] ------------------< testpilot.sandbox:offline-tests >-------------------\n[INFO] Building offline-tests 1\n[INFO]   from pom.xml\n[INFO] --------------------------------[ jar ]---------------------------------\n[INFO] \n[INFO] --- surefire:3.1.2:test (default-cli) @ offline-tests ---\n[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider\n[INFO] \n[INFO] -------------------------------------------------------\n[INFO]  T E S T S\n[INFO] -------------------------------------------------------\n[INFO] Running example.AppTest\n[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.039 s -- in example.AppTest\n[INFO] \n[INFO] Results:\n[INFO] \n[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0\n[INFO] \n[INFO] ------------------------------------------------------------------------\n[INFO] BUILD SUCCESS\n[INFO] ------------------------------------------------------------------------\n[INFO] Total time:  1.610 s\n[INFO] Finished at: 2026-09-17T11:40:37Z\n[INFO] ------------------------------------------------------------------------\n",
+        "tests": [
+          {
+            "name": "example.AppTest.adds",
+            "status": "PASSED",
+            "message": "",
+            "seconds": 0.023
+          }
+        ]
+      }
+    },
+    {
+      "name": "Python passes",
+      "expected": "SUCCESS",
+      "passed": true,
+      "durationSeconds": 0.391,
+      "result": {
+        "outcome": "SUCCESS",
+        "exitCode": 0,
+        "output": "\n============================= test session starts ==============================\nplatform linux -- Python 3.12.3, pytest-8.4.2, pluggy-1.6.0\nrootdir: /opt/testpilot\nconfigfile: pytest.ini\ncollected 1 item\n\n../../opt/testpilot .                                                    [100%]\n\n--------------------- generated xml file: /work/report.xml ---------------------\n============================== 1 passed in 0.01s ===============================\n",
+        "tests": [
+          {
+            "name": ".test_add",
+            "status": "PASSED",
+            "message": "",
+            "seconds": 0.0
+          }
+        ]
+      }
+    },
+    {
+      "name": "JavaScript Jest passes",
+      "expected": "SUCCESS",
+      "passed": true,
+      "durationSeconds": 1.076,
+      "result": {
+        "outcome": "SUCCESS",
+        "exitCode": 0,
+        "output": "\nPASS __testpilot__/app.test.js\n  \u2713 adds (2 ms)\n\nTest Suites: 1 passed, 1 total\nTests:       1 passed, 1 total\nSnapshots:   0 total\nTime:        0.471 s\nRan all test suites within paths \"/work/repo/__testpilot__/app.test.js\".\nTest results written to: ../report.json\n",
+        "tests": [
+          {
+            "name": "adds",
+            "status": "PASSED",
+            "message": "",
+            "seconds": 0.002
+          }
+        ]
+      }
+    },
+    {
+      "name": "JavaScript Jest assertion",
+      "expected": "TEST_FAILURE",
+      "passed": true,
+      "durationSeconds": 1.083,
+      "result": {
+        "outcome": "TEST_FAILURE",
+        "exitCode": 1,
+        "output": "\nFAIL __testpilot__/app.test.js\n  \u2715 adds (3 ms)\n\n  \u25cf adds\n\n    expect(received).toBe(expected) // Object.is equality\n\n    Expected: 6\n    Received: 5\n\n    \u001b[0m\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 1 |\u001b[39m \u001b[36mimport\u001b[39m { test\u001b[33m,\u001b[39m expect } \u001b[36mfrom\u001b[39m \u001b[32m'@jest/globals'\u001b[39m\u001b[33m;\u001b[39m \u001b[36mimport\u001b[39m { add } \u001b[36mfrom\u001b[39m \u001b[32m'../app'\u001b[39m\u001b[33m;\u001b[39m test(\u001b[32m'adds'\u001b[39m\u001b[33m,\u001b[39m () \u001b[33m=>\u001b[39m { expect(add(\u001b[35m2\u001b[39m\u001b[33m,\u001b[39m \u001b[35m3\u001b[39m))\u001b[33m.\u001b[39mtoBe(\u001b[35m6\u001b[39m)\u001b[33m;\u001b[39m })\u001b[33m;\u001b[39m\n     \u001b[90m   |\u001b[39m                                                                                                                    \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\u001b[0m\n\n      at Object.toBe (__testpilot__/app.test.js:1:116)\n\nTest Suites: 1 failed, 1 total\nTests:       1 failed, 1 total\nSnapshots:   0 total\nTime:        0.482 s\nRan all test suites within paths \"/work/repo/__testpilot__/app.test.js\".\nTest results written to: ../report.json\n",
+        "tests": [
+          {
+            "name": "adds",
+            "status": "FAILED",
+            "message": "Error: expect(received).toBe(expected) // Object.is equality\n\nExpected: 6\nReceived: 5\n    at Object.toBe (/work/repo/__testpilot__/app.test.js:1:116)\n    at Promise.finally.completed (/opt/testpilot-js/node_modules/jest-circus/build/jestAdapterInit.js:1557:28)\n    at new Promise (<anonymous>)\n    at callAsyncCircusFn (/opt/testpilot-js/node_modules/jest-circus/build/jestAdapterInit.js:1497:10)\n    at _callCircusTest (/opt/testpilot-js/node_modules/jest-circus/build/jestAdapterInit.js:1007:40)\n    at _runTest (/opt/testpilot-js/node_modules/jest-circus/build/jestAdapterInit.js:947:3)\n    at /opt/testpilot-js/node_modules/jest-circus/build/jestAdapterInit.js:849:7\n    at _runTestsForDescribeBlock (/opt/testpilot-js/node_modules/jest-circus/build/jestAdapterInit.js:862:11)\n    at run (/opt/testpilot-js/node_modules/jest-circus/build/jestAdapterInit.js:761:3)\n    at runAndTransformResultsToJestFormat (/opt/testpilot-js/node_modules/jest-circus/build/jestAdapterInit.js:1918:21)\n    at jestAdapter (/opt/testpilot-js/node_modules/jest-circus/build/runner.js:101:19)\n    at runTestInternal (/opt/testpilot-js/node_modules/jest-runner/build/index.js:275:16)\n    at runTest (/opt/testpilot-js/node_modules/jest-runner/build/index.js:343:7)",
+            "seconds": 0.003
+          }
+        ]
+      }
+    },
+    {
+      "name": "JavaScript Jest syntax",
+      "expected": "COMPILATION_FAILURE",
+      "passed": true,
+      "durationSeconds": 0.313,
+      "result": {
+        "outcome": "COMPILATION_FAILURE",
+        "exitCode": 1,
+        "output": "/opt/testpilot-js/node_modules/@babel/core/lib/parser/index.js:74\n    throw err;\n    ^\n\nSyntaxError: /work/repo/__testpilot__/app.test.js: Unexpected token (2:15)\n\n\u001b[0m \u001b[90m 1 |\u001b[39m \u001b[36mimport\u001b[39m { test\u001b[33m,\u001b[39m expect } \u001b[36mfrom\u001b[39m \u001b[32m'@jest/globals'\u001b[39m\u001b[33m;\u001b[39m \u001b[36mimport\u001b[39m { add } \u001b[36mfrom\u001b[39m \u001b[32m'../app'\u001b[39m\u001b[33m;\u001b[39m test(\u001b[32m'adds'\u001b[39m\u001b[33m,\u001b[39m () \u001b[33m=>\u001b[39m { expect(add(\u001b[35m2\u001b[39m\u001b[33m,\u001b[39m \u001b[35m3\u001b[39m))\u001b[33m.\u001b[39mtoBe(\u001b[35m5\u001b[39m)\u001b[33m;\u001b[39m })\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 2 |\u001b[39m \u001b[36mconst\u001b[39m broken \u001b[33m=\u001b[39m \u001b[33m;\u001b[39m\n \u001b[90m   |\u001b[39m                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\u001b[0m\n    at constructor (/opt/testpilot-js/node_modules/@babel/parser/lib/index.js:369:19)\n    at Parser.raise (/opt/testpilot-js/node_modules/@babel/parser/lib/index.js:6620:19)\n    at Parser.unexpected (/opt/testpilot-js/node_modules/@babel/parser/lib/index.js:6640:16)\n    at Parser.parseExprAtom (/opt/testpilot-js/node_modules/@babel/parser/lib/index.js:11468:22)\n    at Parser.parseExprSubscripts (/opt/testpilot-js/node_modules/@babel/parser/lib/index.js:11102:23)\n    at Parser.parseUpdate (/opt/testpilot-js/node_modules/@babel/parser/lib/index.js:11087:21)\n    at Parser.parseMaybeUnary (/opt/testpilot-js/node_modules/@babel/parser/lib/index.js:11067:23)\n    at Parser.parseMaybeUnaryOrPrivate (/opt/testpilot-js/node_modules/@babel/parser/lib/index.js:10920:61)\n    at Parser.parseExprOps (/opt/testpilot-js/node_modules/@babel/parser/lib/index.js:10925:23)\n    at Parser.parseMaybeConditional (/opt/testpilot-js/node_modules/@babel/parser/lib/index.js:10902:23)\n    at Parser.parseMaybeAssign (/opt/testpilot-js/node_modules/@babel/parser/lib/index.js:10852:21)\n    at /opt/testpilot-js/node_modules/@babel/parser/lib/index.js:10821:39\n    at Parser.allowInAnd (/opt/testpilot-js/node_modules/@babel/parser/lib/index.js:12450:16)\n    at Parser.parseMaybeAssignAllowIn (/opt/testpilot-js/node_modules/@babel/parser/lib/index.js:10821:17)\n    at Parser.parseVar (/opt/testpilot-js/node_modules/@babel/parser/lib/index.js:13413:91)\n    at Parser.parseVarStatement (/opt/testpilot-js/node_modules/@babel/parser/lib/index.js:13259:10)\n    at Parser.parseStatementContent (/opt/testpilot-js/node_modules/@babel/parser/lib/index.js:12880:23)\n    at Parser.parseStatementLike (/opt/testpilot-js/node_modules/@babel/parser/lib/index.js:12796:17)\n    at Parser.parseModuleItem (/opt/testpilot-js/node_modules/@babel/parser/lib/index.js:12773:17)\n    at Parser.parseBlockOrModuleBlockBody (/opt/testpilot-js/node_modules/@babel/parser/lib/index.js:13345:36)\n    at Parser.parseBlockBody (/opt/testpilot-js/node_modules/@babel/parser/lib/index.js:13338:10)\n    at Parser.parseProgram (/opt/testpilot-js/node_modules/@babel/parser/lib/index.js:12651:10)\n    at Parser.parseTopLevel (/opt/testpilot-js/node_modules/@babel/parser/lib/index.js:12641:25)\n    at Parser.parse (/opt/testpilot-js/node_modules/@babel/parser/lib/index.js:14517:25)\n    at parse (/opt/testpilot-js/node_modules/@babel/parser/lib/index.js:14530:26)\n    at parser (/opt/testpilot-js/node_modules/@babel/core/lib/parser/index.js:41:34)\n    at parser.next (<anonymous>)\n    at parse (/opt/testpilot-js/node_modules/@babel/core/lib/parse.js:25:37)\n    at parse.next (<anonymous>)\n    at evaluateSync (/opt/testpilot-js/node_modules/gensync/index.js:251:28)\n    at sync (/opt/testpilot-js/node_modules/gensync/index.js:89:14)\n    at stopHiding - secret - don't use this - v1 (/opt/testpilot-js/node_modules/@babel/core/lib/errors/rewrite-stack-trace.js:47:12)\n    at Object.parseSync (/opt/testpilot-js/node_modules/@babel/core/lib/parse.js:40:72)\n    at Object.<anonymous> (/opt/testpilot/syntax.cjs:4:9)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49 {\n  code: 'BABEL_PARSE_ERROR',\n  reasonCode: 'UnexpectedToken',\n  loc: Position { line: 2, column: 15, index: 143 },\n  pos: 143,\n  syntaxPlugin: undefined\n}\n\nNode.js v22.23.2\n",
+        "tests": []
+      }
+    },
+    {
+      "name": "JavaScript Vitest passes",
+      "expected": "SUCCESS",
+      "passed": true,
+      "durationSeconds": 1.076,
+      "result": {
+        "outcome": "SUCCESS",
+        "exitCode": 0,
+        "output": "\nJUNIT report written to /work/report.xml\n",
+        "tests": [
+          {
+            "name": "__testpilot__/app.test.js.adds",
+            "status": "PASSED",
+            "message": "",
+            "seconds": 0.039740684
+          }
+        ]
+      }
+    },
+    {
+      "name": "JavaScript Vitest assertion",
+      "expected": "TEST_FAILURE",
+      "passed": true,
+      "durationSeconds": 1.073,
+      "result": {
+        "outcome": "TEST_FAILURE",
+        "exitCode": 1,
+        "output": "\nJUNIT report written to /work/report.xml\n",
+        "tests": [
+          {
+            "name": "__testpilot__/app.test.js.adds",
+            "status": "FAILED",
+            "message": "expected 5 to be 6 // Object.is equality\n\nAssertionError: expected 5 to be 6 // Object.is equality\n\n- Expected\n+ Received\n\n- 6\n+ 5\n\n \u276f __testpilot__/app.test.js:1:110\n            ",
+            "seconds": 0.005582761
+          }
+        ]
+      }
+    },
+    {
+      "name": "JavaScript Vitest syntax",
+      "expected": "COMPILATION_FAILURE",
+      "passed": true,
+      "durationSeconds": 0.295,
+      "result": {
+        "outcome": "COMPILATION_FAILURE",
+        "exitCode": 1,
+        "output": "/opt/testpilot-js/node_modules/@babel/core/lib/parser/index.js:74\n    throw err;\n    ^\n\nSyntaxError: /work/repo/__testpilot__/app.test.js: Unexpected token (2:15)\n\n\u001b[0m \u001b[90m 1 |\u001b[39m \u001b[36mimport\u001b[39m { test\u001b[33m,\u001b[39m expect } \u001b[36mfrom\u001b[39m \u001b[32m'vitest'\u001b[39m\u001b[33m;\u001b[39m \u001b[36mimport\u001b[39m { add } \u001b[36mfrom\u001b[39m \u001b[32m'../app'\u001b[39m\u001b[33m;\u001b[39m test(\u001b[32m'adds'\u001b[39m\u001b[33m,\u001b[39m () \u001b[33m=>\u001b[39m { expect(add(\u001b[35m2\u001b[39m\u001b[33m,\u001b[39m \u001b[35m3\u001b[39m))\u001b[33m.\u001b[39mtoBe(\u001b[35m5\u001b[39m)\u001b[33m;\u001b[39m })\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 2 |\u001b[39m \u001b[36mconst\u001b[39m broken \u001b[33m=\u001b[39m \u001b[33m;\u001b[39m\n \u001b[90m   |\u001b[39m                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\u001b[0m\n    at constructor (/opt/testpilot-js/node_modules/@babel/parser/lib/index.js:369:19)\n    at Parser.raise (/opt/testpilot-js/node_modules/@babel/parser/lib/index.js:6620:19)\n    at Parser.unexpected (/opt/testpilot-js/node_modules/@babel/parser/lib/index.js:6640:16)\n    at Parser.parseExprAtom (/opt/testpilot-js/node_modules/@babel/parser/lib/index.js:11468:22)\n    at Parser.parseExprSubscripts (/opt/testpilot-js/node_modules/@babel/parser/lib/index.js:11102:23)\n    at Parser.parseUpdate (/opt/testpilot-js/node_modules/@babel/parser/lib/index.js:11087:21)\n    at Parser.parseMaybeUnary (/opt/testpilot-js/node_modules/@babel/parser/lib/index.js:11067:23)\n    at Parser.parseMaybeUnaryOrPrivate (/opt/testpilot-js/node_modules/@babel/parser/lib/index.js:10920:61)\n    at Parser.parseExprOps (/opt/testpilot-js/node_modules/@babel/parser/lib/index.js:10925:23)\n    at Parser.parseMaybeConditional (/opt/testpilot-js/node_modules/@babel/parser/lib/index.js:10902:23)\n    at Parser.parseMaybeAssign (/opt/testpilot-js/node_modules/@babel/parser/lib/index.js:10852:21)\n    at /opt/testpilot-js/node_modules/@babel/parser/lib/index.js:10821:39\n    at Parser.allowInAnd (/opt/testpilot-js/node_modules/@babel/parser/lib/index.js:12450:16)\n    at Parser.parseMaybeAssignAllowIn (/opt/testpilot-js/node_modules/@babel/parser/lib/index.js:10821:17)\n    at Parser.parseVar (/opt/testpilot-js/node_modules/@babel/parser/lib/index.js:13413:91)\n    at Parser.parseVarStatement (/opt/testpilot-js/node_modules/@babel/parser/lib/index.js:13259:10)\n    at Parser.parseStatementContent (/opt/testpilot-js/node_modules/@babel/parser/lib/index.js:12880:23)\n    at Parser.parseStatementLike (/opt/testpilot-js/node_modules/@babel/parser/lib/index.js:12796:17)\n    at Parser.parseModuleItem (/opt/testpilot-js/node_modules/@babel/parser/lib/index.js:12773:17)\n    at Parser.parseBlockOrModuleBlockBody (/opt/testpilot-js/node_modules/@babel/parser/lib/index.js:13345:36)\n    at Parser.parseBlockBody (/opt/testpilot-js/node_modules/@babel/parser/lib/index.js:13338:10)\n    at Parser.parseProgram (/opt/testpilot-js/node_modules/@babel/parser/lib/index.js:12651:10)\n    at Parser.parseTopLevel (/opt/testpilot-js/node_modules/@babel/parser/lib/index.js:12641:25)\n    at Parser.parse (/opt/testpilot-js/node_modules/@babel/parser/lib/index.js:14517:25)\n    at parse (/opt/testpilot-js/node_modules/@babel/parser/lib/index.js:14530:26)\n    at parser (/opt/testpilot-js/node_modules/@babel/core/lib/parser/index.js:41:34)\n    at parser.next (<anonymous>)\n    at parse (/opt/testpilot-js/node_modules/@babel/core/lib/parse.js:25:37)\n    at parse.next (<anonymous>)\n    at evaluateSync (/opt/testpilot-js/node_modules/gensync/index.js:251:28)\n    at sync (/opt/testpilot-js/node_modules/gensync/index.js:89:14)\n    at stopHiding - secret - don't use this - v1 (/opt/testpilot-js/node_modules/@babel/core/lib/errors/rewrite-stack-trace.js:47:12)\n    at Object.parseSync (/opt/testpilot-js/node_modules/@babel/core/lib/parse.js:40:72)\n    at Object.<anonymous> (/opt/testpilot/syntax.cjs:4:9)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49 {\n  code: 'BABEL_PARSE_ERROR',\n  reasonCode: 'UnexpectedToken',\n  loc: Position { line: 2, column: 15, index: 136 },\n  pos: 136,\n  syntaxPlugin: undefined\n}\n\nNode.js v22.23.2\n",
+        "tests": []
+      }
+    },
+    {
+      "name": "TypeScript Jest passes",
+      "expected": "SUCCESS",
+      "passed": true,
+      "durationSeconds": 2.789,
+      "result": {
+        "outcome": "SUCCESS",
+        "exitCode": 0,
+        "output": "\nPASS __testpilot__/app.test.ts\n  \u2713 adds (2 ms)\n\nTest Suites: 1 passed, 1 total\nTests:       1 passed, 1 total\nSnapshots:   0 total\nTime:        0.468 s\nRan all test suites within paths \"/work/repo/__testpilot__/app.test.ts\".\nTest results written to: ../report.json\n",
+        "tests": [
+          {
+            "name": "adds",
+            "status": "PASSED",
+            "message": "",
+            "seconds": 0.002
+          }
+        ]
+      }
+    },
+    {
+      "name": "TypeScript Jest assertion",
+      "expected": "TEST_FAILURE",
+      "passed": true,
+      "durationSeconds": 2.702,
+      "result": {
+        "outcome": "TEST_FAILURE",
+        "exitCode": 1,
+        "output": "\nFAIL __testpilot__/app.test.ts\n  \u2715 adds (3 ms)\n\n  \u25cf adds\n\n    expect(received).toBe(expected) // Object.is equality\n\n    Expected: 6\n    Received: 5\n\n    \u001b[0m\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 1 |\u001b[39m \u001b[36mimport\u001b[39m { test\u001b[33m,\u001b[39m expect } \u001b[36mfrom\u001b[39m \u001b[32m'@jest/globals'\u001b[39m\u001b[33m;\u001b[39m \u001b[36mimport\u001b[39m { add } \u001b[36mfrom\u001b[39m \u001b[32m'../app'\u001b[39m\u001b[33m;\u001b[39m test(\u001b[32m'adds'\u001b[39m\u001b[33m,\u001b[39m () \u001b[33m=>\u001b[39m { expect(add(\u001b[35m2\u001b[39m\u001b[33m,\u001b[39m \u001b[35m3\u001b[39m))\u001b[33m.\u001b[39mtoBe(\u001b[35m6\u001b[39m)\u001b[33m;\u001b[39m })\u001b[33m;\u001b[39m\n     \u001b[90m   |\u001b[39m                                                                                                                    \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\u001b[0m\n\n      at Object.toBe (__testpilot__/app.test.ts:1:116)\n\nTest Suites: 1 failed, 1 total\nTests:       1 failed, 1 total\nSnapshots:   0 total\nTime:        0.48 s\nRan all test suites within paths \"/work/repo/__testpilot__/app.test.ts\".\nTest results written to: ../report.json\n",
+        "tests": [
+          {
+            "name": "adds",
+            "status": "FAILED",
+            "message": "Error: expect(received).toBe(expected) // Object.is equality\n\nExpected: 6\nReceived: 5\n    at Object.toBe (/work/repo/__testpilot__/app.test.ts:1:116)\n    at Promise.finally.completed (/opt/testpilot-js/node_modules/jest-circus/build/jestAdapterInit.js:1557:28)\n    at new Promise (<anonymous>)\n    at callAsyncCircusFn (/opt/testpilot-js/node_modules/jest-circus/build/jestAdapterInit.js:1497:10)\n    at _callCircusTest (/opt/testpilot-js/node_modules/jest-circus/build/jestAdapterInit.js:1007:40)\n    at _runTest (/opt/testpilot-js/node_modules/jest-circus/build/jestAdapterInit.js:947:3)\n    at /opt/testpilot-js/node_modules/jest-circus/build/jestAdapterInit.js:849:7\n    at _runTestsForDescribeBlock (/opt/testpilot-js/node_modules/jest-circus/build/jestAdapterInit.js:862:11)\n    at run (/opt/testpilot-js/node_modules/jest-circus/build/jestAdapterInit.js:761:3)\n    at runAndTransformResultsToJestFormat (/opt/testpilot-js/node_modules/jest-circus/build/jestAdapterInit.js:1918:21)\n    at jestAdapter (/opt/testpilot-js/node_modules/jest-circus/build/runner.js:101:19)\n    at runTestInternal (/opt/testpilot-js/node_modules/jest-runner/build/index.js:275:16)\n    at runTest (/opt/testpilot-js/node_modules/jest-runner/build/index.js:343:7)",
+            "seconds": 0.003
+          }
+        ]
+      }
+    },
+    {
+      "name": "TypeScript Jest syntax",
+      "expected": "COMPILATION_FAILURE",
+      "passed": true,
+      "durationSeconds": 1.481,
+      "result": {
+        "outcome": "COMPILATION_FAILURE",
+        "exitCode": 2,
+        "output": "__testpilot__/app.test.ts(2,16): error TS1109: Expression expected.\n",
+        "tests": []
+      }
+    },
+    {
+      "name": "TypeScript Vitest passes",
+      "expected": "SUCCESS",
+      "passed": true,
+      "durationSeconds": 2.957,
+      "result": {
+        "outcome": "SUCCESS",
+        "exitCode": 0,
+        "output": "\nJUNIT report written to /work/report.xml\n",
+        "tests": [
+          {
+            "name": "__testpilot__/app.test.ts.adds",
+            "status": "PASSED",
+            "message": "",
+            "seconds": 0.001029625
+          }
+        ]
+      }
+    },
+    {
+      "name": "TypeScript Vitest assertion",
+      "expected": "TEST_FAILURE",
+      "passed": true,
+      "durationSeconds": 2.907,
+      "result": {
+        "outcome": "TEST_FAILURE",
+        "exitCode": 1,
+        "output": "\nJUNIT report written to /work/report.xml\n",
+        "tests": [
+          {
+            "name": "__testpilot__/app.test.ts.adds",
+            "status": "FAILED",
+            "message": "expected 5 to be 6 // Object.is equality\n\nAssertionError: expected 5 to be 6 // Object.is equality\n\n- Expected\n+ Received\n\n- 6\n+ 5\n\n \u276f __testpilot__/app.test.ts:1:109\n            ",
+            "seconds": 0.005061271
+          }
+        ]
+      }
+    },
+    {
+      "name": "TypeScript Vitest syntax",
+      "expected": "COMPILATION_FAILURE",
+      "passed": true,
+      "durationSeconds": 1.575,
+      "result": {
+        "outcome": "COMPILATION_FAILURE",
+        "exitCode": 2,
+        "output": "__testpilot__/app.test.ts(2,16): error TS1109: Expression expected.\n",
+        "tests": []
+      }
+    },
+    {
+      "name": "Java assertion",
+      "expected": "TEST_FAILURE",
+      "passed": true,
+      "durationSeconds": 6.164,
+      "result": {
+        "outcome": "TEST_FAILURE",
+        "exitCode": 1,
+        "output": "Failed to load native library:jansi-2.4.3-c9ff92e0f91f11c2-libjansi.so. The native library file at /tmp/jansi-2.4.3-c9ff92e0f91f11c2-libjansi.so is not executable, make sure that the directory is mounted on a partition without the noexec flag, or set the jansi.tmpdir system property to point to a proper location.  osinfo: Linux/arm64\njava.lang.UnsatisfiedLinkError: /tmp/jansi-2.4.3-c9ff92e0f91f11c2-libjansi.so: /tmp/jansi-2.4.3-c9ff92e0f91f11c2-libjansi.so: failed to map segment from shared object\n[INFO] Scanning for projects...\n[INFO] \n[INFO] ------------------< testpilot.sandbox:offline-tests >-------------------\n[INFO] Building offline-tests 1\n[INFO]   from pom.xml\n[INFO] --------------------------------[ jar ]---------------------------------\n[INFO] \n[INFO] --- resources:3.4.0:resources (default-resources) @ offline-tests ---\n[INFO] skip non existing resourceDirectory /work/repo/src/main/resources\n[INFO] \n[INFO] --- compiler:3.11.0:compile (default-compile) @ offline-tests ---\n[INFO] Changes detected - recompiling the module! :source\n[INFO] Compiling 1 source file with javac [debug release 17] to target/classes\n[INFO] \n[INFO] --- resources:3.4.0:testResources (default-testResources) @ offline-tests ---\n[INFO] skip non existing resourceDirectory /work/repo/src/test/resources\n[INFO] \n[INFO] --- compiler:3.11.0:testCompile (default-testCompile) @ offline-tests ---\n[INFO] Changes detected - recompiling the module! :dependency\n[INFO] Compiling 1 source file with javac [debug release 17] to target/test-classes\n[INFO] ------------------------------------------------------------------------\n[INFO] BUILD SUCCESS\n[INFO] ------------------------------------------------------------------------\n[INFO] Total time:  1.523 s\n[INFO] Finished at: 2026-09-17T11:41:00Z\n[INFO] ------------------------------------------------------------------------\n\nFailed to load native library:jansi-2.4.3-9b5a12ea703e038b-libjansi.so. The native library file at /tmp/jansi-2.4.3-9b5a12ea703e038b-libjansi.so is not executable, make sure that the directory is mounted on a partition without the noexec flag, or set the jansi.tmpdir system property to point to a proper location.  osinfo: Linux/arm64\njava.lang.UnsatisfiedLinkError: /tmp/jansi-2.4.3-9b5a12ea703e038b-libjansi.so: /tmp/jansi-2.4.3-9b5a12ea703e038b-libjansi.so: failed to map segment from shared object\n[INFO] Scanning for projects...\n[INFO] \n[INFO] ------------------< testpilot.sandbox:offline-tests >-------------------\n[INFO] Building offline-tests 1\n[INFO]   from pom.xml\n[INFO] --------------------------------[ jar ]---------------------------------\n[INFO] \n[INFO] --- surefire:3.1.2:test (default-cli) @ offline-tests ---\n[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider\n[INFO] \n[INFO] -------------------------------------------------------\n[INFO]  T E S T S\n[INFO] -------------------------------------------------------\n[INFO] Running example.AppTest\n[ERROR] Tests run: 1, Failures: 1, Errors: 0, Skipped: 0, Time elapsed: 0.042 s <<< FAILURE! -- in example.AppTest\n[ERROR] example.AppTest.adds -- Time elapsed: 0.023 s <<< FAILURE!\norg.opentest4j.AssertionFailedError: expected: <6> but was: <5>\n\tat org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)\n\tat org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)\n\tat org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:197)\n\tat org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:150)\n\tat org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:145)\n\tat org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:531)\n\tat example.AppTest.adds(AppTest.java:1)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\n[INFO] \n[INFO] Results:\n[INFO] \n[ERROR] Failures: \n[ERROR]   AppTest.adds:1 expected: <6> but was: <5>\n[INFO] \n[ERROR] Tests run: 1, Failures: 1, Errors: 0, Skipped: 0\n[INFO] \n[INFO] ------------------------------------------------------------------------\n[INFO] BUILD FAILURE\n[INFO] ------------------------------------------------------------------------\n[INFO] Total time:  1.471 s\n[INFO] Finished at: 2026-09-17T11:41:03Z\n[INFO] ------------------------------------------------------------------------\n[ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.1.2:test (default-cli) on project offline-tests: There are test failures.\n[ERROR] \n[ERROR] Please refer to /work/repo/target/surefire-reports for the individual test results.\n[ERROR] Please refer to dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.\n[ERROR] -> [Help 1]\n[ERROR] \n[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.\n[ERROR] Re-run Maven using the -X switch to enable full debug logging.\n[ERROR] \n[ERROR] For more information about the errors and possible solutions, please read the following articles:\n[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException\n",
+        "tests": [
+          {
+            "name": "example.AppTest.adds",
+            "status": "FAILED",
+            "message": "expected: <6> but was: <5>\norg.opentest4j.AssertionFailedError: expected: <6> but was: <5>\n\tat org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)\n\tat org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)\n\tat org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:197)\n\tat org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:150)\n\tat org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:145)\n\tat org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:531)\n\tat example.AppTest.adds(AppTest.java:1)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n",
+            "seconds": 0.023
+          }
+        ]
+      }
+    },
+    {
+      "name": "Java syntax",
+      "expected": "COMPILATION_FAILURE",
+      "passed": true,
+      "durationSeconds": 2.879,
+      "result": {
+        "outcome": "COMPILATION_FAILURE",
+        "exitCode": 1,
+        "output": "Failed to load native library:jansi-2.4.3-2a5fbc5ede7f31b5-libjansi.so. The native library file at /tmp/jansi-2.4.3-2a5fbc5ede7f31b5-libjansi.so is not executable, make sure that the directory is mounted on a partition without the noexec flag, or set the jansi.tmpdir system property to point to a proper location.  osinfo: Linux/arm64\njava.lang.UnsatisfiedLinkError: /tmp/jansi-2.4.3-2a5fbc5ede7f31b5-libjansi.so: /tmp/jansi-2.4.3-2a5fbc5ede7f31b5-libjansi.so: failed to map segment from shared object\n[INFO] Scanning for projects...\n[INFO] \n[INFO] ------------------< testpilot.sandbox:offline-tests >-------------------\n[INFO] Building offline-tests 1\n[INFO]   from pom.xml\n[INFO] --------------------------------[ jar ]---------------------------------\n[INFO] \n[INFO] --- resources:3.4.0:resources (default-resources) @ offline-tests ---\n[INFO] skip non existing resourceDirectory /work/repo/src/main/resources\n[INFO] \n[INFO] --- compiler:3.11.0:compile (default-compile) @ offline-tests ---\n[INFO] Changes detected - recompiling the module! :source\n[INFO] Compiling 1 source file with javac [debug release 17] to target/classes\n[INFO] -------------------------------------------------------------\n[ERROR] COMPILATION ERROR : \n[INFO] -------------------------------------------------------------\n[ERROR] /work/repo/src/main/java/example/App.java:[2,1] class, interface, enum, or record expected\n[INFO] 1 error\n[INFO] -------------------------------------------------------------\n[INFO] ------------------------------------------------------------------------\n[INFO] BUILD FAILURE\n[INFO] ------------------------------------------------------------------------\n[INFO] Total time:  1.207 s\n[INFO] Finished at: 2026-09-17T11:41:06Z\n[INFO] ------------------------------------------------------------------------\n[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.11.0:compile (default-compile) on project offline-tests: Compilation failure\n[ERROR] /work/repo/src/main/java/example/App.java:[2,1] class, interface, enum, or record expected\n[ERROR] -> [Help 1]\n[ERROR] \n[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.\n[ERROR] Re-run Maven using the -X switch to enable full debug logging.\n[ERROR] \n[ERROR] For more information about the errors and possible solutions, please read the following articles:\n[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException\n",
+        "tests": []
+      }
+    },
+    {
+      "name": "Python assertion",
+      "expected": "TEST_FAILURE",
+      "passed": true,
+      "durationSeconds": 0.386,
+      "result": {
+        "outcome": "TEST_FAILURE",
+        "exitCode": 1,
+        "output": "\n============================= test session starts ==============================\nplatform linux -- Python 3.12.3, pytest-8.4.2, pluggy-1.6.0\nrootdir: /opt/testpilot\nconfigfile: pytest.ini\ncollected 1 item\n\n../../opt/testpilot F                                                    [100%]\n\n=================================== FAILURES ===================================\n___________________________________ test_add ___________________________________\n\n>   def test_add(): assert add(2, 3) == 6\n                    ^^^^^^^^^^^^^^^^^^^^^\nE   assert 5 == 6\nE    +  where 5 = add(2, 3)\n\ntests/test_app.py:2: AssertionError\n--------------------- generated xml file: /work/report.xml ---------------------\n=========================== short test summary info ============================\nFAILED ../../opt/testpilot::test_add - assert 5 == 6\n +  where 5 = add(2, 3)\n============================== 1 failed in 0.01s ===============================\n",
+        "tests": [
+          {
+            "name": ".test_add",
+            "status": "FAILED",
+            "message": "assert 5 == 6\n +  where 5 = add(2, 3)\n>   def test_add(): assert add(2, 3) == 6\n                    ^^^^^^^^^^^^^^^^^^^^^\nE   assert 5 == 6\nE    +  where 5 = add(2, 3)\n\ntests/test_app.py:2: AssertionError",
+            "seconds": 0.0
+          }
+        ]
+      }
+    },
+    {
+      "name": "Python syntax",
+      "expected": "COMPILATION_FAILURE",
+      "passed": true,
+      "durationSeconds": 0.223,
+      "result": {
+        "outcome": "COMPILATION_FAILURE",
+        "exitCode": 1,
+        "output": "*** Error compiling '/work/repo/app.py'...\n  File \"/work/repo/app.py\", line 3\n    not valid syntax !\n              ^^^^^^\nSyntaxError: invalid syntax\n\n",
+        "tests": []
+      }
+    },
+    {
+      "name": "Python missing dependency",
+      "expected": "DEPENDENCY_FAILURE",
+      "passed": true,
+      "durationSeconds": 0.439,
+      "result": {
+        "outcome": "DEPENDENCY_FAILURE",
+        "exitCode": 2,
+        "output": "\n============================= test session starts ==============================\nplatform linux -- Python 3.12.3, pytest-8.4.2, pluggy-1.6.0\nrootdir: /opt/testpilot\nconfigfile: pytest.ini\ncollected 0 items / 1 error\n\n==================================== ERRORS ====================================\n________________________ ERROR collecting test session _________________________\nImportError while importing test module '/work/repo/tests/test_app.py'.\nHint: make sure your test modules/packages have valid Python names.\nTraceback:\n/usr/lib/python3.12/importlib/__init__.py:90: in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\ntests/test_app.py:1: in <module>\n    import app\napp.py:1: in <module>\n    import testpilot_missing_dependency\nE   ModuleNotFoundError: No module named 'testpilot_missing_dependency'\n--------------------- generated xml file: /work/report.xml ---------------------\n=========================== short test summary info ============================\nERROR ../../opt/testpilot\n!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!\n=============================== 1 error in 0.06s ===============================\n\nReport rejected: ValueError",
+        "tests": []
+      }
+    },
+    {
+      "name": "Python all skipped",
+      "expected": "NO_TESTS",
+      "passed": true,
+      "durationSeconds": 0.4,
+      "result": {
+        "outcome": "NO_TESTS",
+        "exitCode": 0,
+        "output": "\n============================= test session starts ==============================\nplatform linux -- Python 3.12.3, pytest-8.4.2, pluggy-1.6.0\nrootdir: /opt/testpilot\nconfigfile: pytest.ini\ncollected 1 item\n\n../../opt/testpilot s                                                    [100%]\n\n--------------------- generated xml file: /work/report.xml ---------------------\n============================== 1 skipped in 0.01s ==============================\n",
+        "tests": [
+          {
+            "name": ".test_skip",
+            "status": "SKIPPED",
+            "message": "fixture\n/work/repo/tests/test_app.py:2: fixture",
+            "seconds": 0.0
+          }
+        ]
+      }
+    },
+    {
+      "name": "Python no tests",
+      "expected": "NO_TESTS",
+      "passed": true,
+      "durationSeconds": 0.394,
+      "result": {
+        "outcome": "NO_TESTS",
+        "exitCode": 5,
+        "output": "\n============================= test session starts ==============================\nplatform linux -- Python 3.12.3, pytest-8.4.2, pluggy-1.6.0\nrootdir: /opt/testpilot\nconfigfile: pytest.ini\ncollected 0 items\n\n--------------------- generated xml file: /work/report.xml ---------------------\n============================ no tests ran in 0.00s =============================\n",
+        "tests": []
+      }
+    },
+    {
+      "name": "Isolation boundary",
+      "expected": "SUCCESS",
+      "passed": true,
+      "durationSeconds": 0.399,
+      "result": {
+        "outcome": "SUCCESS",
+        "exitCode": 0,
+        "output": "\n============================= test session starts ==============================\nplatform linux -- Python 3.12.3, pytest-8.4.2, pluggy-1.6.0\nrootdir: /opt/testpilot\nconfigfile: pytest.ini\ncollected 1 item\n\n../../opt/testpilot .                                                    [100%]\n\n--------------------- generated xml file: /work/report.xml ---------------------\n============================== 1 passed in 0.01s ===============================\n",
+        "tests": [
+          {
+            "name": ".test_container_boundary",
+            "status": "PASSED",
+            "message": "",
+            "seconds": 0.001
+          }
+        ]
+      }
+    },
+    {
+      "name": "Multi-module Maven unsupported",
+      "expected": "UNSUPPORTED",
+      "passed": true,
+      "durationSeconds": 0.185,
+      "result": {
+        "outcome": "UNSUPPORTED",
+        "exitCode": null,
+        "output": "Multi-module Maven execution is not supported by this worker",
+        "tests": []
+      }
+    },
+    {
+      "name": "Unsupported language",
+      "expected": "UNSUPPORTED",
+      "passed": true,
+      "durationSeconds": 0.188,
+      "result": {
+        "outcome": "UNSUPPORTED",
+        "exitCode": null,
+        "output": "No installed adapter for this language/framework",
+        "tests": []
+      }
+    },
+    {
+      "name": "Timeout",
+      "expected": "TIMEOUT",
+      "passed": true,
+      "durationSeconds": 54.568,
+      "result": {
+        "outcome": "TIMEOUT",
+        "exitCode": 0,
+        "output": "Container compilation/test deadline exceeded",
+        "tests": []
+      }
+    }
+  ],
+  "passed": true
+}

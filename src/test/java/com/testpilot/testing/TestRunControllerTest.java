@@ -38,6 +38,11 @@ class TestRunControllerTest {
     @Autowired
     private AuthService authService;
 
+    // Controller/persistence integration only; real runtime behavior is exercised
+    // separately by the Docker worker smoke suite, never by a host Maven fallback.
+    @org.springframework.boot.test.mock.mockito.MockBean
+    private com.testpilot.testing.execution.sandbox.ContainerProcess container;
+
     private String devToken;
     private Long projectId;
 
@@ -110,6 +115,11 @@ class TestRunControllerTest {
                         .content(objectMapper.writeValueAsString(genReq)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.testClass").value("com.example.CalculatorTest"));
+
+        org.mockito.Mockito.when(container.run(org.mockito.ArgumentMatchers.anyList(), org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any())).thenReturn(
+                new com.testpilot.testing.execution.sandbox.ContainerProcess.Result(0, false, false,
+                        "{\"outcome\":\"SUCCESS\",\"exitCode\":0,\"output\":\"fixture worker result\",\"tests\":[{\"name\":\"com.example.CalculatorTest.shouldAddNumbers\",\"status\":\"PASSED\",\"message\":\"\",\"seconds\":0.01}]}"));
 
         // 3. Execute Test Run
         mockMvc.perform(post("/api/test-runs/" + testRunId + "/execute")

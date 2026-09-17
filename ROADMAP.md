@@ -10,6 +10,13 @@ Every phase has a review gate. A later phase starts only after the current phase
 
 ## Progress
 
+[Revised project analysis](docs/REVISED_PROJECT_ANALYSIS.md) records the current
+implementation gaps. [Revised Phase 3](docs/REVISED_PHASE_3.md) completes the
+partial offline polyglot path; all 25 real-container cases and the backend
+regression suite with Docker enabled passed locally. Revised
+Phases 4–6 remain separate owner-reviewed changes. Historical milestones below
+do not imply the new report/reviewer features are implemented.
+
 **Revised product plan:** [Phase 1 — GitHub URL and multi-language intake](docs/REVISED_PHASE_1.md)
 is implemented for review. This is a new iteration, separate from the original
 eight-phase milestones below. It does not imply multilingual test execution or
@@ -133,7 +140,7 @@ Implementation note:
 Deliverables:
 
 - Dedicated non-root worker image with read-only root filesystem, temporary workspace, dropped capabilities, PID/CPU/memory/file limits, and bounded logs.
-- Network disabled by default; explicitly allowlisted dependency-resolution stage separated from test execution.
+- Historical design: allowlisted dependency resolution followed by offline execution. Superseded by revised Phase 3: all runtime stages are offline, using prebuilt dependencies.
 - Durable job queue with leases, idempotency, cancellation, heartbeats, retries, and restart recovery.
 - Test-level-specific templates and validation policies.
 - Coverage and mutation-testing collection where supported.
@@ -147,7 +154,7 @@ Implementation note:
 
 - Execution jobs are unique per TestRun and persist leases, heartbeats, attempts, cancellation, bounded output, typed results, coverage, and optional mutation evidence.
 - The production backend materializes the screened immutable Maven catalog into a temporary workspace and runs it through the non-root worker image. Dependency resolution and offline test execution are separate constrained stages.
-- Unit, module, and integration proposals have different prompt guidance and deterministic validation policies. CI verifies the container restriction contract; the H2 profile uses a clearly identified trusted local runner.
+- Unit, module, and integration proposals have different prompt guidance and deterministic validation policies. Revised Phase 3 replaces the original worker and H2 local runner with the same offline polyglot container in every profile.
 
 ## Phase 6 — production RAG
 

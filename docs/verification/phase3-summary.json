@@ -1,0 +1,31 @@
+{
+  "phase": 3,
+  "status": "VERIFIED",
+  "verifiedAt": "2026-09-17T11:40:31.161543+00:00",
+  "platform": "linux/aarch64 via Lima on macOS",
+  "dockerVersion": "29.8.1",
+  "cgroupVersion": 2,
+  "imageId": "sha256:5c0cbeba35560069bae5f30a64c192ca21cb7db687b02729c27cf6bf95fed700",
+  "backend": {
+    "tests": 98,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 1
+  },
+  "containerCases": 25,
+  "remainingExecutionContainers": 0,
+  "sourceSha256": {
+    "worker/polyglot/Dockerfile": "d0f5bab1d9aea806346097e57eb898d0b145078f22bb996812a0ff7a250b588c",
+    "worker/polyglot/Dockerfile.dockerignore": "64ad346e3dab9d35e0206ecc33e512cabd251f88bb47850964c77b9449fbc90c",
+    "worker/polyglot/runner.py": "2ea343411fbe8f19e77b51fd846e19066bc998415003f6a86f94ed4176b81047",
+    "worker/polyglot/smoke.py": "eac8c4bcb74957e7dbd5c714a3913d758eae97828681200be2254f2951e4a009",
+    "src/main/java/com/testpilot/testing/execution/sandbox/OfflineContainerCommands.java": "20bec82445c3c4c27a7cc7e4e4bd634067444cdcbf577580a4edd2daf04fcb2d",
+    "src/main/java/com/testpilot/testing/execution/sandbox/SecureContainerExecutor.java": "4ae33d5ce961e5d01a58ce1c3f66710ae8258b1c1a811baaa4de4bcba1684932"
+  },
+  "limitations": [
+    "Offline image dependency inventory only; arbitrary framework/project configurations are not guaranteed.",
+    "Gradle, nested Java layouts and multi-module Maven are unsupported.",
+    "Passing test reports are untrusted evidence, not attestation or coverage evidence.",
+    "Verification was local on ARM64; CI is configured to repeat it on Ubuntu."
+  ]
+}

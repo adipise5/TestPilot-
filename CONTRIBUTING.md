@@ -23,7 +23,9 @@ npm run lint
 npm run build
 npm audit --audit-level=high
 cd ..
-docker build -t testpilot-worker:local -f worker/Dockerfile .
+docker build -t testpilot-polyglot:local -f worker/polyglot/Dockerfile .
+python3 -m unittest discover -s worker/polyglot -p 'test_*.py' -v
+python3 worker/polyglot/smoke.py --image testpilot-polyglot:local
 python -m unittest discover -s evaluation/tests -v
 python evaluation/run_evaluation.py --check
 ```

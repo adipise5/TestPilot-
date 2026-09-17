@@ -1,6 +1,6 @@
 # TestPilot threat model
 
-Status: updated through Phase 8. Security controls are implemented for the repository, workflow, retrieval, container-execution, evaluation, observability, and reviewed-delivery boundaries, but this document does not certify any particular deployment for public use.
+Status: updated for revised Phase 3; see [ADR 0008](adr/0008-offline-polyglot-execution.md). Security controls are implemented for the repository, workflow, retrieval, container-execution, evaluation, observability, and reviewed-delivery boundaries, but this document does not certify any particular deployment for public use.
 
 ## Assets
 
@@ -22,8 +22,7 @@ flowchart LR
     API --> DB["Application database"]
     API --> MODEL["External model provider"]
     API --> QUEUE["Durable leased execution jobs"]
-    QUEUE --> WORKER["Constrained dependency container"]
-    WORKER --> OFFLINE["Offline test container"]
+    QUEUE --> OFFLINE["Offline polyglot test container"]
     OFFLINE --> OUT["Typed results and bounded logs"]
     OUT --> API
     API --> REVIEW["Human delivery approval"]
@@ -48,7 +47,7 @@ Untrusted content is data, never instruction. A model response cannot authorize 
 
 | Risk | Current state | Required control |
 |---|---|---|
-| Host code execution | Production defaults to a constrained non-root container; H2 retains an explicit trusted local backend | Keep the local backend inaccessible in public deployments and continuously verify the worker policy |
+| Host code execution | Every profile uses the constrained non-root offline container | Continuously verify the worker policy; no application host fallback |
 | Path traversal | Supplied file paths reach workspace resolution | Canonical relative-path allowlist, symlink rejection, and root containment check |
 | Privilege escalation | Public registration is forced to developer; reviewer/admin creation is protected | Preserve role-administration tests and fail closed on unknown roles |
 | Object authorization | Central project authorization and cross-user negative tests cover run, RAG, repository, observability, and delivery endpoints | Apply the same policy to every future ID-based endpoint |
@@ -56,7 +55,7 @@ Untrusted content is data, never instruction. A model response cannot authorize 
 | Secret exposure | Development JWT fallback and repository/model credentials | Secret manager/environment requirements, redaction, rotation, and fail-fast production config |
 | Prompt injection | Repository and knowledge text is interpolated into prompts | Trust delimiters, deterministic tools, output schemas, scoped retrieval, and human write gates |
 | Cross-project RAG leakage | Dense and lexical candidates require tenant/project/commit/model scope; global guides have an explicit zero scope | Preserve mandatory filters and cross-project negative tests for every storage adapter |
-| Dependency-stage egress | Maven dependencies require network access before offline execution | Route only the dependency container through a deployment-controlled allowlisted network; never attach the test container |
+| Dependency supply chain | Reviewed tooling is installed at image-build time | Review and pin worker dependencies; runtime installation and network access are prohibited |
 | Denial of service | User code and LLM calls consume CPU, memory, time, and cost | Current worker limits, timeouts, cancellation, retrieval budgets, plus deployment quotas and queue backpressure |
 
 ## GitHub, MCP, and delivery rules
@@ -86,9 +85,25 @@ Untrusted content is data, never instruction. A model response cannot authorize 
 
 ## Execution-worker rules
 
-The worker runs as UID/GID 10001 with a read-only root filesystem during test execution, a fresh temporary workspace, dropped Linux capabilities, `no-new-privileges`, bounded PIDs/CPU/memory/file sizes/logs, a strict wall-clock timeout, and `--network none`. Dependency resolution is a separate constrained stage. Its cache is writable only during resolution, read-only during tests, and removed with the workspace. `TEST_DEPENDENCY_NETWORK` must identify an egress-controlled network in production.
+All application executions run in the polyglot image with UID/GID 10001, a
+read-only root, dropped capabilities, no-new-privileges and no network. Only the
+bounded snapshot JSON is mounted from the host, read-only; writable repository
+storage is bounded tmpfs. Dependencies must already exist in the reviewed image.
+There is no local profile exception or runtime networked dependency stage. See
+[Phase 3](REVISED_PHASE_3.md) for fixed resource/time/output limits.
 
-Execution jobs are unique per TestRun. Database leases, heartbeats, persisted cancellation, bounded retries, and serialized terminal results prevent duplicate completed execution and permit recovery after worker/application loss. The screened immutable catalog is hash-checked again before materialization. Neither worker stage receives GitHub/model credentials, application environment secrets, the Docker socket, or arbitrary host mounts.
+Legacy TestRun jobs retain leases, heartbeats, cancellation and retries. Draft
+attempts instead use explicit synchronous execution, optimistic locking, one
+latest-result record and stale-attempt cleanup. Both revalidate source input and
+use the same container executor. Neither receives credentials, Docker socket or
+host-home mounts. Cleanup is best effort if the Docker daemon is unavailable.
+
+Reports are bounded untrusted evidence, not attestation. Repository code can
+fabricate assertions/reports in its own container. Success requires consistent
+exit/case evidence but cannot establish usefulness or prevent deliberate forgery.
+Live container checks are required in CI. Local Phase 3 verification passed all
+25 container cases and the real application executor/cancellation tests; see the
+[verification summary](verification/phase3-summary.json).
 
 ## RAG rules
 
@@ -103,7 +118,7 @@ Execution jobs are unique per TestRun. Database leases, heartbeats, persisted ca
 
 - The deterministic CI dataset is versioned and SHA-256 pinned; changing cases or relevance judgments requires an explicit configuration update and review.
 - Regression thresholds fail closed. A result must not be improved by deleting difficult cases, weakening a seeded defect, or mixing fixture and live-provider experiments.
-- Benchmark Java executes through temporary Maven workspaces and contains only repository-owned fixtures. It is not an authorization to execute arbitrary external repositories outside the Phase 5 worker boundary.
+- Benchmark Java executes through temporary Maven workspaces and contains only repository-owned fixtures. It is not an authorization to execute arbitrary external repositories outside the revised Phase 3 worker boundary.
 - The TestRun observability endpoint uses project read authorization. It exposes aggregate metadata and trace identifiers, not prompts, retrieved source bodies, model responses, credentials, or environment values.
 - Token counts and prices are estimates unless provider-reported usage is explicitly stored; zero-cost mock runs must not be presented as production cost measurements.
 
