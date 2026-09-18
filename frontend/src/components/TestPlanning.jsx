@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { api } from '../api/client';
 import TestReportView from './TestReportView';
+import RetrievalEvidence from './RetrievalEvidence';
 
 export default function TestPlanning({ projectId }) {
   const [plan, setPlan] = useState(null);
@@ -81,6 +82,7 @@ export default function TestPlanning({ projectId }) {
         <p className="text-xs text-slate-400 my-2">{draft.result.generated.explanation}</p>
         <p className="text-xs text-slate-400 my-2">Generation checks: {draft.result.checks.join(', ')}</p>
         <pre className="code-block">{draft.result.generated.fullTestCode}</pre>
+        <RetrievalEvidence context={draft.result.retrieval} />
         <div className="flex gap-3 my-3">
           <button className="btn-primary text-xs" disabled={busy || draft.result.status !== 'STRUCTURALLY_VALIDATED' || draft.snapshotId !== plan.snapshotId}
             onClick={() => execution(draft, true)}>Execute / retry in container</button>

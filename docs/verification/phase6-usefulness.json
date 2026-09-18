@@ -1,0 +1,713 @@
+{
+  "datasetSha256": "6b43a3f81e067d5414a3ea1a2f17e0213599cc9de2198f5b31d5fc6231d6f63c",
+  "origin": "CURATED_TEST_FIXTURES_NOT_LIVE_GENERATION",
+  "provider": null,
+  "model": null,
+  "imageId": "sha256:4af3dc72f163d4813b4948b56f6f56ae5adea9a713d0d7206ac1297941bc2a0b",
+  "verifiedAt": "2026-09-18T18:59:30.545343+00:00",
+  "passed": true,
+  "cases": [
+    {
+      "caseId": "java-add",
+      "language": "Java",
+      "framework": "JUnit 5 / Mockito",
+      "variant": "strong",
+      "metrics": {
+        "baselineValid": true,
+        "baselinePasses": 2,
+        "baselineAttempts": 2,
+        "mutantOutcome": "TEST_FAILURE",
+        "mutationStatus": "MEASURED",
+        "seededMutationScore": 1.0
+      },
+      "expectedMutationScore": 1,
+      "passed": true,
+      "baselines": [
+        {
+          "outcome": "SUCCESS",
+          "exitCode": 0,
+          "output": "Failed to load native library:jansi-2.4.3-bcd139f04f49956a-libjansi.so. The native library file at /tmp/jansi-2.4.3-bcd139f04f49956a-libjansi.so is not executable, make sure that the directory is mounted on a partition without the noexec flag, or set the jansi.tmpdir system property to point to a proper location.  osinfo: Linux/arm64\njava.lang.UnsatisfiedLinkError: /tmp/jansi-2.4.3-bcd139f04f49956a-libjansi.so: /tmp/jansi-2.4.3-bcd139f04f49956a-libjansi.so: failed to map segment from shared object\n[INFO] Scanning for projects...\n[INFO] \n[INFO] ------------------< testpilot.sandbox:offline-tests >-------------------\n[INFO] Building offline-tests 1\n[INFO]   from pom.xml\n[INFO] --------------------------------[ jar ]---------------------------------\n[INFO] \n[INFO] --- resources:3.4.0:resources (default-resources) @ offline-tests ---\n[INFO] skip non existing resourceDirectory /work/repo/src/main/resources\n[INFO] \n[INFO] --- compiler:3.11.0:compile (default-compile) @ offline-tests ---\n[INFO] Changes detected - recompiling the module! :source\n[INFO] Compiling 1 source file with javac [debug release 17] to target/classes\n[INFO] \n[INFO] --- resources:3.4.0:testResources (default-testResources) @ offline-tests ---\n[INFO] skip non existing resourceDirectory /work/repo/src/test/resources\n[INFO] \n[INFO] --- compiler:3.11.0:testCompile (default-testCompile) @ offline-tests ---\n[INFO] Changes detected - recompiling the module! :dependency\n[INFO] Compiling 1 source file with javac [debug release 17] to target/test-classes\n[INFO] ------------------------------------------------------------------------\n[INFO] BUILD SUCCESS\n[INFO] ------------------------------------------------------------------------\n[INFO] Total time:  1.786 s\n[INFO] Finished at: 2026-09-18T18:58:23Z\n[INFO] ------------------------------------------------------------------------\n\nFailed to load native library:jansi-2.4.3-e6e0ba64d25cdf8b-libjansi.so. The native library file at /tmp/jansi-2.4.3-e6e0ba64d25cdf8b-libjansi.so is not executable, make sure that the directory is mounted on a partition without the noexec flag, or set the jansi.tmpdir system property to point to a proper location.  osinfo: Linux/arm64\njava.lang.UnsatisfiedLinkError: /tmp/jansi-2.4.3-e6e0ba64d25cdf8b-libjansi.so: /tmp/jansi-2.4.3-e6e0ba64d25cdf8b-libjansi.so: failed to map segment from shared object\n[INFO] Scanning for projects...\n[INFO] \n[INFO] ------------------< testpilot.sandbox:offline-tests >-------------------\n[INFO] Building offline-tests 1\n[INFO]   from pom.xml\n[INFO] --------------------------------[ jar ]---------------------------------\n[INFO] \n[INFO] --- surefire:3.1.2:test (default-cli) @ offline-tests ---\n[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider\n[INFO] \n[INFO] -------------------------------------------------------\n[INFO]  T E S T S\n[INFO] -------------------------------------------------------\n[INFO] Running AppTest\n[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.098 s -- in AppTest\n[INFO] \n[INFO] Results:\n[INFO] \n[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0\n[INFO] \n[INFO] ------------------------------------------------------------------------\n[INFO] BUILD SUCCESS\n[INFO] ------------------------------------------------------------------------\n[INFO] Total time:  2.166 s\n[INFO] Finished at: 2026-09-18T18:58:26Z\n[INFO] ------------------------------------------------------------------------\n",
+          "tests": [
+            {
+              "name": "AppTest.adds",
+              "status": "PASSED",
+              "message": "",
+              "seconds": 0.03
+            }
+          ],
+          "coverage": {
+            "status": "MEASURED",
+            "tool": "JaCoCo 0.8.12",
+            "sourcePath": "src/main/java/App.java",
+            "executedLines": [
+              1
+            ],
+            "missingLines": [],
+            "note": "Selected source only; line coverage is not assertion quality, branch coverage or a baseline delta."
+          }
+        },
+        {
+          "outcome": "SUCCESS",
+          "exitCode": 0,
+          "output": "Failed to load native library:jansi-2.4.3-a5dd99d336568044-libjansi.so. The native library file at /tmp/jansi-2.4.3-a5dd99d336568044-libjansi.so is not executable, make sure that the directory is mounted on a partition without the noexec flag, or set the jansi.tmpdir system property to point to a proper location.  osinfo: Linux/arm64\njava.lang.UnsatisfiedLinkError: /tmp/jansi-2.4.3-a5dd99d336568044-libjansi.so: /tmp/jansi-2.4.3-a5dd99d336568044-libjansi.so: failed to map segment from shared object\n[INFO] Scanning for projects...\n[INFO] \n[INFO] ------------------< testpilot.sandbox:offline-tests >-------------------\n[INFO] Building offline-tests 1\n[INFO]   from pom.xml\n[INFO] --------------------------------[ jar ]---------------------------------\n[INFO] \n[INFO] --- resources:3.4.0:resources (default-resources) @ offline-tests ---\n[INFO] skip non existing resourceDirectory /work/repo/src/main/resources\n[INFO] \n[INFO] --- compiler:3.11.0:compile (default-compile) @ offline-tests ---\n[INFO] Changes detected - recompiling the module! :source\n[INFO] Compiling 1 source file with javac [debug release 17] to target/classes\n[INFO] \n[INFO] --- resources:3.4.0:testResources (default-testResources) @ offline-tests ---\n[INFO] skip non existing resourceDirectory /work/repo/src/test/resources\n[INFO] \n[INFO] --- compiler:3.11.0:testCompile (default-testCompile) @ offline-tests ---\n[INFO] Changes detected - recompiling the module! :dependency\n[INFO] Compiling 1 source file with javac [debug release 17] to target/test-classes\n[INFO] ------------------------------------------------------------------------\n[INFO] BUILD SUCCESS\n[INFO] ------------------------------------------------------------------------\n[INFO] Total time:  1.413 s\n[INFO] Finished at: 2026-09-18T18:58:30Z\n[INFO] ------------------------------------------------------------------------\n\nFailed to load native library:jansi-2.4.3-978a0f8180597246-libjansi.so. The native library file at /tmp/jansi-2.4.3-978a0f8180597246-libjansi.so is not executable, make sure that the directory is mounted on a partition without the noexec flag, or set the jansi.tmpdir system property to point to a proper location.  osinfo: Linux/arm64\njava.lang.UnsatisfiedLinkError: /tmp/jansi-2.4.3-978a0f8180597246-libjansi.so: /tmp/jansi-2.4.3-978a0f8180597246-libjansi.so: failed to map segment from shared object\n[INFO] Scanning for projects...\n[INFO] \n[INFO] ------------------< testpilot.sandbox:offline-tests >-------------------\n[INFO] Building offline-tests 1\n[INFO]   from pom.xml\n[INFO] --------------------------------[ jar ]---------------------------------\n[INFO] \n[INFO] --- surefire:3.1.2:test (default-cli) @ offline-tests ---\n[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider\n[INFO] \n[INFO] -------------------------------------------------------\n[INFO]  T E S T S\n[INFO] -------------------------------------------------------\n[INFO] Running AppTest\n[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.119 s -- in AppTest\n[INFO] \n[INFO] Results:\n[INFO] \n[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0\n[INFO] \n[INFO] ------------------------------------------------------------------------\n[INFO] BUILD SUCCESS\n[INFO] ------------------------------------------------------------------------\n[INFO] Total time:  2.285 s\n[INFO] Finished at: 2026-09-18T18:58:33Z\n[INFO] ------------------------------------------------------------------------\n",
+          "tests": [
+            {
+              "name": "AppTest.adds",
+              "status": "PASSED",
+              "message": "",
+              "seconds": 0.087
+            }
+          ],
+          "coverage": {
+            "status": "MEASURED",
+            "tool": "JaCoCo 0.8.12",
+            "sourcePath": "src/main/java/App.java",
+            "executedLines": [
+              1
+            ],
+            "missingLines": [],
+            "note": "Selected source only; line coverage is not assertion quality, branch coverage or a baseline delta."
+          }
+        }
+      ],
+      "mutant": {
+        "outcome": "TEST_FAILURE",
+        "exitCode": 1,
+        "output": "Failed to load native library:jansi-2.4.3-27c637d827729e00-libjansi.so. The native library file at /tmp/jansi-2.4.3-27c637d827729e00-libjansi.so is not executable, make sure that the directory is mounted on a partition without the noexec flag, or set the jansi.tmpdir system property to point to a proper location.  osinfo: Linux/arm64\njava.lang.UnsatisfiedLinkError: /tmp/jansi-2.4.3-27c637d827729e00-libjansi.so: /tmp/jansi-2.4.3-27c637d827729e00-libjansi.so: failed to map segment from shared object\n[INFO] Scanning for projects...\n[INFO] \n[INFO] ------------------< testpilot.sandbox:offline-tests >-------------------\n[INFO] Building offline-tests 1\n[INFO]   from pom.xml\n[INFO] --------------------------------[ jar ]---------------------------------\n[INFO] \n[INFO] --- resources:3.4.0:resources (default-resources) @ offline-tests ---\n[INFO] skip non existing resourceDirectory /work/repo/src/main/resources\n[INFO] \n[INFO] --- compiler:3.11.0:compile (default-compile) @ offline-tests ---\n[INFO] Changes detected - recompiling the module! :source\n[INFO] Compiling 1 source file with javac [debug release 17] to target/classes\n[INFO] \n[INFO] --- resources:3.4.0:testResources (default-testResources) @ offline-tests ---\n[INFO] skip non existing resourceDirectory /work/repo/src/test/resources\n[INFO] \n[INFO] --- compiler:3.11.0:testCompile (default-testCompile) @ offline-tests ---\n[INFO] Changes detected - recompiling the module! :dependency\n[INFO] Compiling 1 source file with javac [debug release 17] to target/test-classes\n[INFO] ------------------------------------------------------------------------\n[INFO] BUILD SUCCESS\n[INFO] ------------------------------------------------------------------------\n[INFO] Total time:  1.516 s\n[INFO] Finished at: 2026-09-18T18:58:37Z\n[INFO] ------------------------------------------------------------------------\n\nFailed to load native library:jansi-2.4.3-6214d718d4aec499-libjansi.so. The native library file at /tmp/jansi-2.4.3-6214d718d4aec499-libjansi.so is not executable, make sure that the directory is mounted on a partition without the noexec flag, or set the jansi.tmpdir system property to point to a proper location.  osinfo: Linux/arm64\njava.lang.UnsatisfiedLinkError: /tmp/jansi-2.4.3-6214d718d4aec499-libjansi.so: /tmp/jansi-2.4.3-6214d718d4aec499-libjansi.so: failed to map segment from shared object\n[INFO] Scanning for projects...\n[INFO] \n[INFO] ------------------< testpilot.sandbox:offline-tests >-------------------\n[INFO] Building offline-tests 1\n[INFO]   from pom.xml\n[INFO] --------------------------------[ jar ]---------------------------------\n[INFO] \n[INFO] --- surefire:3.1.2:test (default-cli) @ offline-tests ---\n[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider\n[INFO] \n[INFO] -------------------------------------------------------\n[INFO]  T E S T S\n[INFO] -------------------------------------------------------\n[INFO] Running AppTest\n[ERROR] Tests run: 1, Failures: 1, Errors: 0, Skipped: 0, Time elapsed: 0.184 s <<< FAILURE! -- in AppTest\n[ERROR] AppTest.adds -- Time elapsed: 0.102 s <<< FAILURE!\norg.opentest4j.AssertionFailedError: expected: <5> but was: <-1>\n\tat org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)\n\tat org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)\n\tat org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:197)\n\tat org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:150)\n\tat org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:145)\n\tat org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:531)\n\tat AppTest.adds(AppTest.java:1)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\n[INFO] \n[INFO] Results:\n[INFO] \n[ERROR] Failures: \n[ERROR]   AppTest.adds:1 expected: <5> but was: <-1>\n[INFO] \n[ERROR] Tests run: 1, Failures: 1, Errors: 0, Skipped: 0\n[INFO] \n[INFO] ------------------------------------------------------------------------\n[INFO] BUILD FAILURE\n[INFO] ------------------------------------------------------------------------\n[INFO] Total time:  2.198 s\n[INFO] Finished at: 2026-09-18T18:58:41Z\n[INFO] ------------------------------------------------------------------------\n[ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.1.2:test (default-cli) on project offline-tests: There are test failures.\n[ERROR] \n[ERROR] Please refer to /work/repo/target/surefire-reports for the individual test results.\n[ERROR] Please refer to dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.\n[ERROR] -> [Help 1]\n[ERROR] \n[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.\n[ERROR] Re-run Maven using the -X switch to enable full debug logging.\n[ERROR] \n[ERROR] For more information about the errors and possible solutions, please read the following articles:\n[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException\n",
+        "tests": [
+          {
+            "name": "AppTest.adds",
+            "status": "FAILED",
+            "message": "expected: <5> but was: <-1>\norg.opentest4j.AssertionFailedError: expected: <5> but was: <-1>\n\tat org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)\n\tat org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)\n\tat org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:197)\n\tat org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:150)\n\tat org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:145)\n\tat org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:531)\n\tat AppTest.adds(AppTest.java:1)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\n",
+            "seconds": 0.102
+          }
+        ],
+        "coverage": {
+          "status": "MEASURED",
+          "tool": "JaCoCo 0.8.12",
+          "sourcePath": "src/main/java/App.java",
+          "executedLines": [
+            1
+          ],
+          "missingLines": [],
+          "note": "Selected source only; line coverage is not assertion quality, branch coverage or a baseline delta."
+        }
+      }
+    },
+    {
+      "caseId": "java-add",
+      "language": "Java",
+      "framework": "JUnit 5 / Mockito",
+      "variant": "weak",
+      "metrics": {
+        "baselineValid": true,
+        "baselinePasses": 2,
+        "baselineAttempts": 2,
+        "mutantOutcome": "SUCCESS",
+        "mutationStatus": "MEASURED",
+        "seededMutationScore": 0.0
+      },
+      "expectedMutationScore": 0,
+      "passed": true,
+      "baselines": [
+        {
+          "outcome": "SUCCESS",
+          "exitCode": 0,
+          "output": "Failed to load native library:jansi-2.4.3-2eb2644724cd0ab7-libjansi.so. The native library file at /tmp/jansi-2.4.3-2eb2644724cd0ab7-libjansi.so is not executable, make sure that the directory is mounted on a partition without the noexec flag, or set the jansi.tmpdir system property to point to a proper location.  osinfo: Linux/arm64\njava.lang.UnsatisfiedLinkError: /tmp/jansi-2.4.3-2eb2644724cd0ab7-libjansi.so: /tmp/jansi-2.4.3-2eb2644724cd0ab7-libjansi.so: failed to map segment from shared object\n[INFO] Scanning for projects...\n[INFO] \n[INFO] ------------------< testpilot.sandbox:offline-tests >-------------------\n[INFO] Building offline-tests 1\n[INFO]   from pom.xml\n[INFO] --------------------------------[ jar ]---------------------------------\n[INFO] \n[INFO] --- resources:3.4.0:resources (default-resources) @ offline-tests ---\n[INFO] skip non existing resourceDirectory /work/repo/src/main/resources\n[INFO] \n[INFO] --- compiler:3.11.0:compile (default-compile) @ offline-tests ---\n[INFO] Changes detected - recompiling the module! :source\n[INFO] Compiling 1 source file with javac [debug release 17] to target/classes\n[INFO] \n[INFO] --- resources:3.4.0:testResources (default-testResources) @ offline-tests ---\n[INFO] skip non existing resourceDirectory /work/repo/src/test/resources\n[INFO] \n[INFO] --- compiler:3.11.0:testCompile (default-testCompile) @ offline-tests ---\n[INFO] Changes detected - recompiling the module! :dependency\n[INFO] Compiling 1 source file with javac [debug release 17] to target/test-classes\n[INFO] ------------------------------------------------------------------------\n[INFO] BUILD SUCCESS\n[INFO] ------------------------------------------------------------------------\n[INFO] Total time:  1.502 s\n[INFO] Finished at: 2026-09-18T18:58:44Z\n[INFO] ------------------------------------------------------------------------\n\nFailed to load native library:jansi-2.4.3-e8f6ac0074729997-libjansi.so. The native library file at /tmp/jansi-2.4.3-e8f6ac0074729997-libjansi.so is not executable, make sure that the directory is mounted on a partition without the noexec flag, or set the jansi.tmpdir system property to point to a proper location.  osinfo: Linux/arm64\njava.lang.UnsatisfiedLinkError: /tmp/jansi-2.4.3-e8f6ac0074729997-libjansi.so: /tmp/jansi-2.4.3-e8f6ac0074729997-libjansi.so: failed to map segment from shared object\n[INFO] Scanning for projects...\n[INFO] \n[INFO] ------------------< testpilot.sandbox:offline-tests >-------------------\n[INFO] Building offline-tests 1\n[INFO]   from pom.xml\n[INFO] --------------------------------[ jar ]---------------------------------\n[INFO] \n[INFO] --- surefire:3.1.2:test (default-cli) @ offline-tests ---\n[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider\n[INFO] \n[INFO] -------------------------------------------------------\n[INFO]  T E S T S\n[INFO] -------------------------------------------------------\n[INFO] Running AppTest\n[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.097 s -- in AppTest\n[INFO] \n[INFO] Results:\n[INFO] \n[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0\n[INFO] \n[INFO] ------------------------------------------------------------------------\n[INFO] BUILD SUCCESS\n[INFO] ------------------------------------------------------------------------\n[INFO] Total time:  2.096 s\n[INFO] Finished at: 2026-09-18T18:58:47Z\n[INFO] ------------------------------------------------------------------------\n",
+          "tests": [
+            {
+              "name": "AppTest.vacuous",
+              "status": "PASSED",
+              "message": "",
+              "seconds": 0.025
+            }
+          ],
+          "coverage": {
+            "status": "MEASURED",
+            "tool": "JaCoCo 0.8.12",
+            "sourcePath": "src/main/java/App.java",
+            "executedLines": [],
+            "missingLines": [
+              1
+            ],
+            "note": "Selected source only; line coverage is not assertion quality, branch coverage or a baseline delta."
+          }
+        },
+        {
+          "outcome": "SUCCESS",
+          "exitCode": 0,
+          "output": "Failed to load native library:jansi-2.4.3-b7c857c504cc2665-libjansi.so. The native library file at /tmp/jansi-2.4.3-b7c857c504cc2665-libjansi.so is not executable, make sure that the directory is mounted on a partition without the noexec flag, or set the jansi.tmpdir system property to point to a proper location.  osinfo: Linux/arm64\njava.lang.UnsatisfiedLinkError: /tmp/jansi-2.4.3-b7c857c504cc2665-libjansi.so: /tmp/jansi-2.4.3-b7c857c504cc2665-libjansi.so: failed to map segment from shared object\n[INFO] Scanning for projects...\n[INFO] \n[INFO] ------------------< testpilot.sandbox:offline-tests >-------------------\n[INFO] Building offline-tests 1\n[INFO]   from pom.xml\n[INFO] --------------------------------[ jar ]---------------------------------\n[INFO] \n[INFO] --- resources:3.4.0:resources (default-resources) @ offline-tests ---\n[INFO] skip non existing resourceDirectory /work/repo/src/main/resources\n[INFO] \n[INFO] --- compiler:3.11.0:compile (default-compile) @ offline-tests ---\n[INFO] Changes detected - recompiling the module! :source\n[INFO] Compiling 1 source file with javac [debug release 17] to target/classes\n[INFO] \n[INFO] --- resources:3.4.0:testResources (default-testResources) @ offline-tests ---\n[INFO] skip non existing resourceDirectory /work/repo/src/test/resources\n[INFO] \n[INFO] --- compiler:3.11.0:testCompile (default-testCompile) @ offline-tests ---\n[INFO] Changes detected - recompiling the module! :dependency\n[INFO] Compiling 1 source file with javac [debug release 17] to target/test-classes\n[INFO] ------------------------------------------------------------------------\n[INFO] BUILD SUCCESS\n[INFO] ------------------------------------------------------------------------\n[INFO] Total time:  1.263 s\n[INFO] Finished at: 2026-09-18T18:58:50Z\n[INFO] ------------------------------------------------------------------------\n\nFailed to load native library:jansi-2.4.3-44dbf28249e732fa-libjansi.so. The native library file at /tmp/jansi-2.4.3-44dbf28249e732fa-libjansi.so is not executable, make sure that the directory is mounted on a partition without the noexec flag, or set the jansi.tmpdir system property to point to a proper location.  osinfo: Linux/arm64\njava.lang.UnsatisfiedLinkError: /tmp/jansi-2.4.3-44dbf28249e732fa-libjansi.so: /tmp/jansi-2.4.3-44dbf28249e732fa-libjansi.so: failed to map segment from shared object\n[INFO] Scanning for projects...\n[INFO] \n[INFO] ------------------< testpilot.sandbox:offline-tests >-------------------\n[INFO] Building offline-tests 1\n[INFO]   from pom.xml\n[INFO] --------------------------------[ jar ]---------------------------------\n[INFO] \n[INFO] --- surefire:3.1.2:test (default-cli) @ offline-tests ---\n[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider\n[INFO] \n[INFO] -------------------------------------------------------\n[INFO]  T E S T S\n[INFO] -------------------------------------------------------\n[INFO] Running AppTest\n[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.110 s -- in AppTest\n[INFO] \n[INFO] Results:\n[INFO] \n[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0\n[INFO] \n[INFO] ------------------------------------------------------------------------\n[INFO] BUILD SUCCESS\n[INFO] ------------------------------------------------------------------------\n[INFO] Total time:  2.068 s\n[INFO] Finished at: 2026-09-18T18:58:54Z\n[INFO] ------------------------------------------------------------------------\n",
+          "tests": [
+            {
+              "name": "AppTest.vacuous",
+              "status": "PASSED",
+              "message": "",
+              "seconds": 0.087
+            }
+          ],
+          "coverage": {
+            "status": "MEASURED",
+            "tool": "JaCoCo 0.8.12",
+            "sourcePath": "src/main/java/App.java",
+            "executedLines": [],
+            "missingLines": [
+              1
+            ],
+            "note": "Selected source only; line coverage is not assertion quality, branch coverage or a baseline delta."
+          }
+        }
+      ],
+      "mutant": {
+        "outcome": "SUCCESS",
+        "exitCode": 0,
+        "output": "Failed to load native library:jansi-2.4.3-f6a44badc53332ea-libjansi.so. The native library file at /tmp/jansi-2.4.3-f6a44badc53332ea-libjansi.so is not executable, make sure that the directory is mounted on a partition without the noexec flag, or set the jansi.tmpdir system property to point to a proper location.  osinfo: Linux/arm64\njava.lang.UnsatisfiedLinkError: /tmp/jansi-2.4.3-f6a44badc53332ea-libjansi.so: /tmp/jansi-2.4.3-f6a44badc53332ea-libjansi.so: failed to map segment from shared object\n[INFO] Scanning for projects...\n[INFO] \n[INFO] ------------------< testpilot.sandbox:offline-tests >-------------------\n[INFO] Building offline-tests 1\n[INFO]   from pom.xml\n[INFO] --------------------------------[ jar ]---------------------------------\n[INFO] \n[INFO] --- resources:3.4.0:resources (default-resources) @ offline-tests ---\n[INFO] skip non existing resourceDirectory /work/repo/src/main/resources\n[INFO] \n[INFO] --- compiler:3.11.0:compile (default-compile) @ offline-tests ---\n[INFO] Changes detected - recompiling the module! :source\n[INFO] Compiling 1 source file with javac [debug release 17] to target/classes\n[INFO] \n[INFO] --- resources:3.4.0:testResources (default-testResources) @ offline-tests ---\n[INFO] skip non existing resourceDirectory /work/repo/src/test/resources\n[INFO] \n[INFO] --- compiler:3.11.0:testCompile (default-testCompile) @ offline-tests ---\n[INFO] Changes detected - recompiling the module! :dependency\n[INFO] Compiling 1 source file with javac [debug release 17] to target/test-classes\n[INFO] ------------------------------------------------------------------------\n[INFO] BUILD SUCCESS\n[INFO] ------------------------------------------------------------------------\n[INFO] Total time:  1.484 s\n[INFO] Finished at: 2026-09-18T18:58:57Z\n[INFO] ------------------------------------------------------------------------\n\nFailed to load native library:jansi-2.4.3-c445d57db51c73c9-libjansi.so. The native library file at /tmp/jansi-2.4.3-c445d57db51c73c9-libjansi.so is not executable, make sure that the directory is mounted on a partition without the noexec flag, or set the jansi.tmpdir system property to point to a proper location.  osinfo: Linux/arm64\njava.lang.UnsatisfiedLinkError: /tmp/jansi-2.4.3-c445d57db51c73c9-libjansi.so: /tmp/jansi-2.4.3-c445d57db51c73c9-libjansi.so: failed to map segment from shared object\n[INFO] Scanning for projects...\n[INFO] \n[INFO] ------------------< testpilot.sandbox:offline-tests >-------------------\n[INFO] Building offline-tests 1\n[INFO]   from pom.xml\n[INFO] --------------------------------[ jar ]---------------------------------\n[INFO] \n[INFO] --- surefire:3.1.2:test (default-cli) @ offline-tests ---\n[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider\n[INFO] \n[INFO] -------------------------------------------------------\n[INFO]  T E S T S\n[INFO] -------------------------------------------------------\n[INFO] Running AppTest\n[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.109 s -- in AppTest\n[INFO] \n[INFO] Results:\n[INFO] \n[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0\n[INFO] \n[INFO] ------------------------------------------------------------------------\n[INFO] BUILD SUCCESS\n[INFO] ------------------------------------------------------------------------\n[INFO] Total time:  2.000 s\n[INFO] Finished at: 2026-09-18T18:59:01Z\n[INFO] ------------------------------------------------------------------------\n",
+        "tests": [
+          {
+            "name": "AppTest.vacuous",
+            "status": "PASSED",
+            "message": "",
+            "seconds": 0.085
+          }
+        ],
+        "coverage": {
+          "status": "MEASURED",
+          "tool": "JaCoCo 0.8.12",
+          "sourcePath": "src/main/java/App.java",
+          "executedLines": [],
+          "missingLines": [
+            1
+          ],
+          "note": "Selected source only; line coverage is not assertion quality, branch coverage or a baseline delta."
+        }
+      }
+    },
+    {
+      "caseId": "python-add",
+      "language": "Python",
+      "framework": "pytest",
+      "variant": "strong",
+      "metrics": {
+        "baselineValid": true,
+        "baselinePasses": 2,
+        "baselineAttempts": 2,
+        "mutantOutcome": "TEST_FAILURE",
+        "mutationStatus": "MEASURED",
+        "seededMutationScore": 1.0
+      },
+      "expectedMutationScore": 1,
+      "passed": true,
+      "baselines": [
+        {
+          "outcome": "SUCCESS",
+          "exitCode": 0,
+          "output": "\n============================= test session starts ==============================\nplatform linux -- Python 3.12.3, pytest-8.4.2, pluggy-1.6.0\nrootdir: /opt/testpilot\nconfigfile: pytest.ini\ncollected 1 item\n\n../../opt/testpilot .                                                    [100%]\n\n--------------------- generated xml file: /work/report.xml ---------------------\n============================== 1 passed in 0.02s ===============================\n",
+          "tests": [
+            {
+              "name": ".test_add",
+              "status": "PASSED",
+              "message": "",
+              "seconds": 0.0
+            }
+          ],
+          "coverage": {
+            "status": "MEASURED",
+            "tool": "coverage.py 7.10.6",
+            "sourcePath": "app.py",
+            "executedLines": [
+              1
+            ],
+            "missingLines": [],
+            "note": "Selected source only; line coverage is not assertion quality, branch coverage or a baseline delta."
+          }
+        },
+        {
+          "outcome": "SUCCESS",
+          "exitCode": 0,
+          "output": "\n============================= test session starts ==============================\nplatform linux -- Python 3.12.3, pytest-8.4.2, pluggy-1.6.0\nrootdir: /opt/testpilot\nconfigfile: pytest.ini\ncollected 1 item\n\n../../opt/testpilot .                                                    [100%]\n\n--------------------- generated xml file: /work/report.xml ---------------------\n============================== 1 passed in 0.02s ===============================\n",
+          "tests": [
+            {
+              "name": ".test_add",
+              "status": "PASSED",
+              "message": "",
+              "seconds": 0.0
+            }
+          ],
+          "coverage": {
+            "status": "MEASURED",
+            "tool": "coverage.py 7.10.6",
+            "sourcePath": "app.py",
+            "executedLines": [
+              1
+            ],
+            "missingLines": [],
+            "note": "Selected source only; line coverage is not assertion quality, branch coverage or a baseline delta."
+          }
+        }
+      ],
+      "mutant": {
+        "outcome": "TEST_FAILURE",
+        "exitCode": 1,
+        "output": "\n============================= test session starts ==============================\nplatform linux -- Python 3.12.3, pytest-8.4.2, pluggy-1.6.0\nrootdir: /opt/testpilot\nconfigfile: pytest.ini\ncollected 1 item\n\n../../opt/testpilot F                                                    [100%]\n\n=================================== FAILURES ===================================\n___________________________________ test_add ___________________________________\n\n>   def test_add(): assert add(2,3) == 5\n                    ^^^^^^^^^^^^^^^^^^^^\nE   assert -1 == 5\nE    +  where -1 = add(2, 3)\n\ntests/test_app.py:2: AssertionError\n--------------------- generated xml file: /work/report.xml ---------------------\n=========================== short test summary info ============================\nFAILED ../../opt/testpilot::test_add - assert -1 == 5\n +  where -1 = add(2, 3)\n============================== 1 failed in 0.03s ===============================\n",
+        "tests": [
+          {
+            "name": ".test_add",
+            "status": "FAILED",
+            "message": "assert -1 == 5\n +  where -1 = add(2, 3)\n>   def test_add(): assert add(2,3) == 5\n                    ^^^^^^^^^^^^^^^^^^^^\nE   assert -1 == 5\nE    +  where -1 = add(2, 3)\n\ntests/test_app.py:2: AssertionError",
+            "seconds": 0.001
+          }
+        ],
+        "coverage": {
+          "status": "MEASURED",
+          "tool": "coverage.py 7.10.6",
+          "sourcePath": "app.py",
+          "executedLines": [
+            1
+          ],
+          "missingLines": [],
+          "note": "Selected source only; line coverage is not assertion quality, branch coverage or a baseline delta."
+        }
+      }
+    },
+    {
+      "caseId": "python-add",
+      "language": "Python",
+      "framework": "pytest",
+      "variant": "weak",
+      "metrics": {
+        "baselineValid": true,
+        "baselinePasses": 2,
+        "baselineAttempts": 2,
+        "mutantOutcome": "SUCCESS",
+        "mutationStatus": "MEASURED",
+        "seededMutationScore": 0.0
+      },
+      "expectedMutationScore": 0,
+      "passed": true,
+      "baselines": [
+        {
+          "outcome": "SUCCESS",
+          "exitCode": 0,
+          "output": "\n============================= test session starts ==============================\nplatform linux -- Python 3.12.3, pytest-8.4.2, pluggy-1.6.0\nrootdir: /opt/testpilot\nconfigfile: pytest.ini\ncollected 1 item\n\n../../opt/testpilot .                                                    [100%]\n\n--------------------- generated xml file: /work/report.xml ---------------------\n============================== 1 passed in 0.02s ===============================\n",
+          "tests": [
+            {
+              "name": ".test_vacuous",
+              "status": "PASSED",
+              "message": "",
+              "seconds": 0.0
+            }
+          ],
+          "coverage": {
+            "status": "MEASURED",
+            "tool": "coverage.py 7.10.6",
+            "sourcePath": "app.py",
+            "executedLines": [],
+            "missingLines": [
+              1
+            ],
+            "note": "Selected source only; line coverage is not assertion quality, branch coverage or a baseline delta."
+          }
+        },
+        {
+          "outcome": "SUCCESS",
+          "exitCode": 0,
+          "output": "\n============================= test session starts ==============================\nplatform linux -- Python 3.12.3, pytest-8.4.2, pluggy-1.6.0\nrootdir: /opt/testpilot\nconfigfile: pytest.ini\ncollected 1 item\n\n../../opt/testpilot .                                                    [100%]\n\n--------------------- generated xml file: /work/report.xml ---------------------\n============================== 1 passed in 0.02s ===============================\n",
+          "tests": [
+            {
+              "name": ".test_vacuous",
+              "status": "PASSED",
+              "message": "",
+              "seconds": 0.0
+            }
+          ],
+          "coverage": {
+            "status": "MEASURED",
+            "tool": "coverage.py 7.10.6",
+            "sourcePath": "app.py",
+            "executedLines": [],
+            "missingLines": [
+              1
+            ],
+            "note": "Selected source only; line coverage is not assertion quality, branch coverage or a baseline delta."
+          }
+        }
+      ],
+      "mutant": {
+        "outcome": "SUCCESS",
+        "exitCode": 0,
+        "output": "\n============================= test session starts ==============================\nplatform linux -- Python 3.12.3, pytest-8.4.2, pluggy-1.6.0\nrootdir: /opt/testpilot\nconfigfile: pytest.ini\ncollected 1 item\n\n../../opt/testpilot .                                                    [100%]\n\n--------------------- generated xml file: /work/report.xml ---------------------\n============================== 1 passed in 0.02s ===============================\n",
+        "tests": [
+          {
+            "name": ".test_vacuous",
+            "status": "PASSED",
+            "message": "",
+            "seconds": 0.0
+          }
+        ],
+        "coverage": {
+          "status": "MEASURED",
+          "tool": "coverage.py 7.10.6",
+          "sourcePath": "app.py",
+          "executedLines": [],
+          "missingLines": [
+            1
+          ],
+          "note": "Selected source only; line coverage is not assertion quality, branch coverage or a baseline delta."
+        }
+      }
+    },
+    {
+      "caseId": "js-add",
+      "language": "JavaScript",
+      "framework": "Jest",
+      "variant": "strong",
+      "metrics": {
+        "baselineValid": true,
+        "baselinePasses": 2,
+        "baselineAttempts": 2,
+        "mutantOutcome": "TEST_FAILURE",
+        "mutationStatus": "MEASURED",
+        "seededMutationScore": 1.0
+      },
+      "expectedMutationScore": 1,
+      "passed": true,
+      "baselines": [
+        {
+          "outcome": "SUCCESS",
+          "exitCode": 0,
+          "output": "\nPASS __testpilot__/app.test.js\n  \u2713 adds (2 ms)\n\nTest Suites: 1 passed, 1 total\nTests:       1 passed, 1 total\nSnapshots:   0 total\nTime:        0.792 s\nRan all test suites within paths \"/work/repo/__testpilot__/app.test.js\".\nTest results written to: ../report.json\n",
+          "tests": [
+            {
+              "name": "adds",
+              "status": "PASSED",
+              "message": "",
+              "seconds": 0.002
+            }
+          ],
+          "coverage": {
+            "status": "MEASURED",
+            "tool": "Jest / V8",
+            "sourcePath": "app.js",
+            "executedLines": [
+              1
+            ],
+            "missingLines": [],
+            "note": "Selected source only; line coverage is not assertion quality, branch coverage or a baseline delta."
+          }
+        },
+        {
+          "outcome": "SUCCESS",
+          "exitCode": 0,
+          "output": "\nPASS __testpilot__/app.test.js\n  \u2713 adds (4 ms)\n\nTest Suites: 1 passed, 1 total\nTests:       1 passed, 1 total\nSnapshots:   0 total\nTime:        0.74 s\nRan all test suites within paths \"/work/repo/__testpilot__/app.test.js\".\nTest results written to: ../report.json\n",
+          "tests": [
+            {
+              "name": "adds",
+              "status": "PASSED",
+              "message": "",
+              "seconds": 0.004
+            }
+          ],
+          "coverage": {
+            "status": "MEASURED",
+            "tool": "Jest / V8",
+            "sourcePath": "app.js",
+            "executedLines": [
+              1
+            ],
+            "missingLines": [],
+            "note": "Selected source only; line coverage is not assertion quality, branch coverage or a baseline delta."
+          }
+        }
+      ],
+      "mutant": {
+        "outcome": "TEST_FAILURE",
+        "exitCode": 1,
+        "output": "\nFAIL __testpilot__/app.test.js\n  \u2715 adds (3 ms)\n\n  \u25cf adds\n\n    expect(received).toBe(expected) // Object.is equality\n\n    Expected: 5\n    Received: -1\n\n    \u001b[0m\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 1 |\u001b[39m \u001b[36mimport\u001b[39m {test\u001b[33m,\u001b[39mexpect} \u001b[36mfrom\u001b[39m \u001b[32m'@jest/globals'\u001b[39m\u001b[33m;\u001b[39m \u001b[36mimport\u001b[39m {add} \u001b[36mfrom\u001b[39m \u001b[32m'../app'\u001b[39m\u001b[33m;\u001b[39m test(\u001b[32m'adds'\u001b[39m\u001b[33m,\u001b[39m()\u001b[33m=>\u001b[39mexpect(add(\u001b[35m2\u001b[39m\u001b[33m,\u001b[39m\u001b[35m3\u001b[39m))\u001b[33m.\u001b[39mtoBe(\u001b[35m5\u001b[39m))\u001b[33m;\u001b[39m\n     \u001b[90m   |\u001b[39m                                                                                                         \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\u001b[0m\n\n      at Object.toBe (__testpilot__/app.test.js:1:105)\n\nTest Suites: 1 failed, 1 total\nTests:       1 failed, 1 total\nSnapshots:   0 total\nTime:        0.755 s\nRan all test suites within paths \"/work/repo/__testpilot__/app.test.js\".\nTest results written to: ../report.json\n",
+        "tests": [
+          {
+            "name": "adds",
+            "status": "FAILED",
+            "message": "Error: expect(received).toBe(expected) // Object.is equality\n\nExpected: 5\nReceived: -1\n    at Object.toBe (/work/repo/__testpilot__/app.test.js:1:105)\n    at Promise.finally.completed (/opt/testpilot-js/node_modules/jest-circus/build/jestAdapterInit.js:1557:28)\n    at new Promise (<anonymous>)\n    at callAsyncCircusFn (/opt/testpilot-js/node_modules/jest-circus/build/jestAdapterInit.js:1497:10)\n    at _callCircusTest (/opt/testpilot-js/node_modules/jest-circus/build/jestAdapterInit.js:1007:40)\n    at _runTest (/opt/testpilot-js/node_modules/jest-circus/build/jestAdapterInit.js:947:3)\n    at /opt/testpilot-js/node_modules/jest-circus/build/jestAdapterInit.js:849:7\n    at _runTestsForDescribeBlock (/opt/testpilot-js/node_modules/jest-circus/build/jestAdapterInit.js:862:11)\n    at run (/opt/testpilot-js/node_modules/jest-circus/build/jestAdapterInit.js:761:3)\n    at runAndTransformResultsToJestFormat (/opt/testpilot-js/node_modules/jest-circus/build/jestAdapterInit.js:1918:21)\n    at jestAdapter (/opt/testpilot-js/node_modules/jest-circus/build/runner.js:101:19)\n    at runTestInternal (/opt/testpilot-js/node_modules/jest-runner/build/index.js:275:16)\n    at runTest (/opt/testpilot-js/node_modules/jest-runner/build/index.js:343:7)",
+            "seconds": 0.003
+          }
+        ],
+        "coverage": {
+          "status": "MEASURED",
+          "tool": "Jest / V8",
+          "sourcePath": "app.js",
+          "executedLines": [
+            1
+          ],
+          "missingLines": [],
+          "note": "Selected source only; line coverage is not assertion quality, branch coverage or a baseline delta."
+        }
+      }
+    },
+    {
+      "caseId": "js-add",
+      "language": "JavaScript",
+      "framework": "Jest",
+      "variant": "weak",
+      "metrics": {
+        "baselineValid": true,
+        "baselinePasses": 2,
+        "baselineAttempts": 2,
+        "mutantOutcome": "SUCCESS",
+        "mutationStatus": "MEASURED",
+        "seededMutationScore": 0.0
+      },
+      "expectedMutationScore": 0,
+      "passed": true,
+      "baselines": [
+        {
+          "outcome": "SUCCESS",
+          "exitCode": 0,
+          "output": "\nPASS __testpilot__/app.test.js\n  \u2713 vacuous (2 ms)\n\nTest Suites: 1 passed, 1 total\nTests:       1 passed, 1 total\nSnapshots:   0 total\nTime:        0.727 s\nRan all test suites within paths \"/work/repo/__testpilot__/app.test.js\".\nTest results written to: ../report.json\n",
+          "tests": [
+            {
+              "name": "vacuous",
+              "status": "PASSED",
+              "message": "",
+              "seconds": 0.002
+            }
+          ],
+          "coverage": {
+            "status": "MEASURED",
+            "tool": "Jest / V8",
+            "sourcePath": "app.js",
+            "executedLines": [],
+            "missingLines": [
+              1
+            ],
+            "note": "Selected source only; line coverage is not assertion quality, branch coverage or a baseline delta."
+          }
+        },
+        {
+          "outcome": "SUCCESS",
+          "exitCode": 0,
+          "output": "\nPASS __testpilot__/app.test.js\n  \u2713 vacuous (2 ms)\n\nTest Suites: 1 passed, 1 total\nTests:       1 passed, 1 total\nSnapshots:   0 total\nTime:        0.738 s\nRan all test suites within paths \"/work/repo/__testpilot__/app.test.js\".\nTest results written to: ../report.json\n",
+          "tests": [
+            {
+              "name": "vacuous",
+              "status": "PASSED",
+              "message": "",
+              "seconds": 0.002
+            }
+          ],
+          "coverage": {
+            "status": "MEASURED",
+            "tool": "Jest / V8",
+            "sourcePath": "app.js",
+            "executedLines": [],
+            "missingLines": [
+              1
+            ],
+            "note": "Selected source only; line coverage is not assertion quality, branch coverage or a baseline delta."
+          }
+        }
+      ],
+      "mutant": {
+        "outcome": "SUCCESS",
+        "exitCode": 0,
+        "output": "\nPASS __testpilot__/app.test.js\n  \u2713 vacuous (2 ms)\n\nTest Suites: 1 passed, 1 total\nTests:       1 passed, 1 total\nSnapshots:   0 total\nTime:        0.686 s\nRan all test suites within paths \"/work/repo/__testpilot__/app.test.js\".\nTest results written to: ../report.json\n",
+        "tests": [
+          {
+            "name": "vacuous",
+            "status": "PASSED",
+            "message": "",
+            "seconds": 0.002
+          }
+        ],
+        "coverage": {
+          "status": "MEASURED",
+          "tool": "Jest / V8",
+          "sourcePath": "app.js",
+          "executedLines": [],
+          "missingLines": [
+            1
+          ],
+          "note": "Selected source only; line coverage is not assertion quality, branch coverage or a baseline delta."
+        }
+      }
+    },
+    {
+      "caseId": "ts-add",
+      "language": "TypeScript",
+      "framework": "Vitest",
+      "variant": "strong",
+      "metrics": {
+        "baselineValid": true,
+        "baselinePasses": 2,
+        "baselineAttempts": 2,
+        "mutantOutcome": "TEST_FAILURE",
+        "mutationStatus": "MEASURED",
+        "seededMutationScore": 1.0
+      },
+      "expectedMutationScore": 1,
+      "passed": true,
+      "baselines": [
+        {
+          "outcome": "SUCCESS",
+          "exitCode": 0,
+          "output": "\nJUNIT report written to /work/report.xml\n",
+          "tests": [
+            {
+              "name": "__testpilot__/app.test.ts.adds",
+              "status": "PASSED",
+              "message": "",
+              "seconds": 0.000990832
+            }
+          ],
+          "coverage": {
+            "status": "MEASURED",
+            "tool": "Vitest / V8",
+            "sourcePath": "app.ts",
+            "executedLines": [
+              1
+            ],
+            "missingLines": [],
+            "note": "Selected source only; line coverage is not assertion quality, branch coverage or a baseline delta."
+          }
+        },
+        {
+          "outcome": "SUCCESS",
+          "exitCode": 0,
+          "output": "\nJUNIT report written to /work/report.xml\n",
+          "tests": [
+            {
+              "name": "__testpilot__/app.test.ts.adds",
+              "status": "PASSED",
+              "message": "",
+              "seconds": 0.000897305
+            }
+          ],
+          "coverage": {
+            "status": "MEASURED",
+            "tool": "Vitest / V8",
+            "sourcePath": "app.ts",
+            "executedLines": [
+              1
+            ],
+            "missingLines": [],
+            "note": "Selected source only; line coverage is not assertion quality, branch coverage or a baseline delta."
+          }
+        }
+      ],
+      "mutant": {
+        "outcome": "TEST_FAILURE",
+        "exitCode": 1,
+        "output": "\nJUNIT report written to /work/report.xml\n",
+        "tests": [
+          {
+            "name": "__testpilot__/app.test.ts.adds",
+            "status": "FAILED",
+            "message": "expected -1 to be 5 // Object.is equality\n\nAssertionError: expected -1 to be 5 // Object.is equality\n\n- Expected\n+ Received\n\n- 5\n+ -1\n\n \u276f __testpilot__/app.test.ts:1:98\n            ",
+            "seconds": 0.005878596
+          }
+        ],
+        "coverage": {
+          "status": "MEASURED",
+          "tool": "Vitest / V8",
+          "sourcePath": "app.ts",
+          "executedLines": [
+            1
+          ],
+          "missingLines": [],
+          "note": "Selected source only; line coverage is not assertion quality, branch coverage or a baseline delta."
+        }
+      }
+    },
+    {
+      "caseId": "ts-add",
+      "language": "TypeScript",
+      "framework": "Vitest",
+      "variant": "weak",
+      "metrics": {
+        "baselineValid": true,
+        "baselinePasses": 2,
+        "baselineAttempts": 2,
+        "mutantOutcome": "SUCCESS",
+        "mutationStatus": "MEASURED",
+        "seededMutationScore": 0.0
+      },
+      "expectedMutationScore": 0,
+      "passed": true,
+      "baselines": [
+        {
+          "outcome": "SUCCESS",
+          "exitCode": 0,
+          "output": "\nJUNIT report written to /work/report.xml\n",
+          "tests": [
+            {
+              "name": "__testpilot__/app.test.ts.vacuous",
+              "status": "PASSED",
+              "message": "",
+              "seconds": 0.000892346
+            }
+          ],
+          "coverage": {
+            "status": "MEASURED",
+            "tool": "Vitest / V8",
+            "sourcePath": "app.ts",
+            "executedLines": [],
+            "missingLines": [
+              1
+            ],
+            "note": "Selected source only; line coverage is not assertion quality, branch coverage or a baseline delta."
+          }
+        },
+        {
+          "outcome": "SUCCESS",
+          "exitCode": 0,
+          "output": "\nJUNIT report written to /work/report.xml\n",
+          "tests": [
+            {
+              "name": "__testpilot__/app.test.ts.vacuous",
+              "status": "PASSED",
+              "message": "",
+              "seconds": 0.000890143
+            }
+          ],
+          "coverage": {
+            "status": "MEASURED",
+            "tool": "Vitest / V8",
+            "sourcePath": "app.ts",
+            "executedLines": [],
+            "missingLines": [
+              1
+            ],
+            "note": "Selected source only; line coverage is not assertion quality, branch coverage or a baseline delta."
+          }
+        }
+      ],
+      "mutant": {
+        "outcome": "SUCCESS",
+        "exitCode": 0,
+        "output": "\nJUNIT report written to /work/report.xml\n",
+        "tests": [
+          {
+            "name": "__testpilot__/app.test.ts.vacuous",
+            "status": "PASSED",
+            "message": "",
+            "seconds": 0.037184708
+          }
+        ],
+        "coverage": {
+          "status": "MEASURED",
+          "tool": "Vitest / V8",
+          "sourcePath": "app.ts",
+          "executedLines": [],
+          "missingLines": [
+            1
+          ],
+          "note": "Selected source only; line coverage is not assertion quality, branch coverage or a baseline delta."
+        }
+      }
+    }
+  ],
+  "limitations": [
+    "One supplied mutant per example; authors must check that the mutant is valid and non-equivalent. Scores do not establish general test usefulness.",
+    "Bundled strong/weak examples are authored fixtures, not live generation. passed means valid measurement and any supplied expectation matched, not that every test killed a mutant.",
+    "Two baseline runs only measure repeat consistency in this sample, not general flakiness.",
+    "Compilation, infrastructure, missing-report and timeout failures do not count as killed mutants."
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "datasetSha256": "199b41e6091ee0e9a5134eb83ed3a8191db43c3b5be7667d750c4ab11494c4c2",
+  "reportsSha256": "62fff512f1e1fc975eb869525860e9f3dba2246271dca23eebb8c101656ca2ff",
+  "origin": "CURATED_FIXTURE_NOT_LIVE_MODEL",
+  "provider": "fixture",
+  "model": "phase6-metrics-fixture-v1",
+  "adjudicator": "TestPilot benchmark authors (fixture labels only)",
+  "metrics": {
+    "candidates": 6,
+    "groundedCandidates": 5,
+    "groundingRate": 0.8333333333333334,
+    "semanticQualityStatus": "ADJUDICATED",
+    "precision": 0.8333333333333334,
+    "recall": 1.0,
+    "falseDiscoveryRate": 0.16666666666666666,
+    "severityAccuracy": 1.0,
+    "actionableRate": 0.8333333333333334,
+    "byKind": {
+      "IMPROVEMENT": {
+        "precision": 0.8,
+        "recall": 1.0
+      },
+      "GOOD_PRACTICE": {
+        "precision": 1.0,
+        "recall": 1.0
+      }
+    },
+    "truePositives": 5,
+    "falsePositives": 1,
+    "falseNegatives": 0
+  },
+  "limitations": [
+    "Grounding checks location only; semantic scores require supplied judgments.",
+    "Curated fixture scores are not live-model quality estimates. Small datasets do not establish general reviewer performance."
+  ]
+}

@@ -1,0 +1,98 @@
+{
+  "phase": 6,
+  "status": "IMPLEMENTED_AND_LOCALLY_VERIFIED",
+  "verifiedAt": "2026-09-18T19:05:39.134183+00:00",
+  "baselineCommit": "71bd700",
+  "branch": "codex/phase-6-rag-evaluation",
+  "backend": {
+    "tests": 131,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 1
+  },
+  "backendPackaging": "PASSED",
+  "realContainerExecutorTests": 2,
+  "contextAndCitationTestMethods": 6,
+  "retrievalBenchmarkCases": 4,
+  "invalidBenchmarkFindingsRejected": 20,
+  "evaluationUnitTests": 15,
+  "workerUnitTests": 12,
+  "frontend": {
+    "lint": "PASSED",
+    "productionBuild": "PASSED",
+    "productionAuditVulnerabilities": 0
+  },
+  "testUsefulness": {
+    "containerRuns": 24,
+    "languages": [
+      "Java",
+      "Python",
+      "JavaScript",
+      "TypeScript"
+    ],
+    "strongTestsKillingSeededDefect": 4,
+    "vacuousTestsSurvivingSeededDefect": 4,
+    "origin": "AUTHORED_FIXTURES_NOT_LIVE_GENERATION",
+    "evidence": "phase6-usefulness.json"
+  },
+  "reviewerMetricRegression": {
+    "status": "PASSED",
+    "origin": "CURATED_FIXTURE_NOT_LIVE_MODEL",
+    "evidence": "phase6-review-quality.json"
+  },
+  "browserVerification": {
+    "profile": "disposable H2 database with mock provider",
+    "checks": [
+      "Load snapshot-bound test plan",
+      "Generate labeled mock draft",
+      "Expand saved retrieval context",
+      "Exact helper source, original line range and source hash displayed",
+      "Language-standard guidance and official links displayed",
+      "Mock scaffold execution remains disabled"
+    ]
+  },
+  "cleanup": {
+    "temporaryAppServices": "stopped",
+    "remainingExecutionContainers": 0,
+    "dockerVm": "restored to initial stopped state"
+  },
+  "sourceSha256": {
+    "evaluation/phase6/README.md": "6851940fc4db06a13fd3aac0b27aebe55bb13ee2254e4957f6c69574dd95f3ba",
+    "evaluation/phase6/context-v1.json": "624101f1e2cfe6042ea89834157f21f73875dc56c027187101da50fb9e3996b3",
+    "evaluation/phase6/context-v1.sha256": "595a680b20155ebe50891d197046c641fcacc97a19b74b700ca82ad3c2839def",
+    "evaluation/phase6/review-quality-v1.json": "199b41e6091ee0e9a5134eb83ed3a8191db43c3b5be7667d750c4ab11494c4c2",
+    "evaluation/phase6/review-quality-v1.sha256": "a6008744f6ea871e2c185a398cdc4cb0bcc5989bcc66bd7fdd3d7779aa863a70",
+    "evaluation/phase6/reviewer-fixture-judgments.json": "9784629f07533259c0102847b8e38f19242192254132792b29a868e2d5f53601",
+    "evaluation/phase6/reviewer-fixture-reports.json": "62fff512f1e1fc975eb869525860e9f3dba2246271dca23eebb8c101656ca2ff",
+    "evaluation/phase6/reviewer_quality.py": "0ab01e822e12703ff025dfda57f4e2502bc194a1387791eaeb7854818285299b",
+    "evaluation/phase6/test-usefulness-v1.json": "6b43a3f81e067d5414a3ea1a2f17e0213599cc9de2198f5b31d5fc6231d6f63c",
+    "evaluation/phase6/test-usefulness-v1.sha256": "0ebff73a3153bfa5e5fd28142b1904193ea846e953d720616c9f490530b4b633",
+    "evaluation/phase6/test_usefulness.py": "f8dbe35782ad763ff57973c5c4dfe925f46d1938907eed14264789de4b8f95e4",
+    "evaluation/tests/test_phase6.py": "8f51822baf948d91c59d9822c9b49a0c867ef988da7fbe44cfb2b87617469b7e",
+    "frontend/src/components/RetrievalEvidence.jsx": "3595a452b103ea6ae5ad368014615504ef1e37e0795ce710b4fb9190cb73c6db",
+    "src/main/java/com/testpilot/rag/context/ContextBundle.java": "b76af37ddd390ef490445840d8c81068937e421dd10d52e2aef5f670c2a1ad3e",
+    "src/main/java/com/testpilot/rag/context/LanguageStandards.java": "9ec08eb9d452dedb7bf290fe2a1f4f43296c74fc8ae96dfeac95be3a2cba2069",
+    "src/main/java/com/testpilot/rag/context/SnapshotContextRetriever.java": "4713a1209957318db48ac2b2cd8828385ce8efa7fdad62e5e00f33b87ba3571b",
+    "src/main/resources/standards/review-v1.json": "dac66a4e2586772b348b04806bab3625b196895a6d8eb409cf841dfdd3a7a903",
+    "src/test/java/com/testpilot/rag/context/Phase6ContextBenchmarkTest.java": "a99ed64e5cd2d590d169449081e575d877582093b7227cca18565f91cc53f17f",
+    ".github/workflows/ci.yml": "4628df2c0ced8debbaf39edf132f9c42cabec7ac16c75b8f07bdc46abdc8061a",
+    "frontend/src/components/CodeReviewer.jsx": "d5e025cf7adfd345875825a98a345a4850ea8a2c595e353650cda331134d428d",
+    "frontend/src/components/TestPlanning.jsx": "42f0e06e9a7007d9a992e5666694b47a3feaf0b5b55b02dbe393334d48ee8f3b",
+    "src/main/java/com/testpilot/ai/agent/TestGenerationAgent.java": "1ea1cb814d2c7ee89d314bd18273d28db854973be8342e72e44fed54a00a5a3c",
+    "src/main/java/com/testpilot/review/CodeReviewService.java": "26679aabcac759a8ae765609279dc74bc78f8ca4085d2aaaf5c6f471516e1e05",
+    "src/main/java/com/testpilot/review/ReviewAgent.java": "ba0a9238267c11443d5498f20df9b57c38d8710835b8524ec7702b5ad20e7738",
+    "src/main/java/com/testpilot/review/ReviewReport.java": "f42ae3ed413abb032d6b85b093499cf7e11d10093fb911e29fbb45c4bb42c98f",
+    "src/main/java/com/testpilot/testing/generation/TestPlanningService.java": "c3692e2efff1e957779ae4bbf7dcef676740eb712754a22b52fadcd0b5de9a75",
+    "src/test/java/com/testpilot/review/CodeReviewIntegrationTest.java": "adf101497d997ecc936b83f13c99f6391789ce3168451fef6fb786c51e8bcd7f",
+    "src/test/java/com/testpilot/testing/TestPlanningIntegrationTest.java": "1b2fbe8741597ec8918e6271b280a1ce67554d84fa34996598fdb250afd65223"
+  },
+  "limitations": [
+    "The optional PostgreSQL/pgvector integration test was skipped locally; its separate CI job remains.",
+    "No live AI provider or live-model quality comparison was run. Semantic quality requires exact-report-bound human adjudications.",
+    "Snapshot retrieval is bounded lexical matching, not resolved imports, a call graph or exhaustive semantic repository analysis.",
+    "Validated structured citations establish exact source locations, not correct conclusions, free-form guidance or severity.",
+    "Test usefulness evidence uses one authored non-equivalent mutant per example and two baseline repetitions; it is not a production mutation or general flakiness score.",
+    "The unchanged orchestrator suite and historical Phase 7 full benchmark were not rerun in this phase; their existing CI jobs remain.",
+    "Nothing was committed or pushed."
+  ]
+}

@@ -6,6 +6,7 @@ import com.testpilot.common.exception.*;
 import com.testpilot.project.service.ProjectService;
 import com.testpilot.repository.service.RepositoryCatalogPolicy;
 import com.testpilot.testing.generation.SourceInput;
+import com.testpilot.rag.context.SnapshotContextRetriever;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -21,10 +22,11 @@ public class CodeReviewService {
     private final ReviewAgent agent;
     private final CodeReviewRepository store;
     private final ObjectMapper mapper;
+    private final SnapshotContextRetriever retriever;
     private final Semaphore capacity = new Semaphore(1);
     public CodeReviewService(ProjectService projects, ReviewSnapshotService snapshots, ReviewAgent agent,
-                             CodeReviewRepository store, ObjectMapper mapper) {
-        this.projects = projects; this.snapshots = snapshots; this.agent = agent; this.store = store; this.mapper = mapper;
+                             CodeReviewRepository store, ObjectMapper mapper, SnapshotContextRetriever retriever) {
+        this.projects = projects; this.snapshots = snapshots; this.agent = agent; this.store = store; this.mapper = mapper; this.retriever = retriever;
     }
     public record Plan(String snapshotId, String commitSha, String provider, String model, int totalBatches,
                        int batchesPerReview, List<ReviewReport.FileScope> files) {}
@@ -49,7 +51,8 @@ public class CodeReviewService {
             var files = new ArrayList<>(scope(snapshot, "DEFERRED"));
             List<ReviewReport.Finding> findings = new ArrayList<>();
             int successful = 0, failed = 0, rejected = 0;
-            var initial = report(snapshot, "RUNNING", offset, next, batches.size(), files, findings, rejected, successful, failed);
+            List<ReviewReport.Retrieval> retrieval = new ArrayList<>();
+            var initial = report(snapshot, "RUNNING", offset, next, batches.size(), files, findings, rejected, successful, failed, retrieval);
             CodeReview row = store.saveAndFlush(new CodeReview(projectId, snapshot.id(), encode(initial)));
             if (agent.mock()) {
                 for (int i = offset; i < end; i++) mark(files, batches.get(i), "NOT_REVIEWED", "Mock provider cannot perform an AI code review");
@@ -57,7 +60,9 @@ public class CodeReviewService {
                 for (int i = offset; i < end; i++) {
                     var batch = batches.get(i);
                     try {
-                        var result = agent.review(batch);
+                        var context = retriever.retrieve(snapshot.id(), batch, snapshot.files());
+                        retrieval.add(new ReviewReport.Retrieval(i, context));
+                        var result = agent.review(batch, context);
                         rejected += result.rejected();
                         findings.addAll(result.findings());
                         for (var file : batch) mark(files, List.of(file), result.reviewedPaths().contains(file.path())
@@ -74,7 +79,7 @@ public class CodeReviewService {
             String status = successful == 0 ? "UNAVAILABLE" : files.stream().allMatch(f -> f.status().equals("REVIEWED")) ? "COMPLETED" : "PARTIAL";
             // The report deliberately stays attached to the original snapshot if intake changes mid-call.
             projects.findProjectAndVerifyWriteAccess(projectId, user);
-            row.finish(status, encode(report(snapshot, status, offset, next, batches.size(), files, findings, rejected, successful, failed)));
+            row.finish(status, encode(report(snapshot, status, offset, next, batches.size(), files, findings, rejected, successful, failed, retrieval)));
             try { return response(store.saveAndFlush(row)); }
             catch (ObjectOptimisticLockingFailureException recovered) { return get(projectId, row.getId(), user); }
         } finally { capacity.release(); }
@@ -95,7 +100,7 @@ public class CodeReviewService {
             var files = old.files().stream().map(f -> f.status().equals("EXCLUDED") ? f
                     : new ReviewReport.FileScope(f.path(), f.language(), f.sha256(), f.lines(), "NOT_REVIEWED", "Server/review interrupted; retry explicitly")).toList();
             var report = new ReviewReport(old.schemaVersion(), old.snapshotId(), old.commitSha(), old.provider(), old.model(), "INTERRUPTED",
-                    old.batchOffset(), old.nextBatchOffset(), old.totalBatches(), files, List.of(), 0, 0, 0, old.limitations());
+                    old.batchOffset(), old.nextBatchOffset(), old.totalBatches(), files, List.of(), 0, 0, 0, old.limitations(), old.retrieval());
             row.finish("INTERRUPTED", encode(report));
             try { store.saveAndFlush(row); } catch (ObjectOptimisticLockingFailureException ignored) { }
         }
@@ -125,15 +130,15 @@ public class CodeReviewService {
         files.replaceAll(f -> paths.contains(f.path()) ? new ReviewReport.FileScope(f.path(), f.language(), f.sha256(), f.lines(), status, reason) : f);
     }
     private ReviewReport report(ReviewSnapshotService.Snapshot snapshot, String status, int offset, Integer next, int batches,
-            List<ReviewReport.FileScope> files, List<ReviewReport.Finding> findings, int rejected, int successful, int failed) {
-        return new ReviewReport("testpilot-review-v1", snapshot.id(), snapshot.commitSha(), agent.provider(), agent.model(), status,
+            List<ReviewReport.FileScope> files, List<ReviewReport.Finding> findings, int rejected, int successful, int failed, List<ReviewReport.Retrieval> retrieval) {
+        return new ReviewReport("testpilot-review-v2", snapshot.id(), snapshot.commitSha(), agent.provider(), agent.model(), status,
                 offset, next, batches, List.copyOf(files), findings.stream().distinct().toList(), rejected, successful, failed, List.of(
                 "AI findings and severity are proposals for human review, not verified defects, exploits, fixes or measured performance gains.",
                 "Evidence validation proves exact path/line/snippet membership only; it does not establish that an AI conclusion is correct.",
                 "Scope is the immutable catalog, not the entire remote repository. Intake-excluded, unsupported and oversized files are not reviewed.",
                 "Each request reviews up to 8 batches of 20 files / 40,000 source characters. Continue remaining batches explicitly; previous reports are retained.",
-                "Related files may be split across batches. No repository-wide call graph, RAG retrieval, vulnerability database lookup or execution is performed.",
-                "A completed review or empty findings list is not proof of correctness, security, performance or absence of defects."));
+                "Related-symbol excerpts and versioned language standards augment each batch. Lexical matches are not a resolved call graph or a vulnerability database lookup.",
+                "A completed review or empty findings list is not proof of correctness, security, performance or absence of defects."), List.copyOf(retrieval));
     }
     private Response response(CodeReview row) { return new Response(row.getId(), row.getProjectId(), row.getStatus(), row.getStartedAt(), row.getCompletedAt(), decode(row.getReportJson())); }
     private ReviewReport decode(String json) {

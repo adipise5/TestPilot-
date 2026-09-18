@@ -72,10 +72,10 @@ public class TestGenerationAgent {
         promptBuilder.append(PromptBoundary.section("BOUNDED_REPOSITORY_CONTEXT", contextText.toString(), 60_000));
 
         if (ragContext != null && !ragContext.isBlank()) {
-            promptBuilder.append(PromptBoundary.section("RAG_CONTEXT", ragContext, 50_000));
+            promptBuilder.append(PromptBoundary.section("RAG_CONTEXT", ragContext, 150_000));
         }
 
-        promptBuilder.append("Generate one complete test file matching the assigned language, framework, identity and level. Context may be partial.");
+        promptBuilder.append("Generate one complete test file matching the assigned language, framework, identity and level. Context may be partial. Retrieved symbols are lexical candidates; inspect their definitions before calling them. Apply supplied language standards only when relevant to the target contract.");
         var response = llmClient.generateStructured(promptBuilder.toString(), systemInstruction, TestGenerationResponse.class);
         adapter.validate(plan, response, "mock".equals(llmClient.providerId()));
         return response;

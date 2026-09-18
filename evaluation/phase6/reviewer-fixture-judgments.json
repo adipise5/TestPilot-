@@ -1,0 +1,56 @@
+{
+  "origin": "CURATED_FIXTURE_ANNOTATIONS",
+  "adjudicator": "TestPilot benchmark authors (fixture labels only)",
+  "datasetSha256": "199b41e6091ee0e9a5134eb83ed3a8191db43c3b5be7667d750c4ab11494c4c2",
+  "reportsSha256": "62fff512f1e1fc975eb869525860e9f3dba2246271dca23eebb8c101656ca2ff",
+  "judgments": [
+    {
+      "caseId": "java-sql",
+      "candidateIndex": 0,
+      "goldId": "java-sql-defect",
+      "correct": true,
+      "actionable": true,
+      "severityCorrect": true
+    },
+    {
+      "caseId": "java-sql",
+      "candidateIndex": 1,
+      "goldId": "java-sql-positive",
+      "correct": true,
+      "actionable": true,
+      "severityCorrect": true
+    },
+    {
+      "caseId": "python-default",
+      "candidateIndex": 0,
+      "goldId": "python-default-defect",
+      "correct": true,
+      "actionable": true,
+      "severityCorrect": true
+    },
+    {
+      "caseId": "js-coercion",
+      "candidateIndex": 0,
+      "goldId": "js-coercion-defect",
+      "correct": true,
+      "actionable": true,
+      "severityCorrect": true
+    },
+    {
+      "caseId": "ts-null",
+      "candidateIndex": 0,
+      "goldId": "ts-null-defect",
+      "correct": true,
+      "actionable": true,
+      "severityCorrect": true
+    },
+    {
+      "caseId": "java-sql",
+      "candidateIndex": 2,
+      "goldId": null,
+      "correct": false,
+      "actionable": false,
+      "severityCorrect": false
+    }
+  ]
+}

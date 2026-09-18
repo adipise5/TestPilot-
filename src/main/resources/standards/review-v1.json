@@ -1,0 +1,11 @@
+{
+  "version": "testpilot-language-standards-v1",
+  "rules": [
+    {"id":"java.resources","language":"Java","category":"CORRECTNESS","guidance":"Use try-with-resources for owned AutoCloseable resources so exceptional paths also close them. Check ownership before closing caller-owned resources.","sourceUrl":"https://docs.oracle.com/javase/tutorial/essential/exceptions/tryResourceClose.html"},
+    {"id":"java.sql-parameters","language":"Java","category":"SECURITY","guidance":"Bind untrusted SQL values with PreparedStatement parameters rather than concatenating them into SQL. Identifiers require a separate allowlist.","sourceUrl":"https://docs.oracle.com/javase/tutorial/jdbc/basics/prepared.html"},
+    {"id":"python.shell","language":"Python","category":"SECURITY","guidance":"Prefer an argument sequence without a shell for subprocess calls. If shell interpretation is necessary, establish and test a safe input contract before passing untrusted text.","sourceUrl":"https://docs.python.org/3/library/subprocess.html#security-considerations"},
+    {"id":"python.mutable-defaults","language":"Python","category":"CORRECTNESS","guidance":"Default argument objects are shared across calls. For per-call mutable state, use a sentinel such as None and construct the object inside the function.","sourceUrl":"https://docs.python.org/3/tutorial/controlflow.html#default-argument-values"},
+    {"id":"javascript.equality","language":"JavaScript","category":"CORRECTNESS","guidance":"Use strict equality when implicit conversion is not part of the intended contract. Test values of different types before replacing intentional coercion.","sourceUrl":"https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Strict_equality"},
+    {"id":"typescript.nullability","language":"TypeScript","category":"CORRECTNESS","guidance":"With strictNullChecks, handle possibly null or undefined values explicitly. A non-null assertion does not add a runtime check; validate the value when the contract requires it.","sourceUrl":"https://www.typescriptlang.org/tsconfig/strictNullChecks.html"}
+  ]
+}

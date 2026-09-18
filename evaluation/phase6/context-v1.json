@@ -1,0 +1,62 @@
+{
+  "version": "phase6-context-v1",
+  "purpose": "Deterministic retrieval/grounding regression fixtures, not live-model quality evidence",
+  "cases": [
+    {
+      "id": "java-related",
+      "language": "Java",
+      "primary": {
+        "path": "src/Service.java",
+        "content": "class Service {\n    int value() { return Price.total(2, 3); }\n}\n"
+      },
+      "related": {
+        "path": "src/Price.java",
+        "content": "class Price {\n    static int total(int a, int b) { return a + b; }\n}\n"
+      },
+      "expectedPath": "src/Price.java",
+      "expectedStandard": "java.resources"
+    },
+    {
+      "id": "python-related",
+      "language": "Python",
+      "primary": {
+        "path": "service.py",
+        "content": "from pricing import total\ndef value():\n    return total(2, 3)\n"
+      },
+      "related": {
+        "path": "pricing.py",
+        "content": "def total(a, b):\n    return a + b\n"
+      },
+      "expectedPath": "pricing.py",
+      "expectedStandard": "python.mutable-defaults"
+    },
+    {
+      "id": "javascript-related",
+      "language": "JavaScript",
+      "primary": {
+        "path": "service.js",
+        "content": "import { total } from './pricing';\nexport function value() { return total(2, 3); }\n"
+      },
+      "related": {
+        "path": "pricing.js",
+        "content": "export function total(a, b) {\n    return a + b;\n}\n"
+      },
+      "expectedPath": "pricing.js",
+      "expectedStandard": "javascript.equality"
+    },
+    {
+      "id": "typescript-related",
+      "language": "TypeScript",
+      "primary": {
+        "path": "service.ts",
+        "content": "import { total } from './pricing';\nexport function value(): number { return total(2, 3); }\n"
+      },
+      "related": {
+        "path": "pricing.ts",
+        "content": "export function total(a: number, b: number): number {\n    return a + b;\n}\n"
+      },
+      "expectedPath": "pricing.ts",
+      "expectedStandard": "typescript.nullability"
+    }
+  ]
+}

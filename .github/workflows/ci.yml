@@ -30,6 +30,14 @@ jobs:
       - name: Run backend tests
         run: ./mvnw --batch-mode --no-transfer-progress test
 
+      - name: Upload snapshot retrieval and citation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase6-context-evidence
+          path: target/phase6-context-evidence.json
+          if-no-files-found: warn
+
   frontend:
     name: Frontend quality gates
     runs-on: ubuntu-latest
@@ -86,7 +94,7 @@ jobs:
         run: python -m pytest
 
   evaluation:
-    name: Phase 7 benchmark regression
+    name: Retrieval and evaluation regression
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -112,6 +120,17 @@ jobs:
           python evaluation/run_evaluation.py --check
           --output /tmp/testpilot-phase7-results.json
           --report /tmp/testpilot-phase7-results.md
+
+      - name: Verify reviewer metrics against pinned annotated fixtures
+        run: python evaluation/phase6/reviewer_quality.py --fixture-check --output /tmp/phase6-review-quality.json
+
+      - name: Upload reviewer metric regression evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase6-review-quality
+          path: /tmp/phase6-review-quality.json
+          if-no-files-found: warn
 
       - name: Upload benchmark evidence
         if: always()
@@ -144,6 +163,17 @@ jobs:
 
       - name: Verify languages, outcomes, timeout and isolation in real containers
         run: python worker/polyglot/smoke.py --image testpilot-polyglot:ci --output /tmp/phase4-container-evidence.json
+
+      - name: Measure authored strong and vacuous tests against seeded defects
+        run: python evaluation/phase6/test_usefulness.py --image testpilot-polyglot:ci --output /tmp/phase6-usefulness.json
+
+      - name: Upload test usefulness evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase6-usefulness
+          path: /tmp/phase6-usefulness.json
+          if-no-files-found: warn
 
       - name: Set up Java 17 for real executor integration
         uses: actions/setup-java@v4

@@ -56,7 +56,7 @@ class CodeReviewIntegrationTest {
         when(llm.generateStructured(anyString(), anyString(), eq(ReviewReport.BatchResponse.class))).thenAnswer(call -> {
             String prompt = call.getArgument(0);
             assertFalse(prompt.contains("SHOULD_NEVER_REACH_PROVIDER"));
-            int begin = prompt.indexOf("[{"), end = prompt.lastIndexOf("]");
+            int begin = prompt.indexOf("[{"), end = prompt.indexOf("\n--- END UNTRUSTED DATA: REPOSITORY_FILES_JSON") - 1;
             var sources = mapper.readTree(prompt.substring(begin, end+1));
             List<String> paths = new ArrayList<>(); sources.forEach(s -> paths.add(s.path("path").asText()));
             List<ReviewReport.Finding> findings = new ArrayList<>();
@@ -174,6 +174,39 @@ class CodeReviewIntegrationTest {
         for (int offset : List.of(-1, 999)) mvc.perform(post(base()).header("Authorization", owner).contentType(MediaType.APPLICATION_JSON)
                 .content(mapper.createObjectNode().put("snapshotId", snapshot()).put("batchOffset", offset).toString())).andExpect(status().isBadRequest());
         verify(llm, never()).generateStructured(anyString(), anyString(), any());
+    }
+
+    @Test void persistsExactCrossFileContextAndStandardsFromTheProviderRequest() throws Exception {
+        add("000use.py", "from zzPricing import total\ndef price(): return total(3)\n");
+        for (int i=0; i<20; i++) add("filler"+i+".py", "value = 1\n");
+        add("zzPricing.py", "def total(quantity):\n    return quantity * 10\n");
+        doAnswer(call -> {
+            String prompt = call.getArgument(0);
+            int begin = prompt.indexOf("[{"), end = prompt.indexOf("\n--- END UNTRUSTED DATA: REPOSITORY_FILES_JSON");
+            var primary = mapper.readTree(prompt.substring(begin, end));
+            List<String> paths = new ArrayList<>(); primary.forEach(f -> paths.add(f.path("path").asText()));
+            if (!paths.contains("000use.py")) return new ReviewReport.BatchResponse(paths, List.of());
+            assertFalse(paths.contains("zzPricing.py"));
+            String label = "--- BEGIN UNTRUSTED DATA: RELATED_CONTEXT_JSON ---\n";
+            int contextStart = prompt.indexOf(label) + label.length();
+            var context = mapper.readTree(prompt.substring(contextStart, prompt.indexOf("\n--- END UNTRUSTED DATA: RELATED_CONTEXT_JSON")));
+            assertEquals("zzPricing.py", context.path("snippets").get(0).path("path").asText());
+            assertTrue(context.path("standards").toString().contains("python.mutable-defaults"));
+            return new ReviewReport.BatchResponse(paths, List.of(new ReviewReport.Finding("IMPROVEMENT", "CORRECTNESS", "LOW",
+                    "Fixture cross-file observation", "The helper multiplies the supplied quantity.", "Add boundary checks for negative quantities if disallowed.",
+                    List.of(new ReviewReport.Evidence("000use.py", 2, 2, "def price(): return total(3)"),
+                            new ReviewReport.Evidence("zzPricing.py", 2, 2, "    return quantity * 10")), List.of())));
+        }).when(llm).generateStructured(anyString(), anyString(), eq(ReviewReport.BatchResponse.class));
+        String frozenSnapshot = snapshot();
+        var result = mapper.readTree(start(frozenSnapshot, 0));
+        var report = result.path("report");
+        assertEquals(0, report.path("failedBatches").asInt());
+        assertEquals(1, report.path("findings").size());
+        assertEquals(frozenSnapshot, report.path("retrieval").get(0).path("context").path("snapshotId").asText());
+        assertEquals("zzPricing.py", report.path("retrieval").get(0).path("context").path("snippets").get(0).path("path").asText());
+        add("later.py", "def total(): return 999\n");
+        mvc.perform(get(base()+"/"+result.path("id").asLong()+"/download").header("Authorization", owner))
+                .andExpect(status().isOk()).andExpect(content().json(result.toString()));
     }
 
 }

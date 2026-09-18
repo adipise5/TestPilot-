@@ -30,14 +30,15 @@ public class TestPlanningService {
     private final LlmClient llm;
     private final TestDraftRepository drafts;
     private final ObjectMapper mapper;
+    private final com.testpilot.rag.context.SnapshotContextRetriever retriever;
 
     public TestPlanningService(ProjectService projects, ProjectSourceService manualSources,
             ConnectedRepositoryRepository repositories, RepositoryIngestionRepository ingestions,
             RepositoryArtifactRepository artifacts, LanguageAdapterRegistry adapters,
-            TestGenerationAgent generator, LlmClient llm, TestDraftRepository drafts, ObjectMapper mapper) {
+            TestGenerationAgent generator, LlmClient llm, TestDraftRepository drafts, ObjectMapper mapper, com.testpilot.rag.context.SnapshotContextRetriever retriever) {
         this.projects = projects; this.manualSources = manualSources; this.repositories = repositories;
         this.ingestions = ingestions; this.artifacts = artifacts; this.adapters = adapters;
-        this.generator = generator; this.llm = llm; this.drafts = drafts; this.mapper = mapper;
+        this.generator = generator; this.llm = llm; this.drafts = drafts; this.mapper = mapper; this.retriever = retriever;
     }
 
     public record UnsupportedSource(String path, String reason) {}
@@ -84,7 +85,11 @@ public class TestPlanningService {
         if (!item.applicable()) throw new InvalidRequestException("No detected boundary for this planned test level");
         SourceInput source = snapshot.targets().stream().filter(s -> s.path().equals(item.sourcePath())).findFirst().orElseThrow();
         var adapter = adapters.require(source.path());
-        var response = generator.generate(item, source, relevantContext(source, snapshot.context()), "", adapter);
+        var retrieval = retriever.retrieve(snapshot.id(), List.of(source), snapshot.context());
+        String ragContext;
+        try { ragContext = mapper.writeValueAsString(retrieval); }
+        catch (java.io.IOException ex) { throw new IllegalStateException("Unable to encode retrieval context", ex); }
+        var response = generator.generate(item, source, List.of(), ragContext, adapter);
         boolean mock = "mock".equals(llm.providerId());
         var checks = adapter.validate(item, response, mock);
         projects.findProjectAndVerifyWriteAccess(projectId, user);
@@ -92,6 +97,7 @@ public class TestPlanningService {
         var result = mapper.createObjectNode();
         result.set("plan", mapper.valueToTree(item));
         result.set("generated", mapper.valueToTree(response));
+        result.set("retrieval", mapper.valueToTree(retrieval));
         result.set("checks", mapper.valueToTree(checks));
         result.put("status", mock ? "MOCK_SCAFFOLD" : "STRUCTURALLY_VALIDATED");
         result.put("provider", llm.providerId());
@@ -99,7 +105,7 @@ public class TestPlanningService {
         result.put("commitSha", snapshot.commitSha());
         result.put("executionStatus", "NOT_EXECUTED");
         result.put("validationNote", "Static heuristic checks only; syntax, imports, behavior and safety are not proven. No compiler or test runner was invoked.");
-        result.put("contextNote", "At most 12 context files, 8,000 characters each and 60,000 total; primary source at most 100,000 characters. Context may be partial.");
+        result.put("contextNote", "Snapshot-scoped lexical symbol retrieval: at most six exact excerpts / 12,000 characters and versioned language standards; primary source at most 100,000 characters. Context may be partial.");
         return saved(drafts.save(new TestDraft(projectId, snapshot.id(), result.toString())));
     }
 
@@ -130,13 +136,6 @@ public class TestPlanningService {
     private SavedDraft saved(TestDraft draft) {
         try { return new SavedDraft(draft.getId(), draft.getSnapshotId(), mapper.readTree(draft.getResultJson())); }
         catch (java.io.IOException ex) { throw new IllegalStateException("Stored draft is invalid", ex); }
-    }
-
-    private List<SourceInput> relevantContext(SourceInput target, List<SourceInput> context) {
-        String dir = target.path().substring(0, target.path().lastIndexOf('/') + 1);
-        return context.stream().sorted(Comparator.<SourceInput>comparingInt(s ->
-                s.path().endsWith("package.json") || s.path().endsWith("pyproject.toml") || s.path().endsWith("pom.xml") ? 0
-                        : s.path().startsWith(dir) ? 1 : 2).thenComparing(SourceInput::path)).toList();
     }
 
     private Snapshot snapshot(Long projectId) {

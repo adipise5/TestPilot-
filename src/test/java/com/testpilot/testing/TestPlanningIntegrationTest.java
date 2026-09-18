@@ -77,7 +77,9 @@ class TestPlanningIntegrationTest {
             mvc.perform(post("/api/projects/" + project + "/test-drafts").header("Authorization", token)
                             .contentType(MediaType.APPLICATION_JSON).content(body.toString()))
                     .andExpect(status().isOk()).andExpect(jsonPath("$.result.status").value("MOCK_SCAFFOLD"))
-                    .andExpect(jsonPath("$.result.executionStatus").value("NOT_EXECUTED"));
+                    .andExpect(jsonPath("$.result.executionStatus").value("NOT_EXECUTED"))
+                    .andExpect(jsonPath("$.result.retrieval.snapshotId").value(plan.path("snapshotId").asText()))
+                    .andExpect(jsonPath("$.result.retrieval.standardsVersion").value("testpilot-language-standards-v1"));
             generated++;
         }
         assertTrue(generated >= 4);
@@ -110,6 +112,24 @@ class TestPlanningIntegrationTest {
                 RepositoryArtifactKind.SOURCE_CODE, 9, "value = 1"));
         mvc.perform(get("/api/projects/" + project + "/test-plan").header("Authorization", token))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test void generatedDraftRetrievesRelatedDefinitionAndPreservesIt() throws Exception {
+        add("use.py", RepositoryArtifactKind.SOURCE_CODE, "from pricing import total\ndef price(): return total(3)\n");
+        add("pricing.py", RepositoryArtifactKind.SOURCE_CODE, "def total(quantity): return quantity * 10\n");
+        var plan = mapper.readTree(mvc.perform(get("/api/projects/"+project+"/test-plan").header("Authorization", token))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+        var item = java.util.stream.StreamSupport.stream(plan.path("items").spliterator(), false)
+                .filter(p -> p.path("sourcePath").asText().equals("use.py") && p.path("level").asText().equals("UNIT")).findFirst().orElseThrow();
+        String body = mapper.createObjectNode().put("snapshotId", plan.path("snapshotId").asText()).put("planId", item.path("id").asText()).toString();
+        var response = mvc.perform(post("/api/projects/"+project+"/test-drafts").header("Authorization", token)
+                .contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.result.retrieval.snippets[0].path").value("pricing.py"))
+                .andExpect(jsonPath("$.result.retrieval.snippets[0].content").value("def total(quantity): return quantity * 10"))
+                .andReturn().getResponse().getContentAsString();
+        add("later.py", RepositoryArtifactKind.SOURCE_CODE, "def total(): return 999\n");
+        mvc.perform(get("/api/projects/"+project+"/test-drafts").header("Authorization", token))
+                .andExpect(content().json("["+response+"]"));
     }
 
 }

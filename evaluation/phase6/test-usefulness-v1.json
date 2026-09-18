@@ -1,0 +1,66 @@
+{
+  "version": "phase6-test-usefulness-v1",
+  "origin": "CURATED_TEST_FIXTURES_NOT_LIVE_GENERATION",
+  "cases": [
+    {
+      "id": "java-add",
+      "language": "Java",
+      "framework": "JUnit 5 / Mockito",
+      "sourcePath": "src/main/java/App.java",
+      "source": "public class App { public static int add(int a, int b) { return a + b; } }\n",
+      "mutant": "public class App { public static int add(int a, int b) { return a - b; } }\n",
+      "testPath": "src/test/java/AppTest.java",
+      "strong": "import org.junit.jupiter.api.Test; import static org.junit.jupiter.api.Assertions.*; class AppTest { @Test void adds() { assertEquals(5, App.add(2,3)); } }",
+      "weak": "import org.junit.jupiter.api.Test; import static org.junit.jupiter.api.Assertions.*; class AppTest { @Test void vacuous() { assertTrue(true); } }",
+      "expectedMutationScores": {
+        "strong": 1,
+        "weak": 0
+      }
+    },
+    {
+      "id": "python-add",
+      "language": "Python",
+      "framework": "pytest",
+      "sourcePath": "app.py",
+      "source": "def add(a,b): return a + b\n",
+      "mutant": "def add(a,b): return a - b\n",
+      "testPath": "tests/test_app.py",
+      "strong": "from app import add\ndef test_add(): assert add(2,3) == 5\n",
+      "weak": "def test_vacuous(): assert True\n",
+      "expectedMutationScores": {
+        "strong": 1,
+        "weak": 0
+      }
+    },
+    {
+      "id": "js-add",
+      "language": "JavaScript",
+      "framework": "Jest",
+      "sourcePath": "app.js",
+      "source": "export function add(a,b) { return a + b; }\n",
+      "mutant": "export function add(a,b) { return a - b; }\n",
+      "testPath": "__testpilot__/app.test.js",
+      "strong": "import {test,expect} from '@jest/globals'; import {add} from '../app'; test('adds',()=>expect(add(2,3)).toBe(5));",
+      "weak": "import {test,expect} from '@jest/globals'; test('vacuous',()=>expect(true).toBe(true));",
+      "expectedMutationScores": {
+        "strong": 1,
+        "weak": 0
+      }
+    },
+    {
+      "id": "ts-add",
+      "language": "TypeScript",
+      "framework": "Vitest",
+      "sourcePath": "app.ts",
+      "source": "export function add(a: number,b: number) { return a + b; }\n",
+      "mutant": "export function add(a: number,b: number) { return a - b; }\n",
+      "testPath": "__testpilot__/app.test.ts",
+      "strong": "import {test,expect} from 'vitest'; import {add} from '../app'; test('adds',()=>expect(add(2,3)).toBe(5));",
+      "weak": "import {test,expect} from 'vitest'; test('vacuous',()=>expect(true).toBe(true));",
+      "expectedMutationScores": {
+        "strong": 1,
+        "weak": 0
+      }
+    }
+  ]
+}

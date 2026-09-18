@@ -1,5 +1,7 @@
 # Revised Phase 5 — AI Code Reviewer
 
+> This document records the Phase 5 baseline. [Phase 6](REVISED_PHASE_6.md) now extends it with saved related-context excerpts, standards and cross-file citation validation; the Phase 5 evidence below remains historical.
+
 Phase 5 adds a separately invoked, saved code-review flow over the immutable intake catalog (or manually added Java sources). It recognizes good practices, proposes improvements and shows exact source locations with implementation guidance. The legacy Java testing-analysis button remains separate.
 
 ## Use the reviewer

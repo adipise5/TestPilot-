@@ -1,0 +1,130 @@
+{
+  "origin": "CURATED_FIXTURE_NOT_LIVE_MODEL",
+  "provider": "fixture",
+  "model": "phase6-metrics-fixture-v1",
+  "cases": [
+    {
+      "caseId": "java-sql",
+      "findings": [
+        {
+          "kind": "IMPROVEMENT",
+          "category": "SECURITY",
+          "severity": "HIGH",
+          "title": "java-sql",
+          "explanation": "Curated fixture; correctness is supplied by the evaluation annotation, not inferred from a matching line.",
+          "guidance": "Use a prepared statement with bound values",
+          "standardIds": [],
+          "evidence": [
+            {
+              "path": "App.java",
+              "startLine": 3,
+              "endLine": 3,
+              "snippet": "  return \"SELECT * FROM users WHERE name=\" + name;"
+            }
+          ]
+        },
+        {
+          "kind": "GOOD_PRACTICE",
+          "category": "TESTABILITY",
+          "severity": "INFO",
+          "title": "Query construction returns a value",
+          "explanation": "The constructor has no I/O, enabling direct tests, although its SQL string still requires remediation.",
+          "guidance": "Keep pure construction separate from execution while introducing safe parameters.",
+          "standardIds": [],
+          "evidence": [
+            {
+              "path": "App.java",
+              "startLine": 2,
+              "endLine": 2,
+              "snippet": " String query(String name) {"
+            }
+          ]
+        },
+        {
+          "kind": "IMPROVEMENT",
+          "category": "SECURITY",
+          "severity": "HIGH",
+          "title": "Deliberately false fixture",
+          "explanation": "This intentionally hallucinated finding tests false-positive and evidence metrics.",
+          "guidance": "Unsupported claim; this is not implementation guidance.",
+          "standardIds": [],
+          "evidence": [
+            {
+              "path": "invented.java",
+              "startLine": 999,
+              "endLine": 999,
+              "snippet": "invented"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "caseId": "python-default",
+      "findings": [
+        {
+          "kind": "IMPROVEMENT",
+          "category": "CORRECTNESS",
+          "severity": "MEDIUM",
+          "title": "python-default",
+          "explanation": "Curated fixture; correctness is supplied by the evaluation annotation, not inferred from a matching line.",
+          "guidance": "Use None then construct a new list per call",
+          "standardIds": [],
+          "evidence": [
+            {
+              "path": "app.py",
+              "startLine": 1,
+              "endLine": 1,
+              "snippet": "def append(value, items=[]):"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "caseId": "js-coercion",
+      "findings": [
+        {
+          "kind": "IMPROVEMENT",
+          "category": "CORRECTNESS",
+          "severity": "LOW",
+          "title": "js-coercion",
+          "explanation": "Curated fixture; correctness is supplied by the evaluation annotation, not inferred from a matching line.",
+          "guidance": "If numeric-only comparison is intended, validate types and use strict equality",
+          "standardIds": [],
+          "evidence": [
+            {
+              "path": "app.js",
+              "startLine": 1,
+              "endLine": 1,
+              "snippet": "export function matches(value) { return value == 0; }"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "caseId": "ts-null",
+      "findings": [
+        {
+          "kind": "IMPROVEMENT",
+          "category": "CORRECTNESS",
+          "severity": "MEDIUM",
+          "title": "ts-null",
+          "explanation": "Curated fixture; correctness is supplied by the evaluation annotation, not inferred from a matching line.",
+          "guidance": "Check for undefined and implement the documented missing-user behavior",
+          "standardIds": [],
+          "evidence": [
+            {
+              "path": "app.ts",
+              "startLine": 3,
+              "endLine": 3,
+              "snippet": "    return user!.name;"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "datasetSha256": "199b41e6091ee0e9a5134eb83ed3a8191db43c3b5be7667d750c4ab11494c4c2"
+}

@@ -1,0 +1,78 @@
+{
+  "version": "phase6-review-quality-v1",
+  "cases": [
+    {
+      "id": "java-sql",
+      "language": "Java",
+      "files": [
+        {
+          "path": "App.java",
+          "content": "class App {\n String query(String name) {\n  return \"SELECT * FROM users WHERE name=\" + name;\n }\n}\n"
+        }
+      ],
+      "gold": [
+        {
+          "id": "java-sql-defect",
+          "kind": "IMPROVEMENT",
+          "severity": "HIGH"
+        },
+        {
+          "id": "java-sql-positive",
+          "kind": "GOOD_PRACTICE",
+          "severity": "INFO"
+        }
+      ]
+    },
+    {
+      "id": "python-default",
+      "language": "Python",
+      "files": [
+        {
+          "path": "app.py",
+          "content": "def append(value, items=[]):\n    items.append(value)\n    return items\n"
+        }
+      ],
+      "gold": [
+        {
+          "id": "python-default-defect",
+          "kind": "IMPROVEMENT",
+          "severity": "MEDIUM"
+        }
+      ]
+    },
+    {
+      "id": "js-coercion",
+      "language": "JavaScript",
+      "files": [
+        {
+          "path": "app.js",
+          "content": "export function matches(value) { return value == 0; }\n"
+        }
+      ],
+      "gold": [
+        {
+          "id": "js-coercion-defect",
+          "kind": "IMPROVEMENT",
+          "severity": "LOW"
+        }
+      ]
+    },
+    {
+      "id": "ts-null",
+      "language": "TypeScript",
+      "files": [
+        {
+          "path": "app.ts",
+          "content": "type User = {name: string};\nexport function name(user: User | undefined) {\n    return user!.name;\n}\n"
+        }
+      ],
+      "gold": [
+        {
+          "id": "ts-null-defect",
+          "kind": "IMPROVEMENT",
+          "severity": "MEDIUM"
+        }
+      ]
+    }
+  ]
+}

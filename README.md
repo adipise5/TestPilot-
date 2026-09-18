@@ -23,7 +23,7 @@ and read-only manifest hints. [Revised Phase 2](docs/REVISED_PHASE_2.md) adds
 Java/Python/JS/TS planning, framework-specific generation, static validation and saved
 drafts. [Revised Phase 3](docs/REVISED_PHASE_3.md) completes the partial container-only
 execution path for Java/Python/JS/TS, adds validation and actual-worker CI checks.
-The [Phase 4 structured report](docs/REVISED_PHASE_4.md) adds failure classification, suggestions and selected-source coverage. The [Phase 5 AI Code Reviewer](docs/REVISED_PHASE_5.md) adds saved multi-file reviews, positive practices, security/performance findings and validated source citations. Revised Phase 6 RAG and reviewer-quality evaluation remain future work.
+The [Phase 4 structured report](docs/REVISED_PHASE_4.md) adds failure classification, suggestions and selected-source coverage. The [Phase 5 AI Code Reviewer](docs/REVISED_PHASE_5.md) adds saved multi-file reviews, positive practices, security/performance findings and validated source citations. [Phase 6](docs/REVISED_PHASE_6.md) adds snapshot-scoped related-symbol context, versioned language standards, checked cross-file citations, and reproducible reviewer/test-usefulness evaluation. Recorded scores distinguish authored fixtures from live-model quality.
 Mock-provider drafts are skipped scaffolds, not behavioral tests. The current
 [analysis and phase gates](docs/REVISED_PROJECT_ANALYSIS.md) distinguish this revised
 plan from the historical milestones below.

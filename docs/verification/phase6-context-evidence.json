@@ -1,0 +1,155 @@
+{
+  "datasetSha256" : "624101f1e2cfe6042ea89834157f21f73875dc56c027187101da50fb9e3996b3",
+  "validFixtureAcceptance" : 1.0,
+  "retrievalHitAt1" : 1.0,
+  "indexVersion" : "snapshot-symbol-lexical-v1",
+  "invalidFixtureRejection" : 1.0,
+  "liveModelEvaluation" : false,
+  "cases" : [ {
+    "rejectedAdversarialFixtures" : 5,
+    "caseId" : "java-related",
+    "retrieval" : {
+      "snapshotId" : "snapshot-A",
+      "indexVersion" : "snapshot-symbol-lexical-v1",
+      "queryHash" : "32c358c110f8ceccd58d9a8a09a23ed8b371458ff76fd95eab20267e2cb11ed1",
+      "standardsVersion" : "testpilot-language-standards-v1",
+      "standards" : [ {
+        "id" : "java.resources",
+        "language" : "Java",
+        "category" : "CORRECTNESS",
+        "guidance" : "Use try-with-resources for owned AutoCloseable resources so exceptional paths also close them. Check ownership before closing caller-owned resources.",
+        "sourceUrl" : "https://docs.oracle.com/javase/tutorial/essential/exceptions/tryResourceClose.html"
+      }, {
+        "id" : "java.sql-parameters",
+        "language" : "Java",
+        "category" : "SECURITY",
+        "guidance" : "Bind untrusted SQL values with PreparedStatement parameters rather than concatenating them into SQL. Identifiers require a separate allowlist.",
+        "sourceUrl" : "https://docs.oracle.com/javase/tutorial/jdbc/basics/prepared.html"
+      } ],
+      "snippets" : [ {
+        "path" : "src/Price.java",
+        "symbol" : "Price",
+        "startLine" : 1,
+        "endLine" : 3,
+        "content" : "class Price {\n    static int total(int a, int b) { return a + b; }\n}",
+        "sourceHash" : "07810ecc9988ca56ea93af511fa6cfe66547c4a116c746e3ac841d61a091b175",
+        "snippetHash" : "55ee8ef654bbe66ab080584b1630f1e32fc03f5efde6ee4c693c95c4e462ad11",
+        "reason" : "SYMBOL_NAME_MATCH (lexical candidate, not resolved call)",
+        "score" : 152
+      }, {
+        "path" : "src/Price.java",
+        "symbol" : "total",
+        "startLine" : 2,
+        "endLine" : 3,
+        "content" : "    static int total(int a, int b) { return a + b; }\n}",
+        "sourceHash" : "07810ecc9988ca56ea93af511fa6cfe66547c4a116c746e3ac841d61a091b175",
+        "snippetHash" : "166d82ddb970d856e6f3bfb44ef3292fa29069e44c9a93642238cfb3a2bed931",
+        "reason" : "SYMBOL_NAME_MATCH (lexical candidate, not resolved call)",
+        "score" : 151
+      } ],
+      "candidates" : 2,
+      "usedCharacters" : 122,
+      "limitations" : [ "Lexical declarations/name overlap are retrieval hints, not a resolved import or call graph; aliases, dynamic calls and overloads may be missed.", "Context is limited to six exact excerpts / 12,000 characters from supported files in this snapshot. Oversized, sensitive and unsupported files are omitted.", "Context excerpts do not establish whole-file review coverage. Standards are a small versioned project baseline, not an exhaustive security standard." ]
+    },
+    "acceptedGroundedFixture" : 1
+  }, {
+    "rejectedAdversarialFixtures" : 5,
+    "caseId" : "python-related",
+    "retrieval" : {
+      "snapshotId" : "snapshot-A",
+      "indexVersion" : "snapshot-symbol-lexical-v1",
+      "queryHash" : "7321f2a6877252267c8961a988199225daabc6b8a5e00fa74ca93ea7c33ef87b",
+      "standardsVersion" : "testpilot-language-standards-v1",
+      "standards" : [ {
+        "id" : "python.shell",
+        "language" : "Python",
+        "category" : "SECURITY",
+        "guidance" : "Prefer an argument sequence without a shell for subprocess calls. If shell interpretation is necessary, establish and test a safe input contract before passing untrusted text.",
+        "sourceUrl" : "https://docs.python.org/3/library/subprocess.html#security-considerations"
+      }, {
+        "id" : "python.mutable-defaults",
+        "language" : "Python",
+        "category" : "CORRECTNESS",
+        "guidance" : "Default argument objects are shared across calls. For per-call mutable state, use a sentinel such as None and construct the object inside the function.",
+        "sourceUrl" : "https://docs.python.org/3/tutorial/controlflow.html#default-argument-values"
+      } ],
+      "snippets" : [ {
+        "path" : "pricing.py",
+        "symbol" : "total",
+        "startLine" : 1,
+        "endLine" : 2,
+        "content" : "def total(a, b):\n    return a + b",
+        "sourceHash" : "9344fe33a09be455d18787e4d4b0a09b1965cb22758f1562704835a0a1410e16",
+        "snippetHash" : "9faff5b24d4ae872b8d6eb47e46b15c25068bc039bf041224977c5ee92ce8880",
+        "reason" : "SYMBOL_NAME_MATCH (lexical candidate, not resolved call)",
+        "score" : 151
+      } ],
+      "candidates" : 1,
+      "usedCharacters" : 33,
+      "limitations" : [ "Lexical declarations/name overlap are retrieval hints, not a resolved import or call graph; aliases, dynamic calls and overloads may be missed.", "Context is limited to six exact excerpts / 12,000 characters from supported files in this snapshot. Oversized, sensitive and unsupported files are omitted.", "Context excerpts do not establish whole-file review coverage. Standards are a small versioned project baseline, not an exhaustive security standard." ]
+    },
+    "acceptedGroundedFixture" : 1
+  }, {
+    "rejectedAdversarialFixtures" : 5,
+    "caseId" : "javascript-related",
+    "retrieval" : {
+      "snapshotId" : "snapshot-A",
+      "indexVersion" : "snapshot-symbol-lexical-v1",
+      "queryHash" : "4365b05dfdf95d43e60478c8014bb5d5586d6f80b04ba03c90dee1eb0453df8a",
+      "standardsVersion" : "testpilot-language-standards-v1",
+      "standards" : [ {
+        "id" : "javascript.equality",
+        "language" : "JavaScript",
+        "category" : "CORRECTNESS",
+        "guidance" : "Use strict equality when implicit conversion is not part of the intended contract. Test values of different types before replacing intentional coercion.",
+        "sourceUrl" : "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Strict_equality"
+      } ],
+      "snippets" : [ {
+        "path" : "pricing.js",
+        "symbol" : "total",
+        "startLine" : 1,
+        "endLine" : 3,
+        "content" : "export function total(a, b) {\n    return a + b;\n}",
+        "sourceHash" : "c47510bfe58318c3c73cc15a55e30a466ecd29b336d2bb0941813c69d5fddaf2",
+        "snippetHash" : "52aaf5cf71c19d57c8867f6a96bb6f55c997295570b5e424479af78e18206e34",
+        "reason" : "SYMBOL_NAME_MATCH (lexical candidate, not resolved call)",
+        "score" : 101
+      } ],
+      "candidates" : 1,
+      "usedCharacters" : 49,
+      "limitations" : [ "Lexical declarations/name overlap are retrieval hints, not a resolved import or call graph; aliases, dynamic calls and overloads may be missed.", "Context is limited to six exact excerpts / 12,000 characters from supported files in this snapshot. Oversized, sensitive and unsupported files are omitted.", "Context excerpts do not establish whole-file review coverage. Standards are a small versioned project baseline, not an exhaustive security standard." ]
+    },
+    "acceptedGroundedFixture" : 1
+  }, {
+    "rejectedAdversarialFixtures" : 5,
+    "caseId" : "typescript-related",
+    "retrieval" : {
+      "snapshotId" : "snapshot-A",
+      "indexVersion" : "snapshot-symbol-lexical-v1",
+      "queryHash" : "7ba5f2611977d744e87eef9a8a10eb2af1f45f28577b7678d5d62f6cbdc28b4c",
+      "standardsVersion" : "testpilot-language-standards-v1",
+      "standards" : [ {
+        "id" : "typescript.nullability",
+        "language" : "TypeScript",
+        "category" : "CORRECTNESS",
+        "guidance" : "With strictNullChecks, handle possibly null or undefined values explicitly. A non-null assertion does not add a runtime check; validate the value when the contract requires it.",
+        "sourceUrl" : "https://www.typescriptlang.org/tsconfig/strictNullChecks.html"
+      } ],
+      "snippets" : [ {
+        "path" : "pricing.ts",
+        "symbol" : "total",
+        "startLine" : 1,
+        "endLine" : 3,
+        "content" : "export function total(a: number, b: number): number {\n    return a + b;\n}",
+        "sourceHash" : "42d4c7140eb4e49832d19fbfc51a94de65eba5ad0d2340092cf7ebe2ad989927",
+        "snippetHash" : "c6ad1ca845f342b74db7ee116df34ef5127d686de3186767b934a00fdb48834e",
+        "reason" : "SYMBOL_NAME_MATCH (lexical candidate, not resolved call)",
+        "score" : 101
+      } ],
+      "candidates" : 1,
+      "usedCharacters" : 73,
+      "limitations" : [ "Lexical declarations/name overlap are retrieval hints, not a resolved import or call graph; aliases, dynamic calls and overloads may be missed.", "Context is limited to six exact excerpts / 12,000 characters from supported files in this snapshot. Oversized, sensitive and unsupported files are omitted.", "Context excerpts do not establish whole-file review coverage. Standards are a small versioned project baseline, not an exhaustive security standard." ]
+    },
+    "acceptedGroundedFixture" : 1
+  } ]
+}

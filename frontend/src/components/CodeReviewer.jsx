@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { api } from '../api/client';
+import RetrievalEvidence from './RetrievalEvidence';
 
 export default function CodeReviewer({ projectId }) {
   const [plan, setPlan] = useState(null);
@@ -97,9 +98,11 @@ export default function CodeReviewer({ projectId }) {
       {findings.map((finding, index) => <article key={index} className="border border-slate-700 rounded p-3 space-y-2 text-sm">
         <p className={finding.kind === 'GOOD_PRACTICE' ? 'text-emerald-300 text-xs' : 'text-amber-300 text-xs'}>{finding.kind} · {finding.category} · {finding.severity}</p>
         <h4 className="font-semibold">{finding.title}</h4>
+        {finding.standardIds?.length > 0 && <p className="text-xs text-blue-300">Standards: {finding.standardIds.join(", ")}</p>}
         <p>{finding.explanation}</p><p className="text-slate-300">{finding.guidance}</p>
         {finding.evidence.map((e, i) => <div key={i}><p className="font-mono text-xs break-all">{e.path}:{e.startLine}–{e.endLine}</p><pre className="code-block whitespace-pre-wrap">{e.snippet}</pre></div>)}
       </article>)}
+      {report.retrieval?.map(trace => <div key={trace.batchOffset}><p className="text-xs">Retrieval for batch {trace.batchOffset + 1}</p><RetrievalEvidence context={trace.context} /></div>)}
       <details className="text-xs"><summary>Reviewed, deferred, failed and excluded files</summary>
         <div className="max-h-64 overflow-auto space-y-2 mt-2">{report.files.map(f => <p key={f.path} className="break-all">{f.path} · {f.status} · {f.reason}</p>)}</div>
       </details>

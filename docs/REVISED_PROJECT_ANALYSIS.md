@@ -93,11 +93,15 @@ security/performance categories and exact evidence, with authorization tests.
 Implemented in [Revised Phase 5](REVISED_PHASE_5.md): explicit bounded multi-file
 reviews, frozen history/downloads, positive and improvement findings, exact
 source-citation validation and honest incomplete/unavailable states. Semantic
-reviewer quality and related-symbol retrieval remain Phase 6 work.
+reviewer quality and related-symbol retrieval are addressed separately by Phase 6 below.
 
 **Phase 6:** add multilingual symbol/context retrieval and standards; validate
 citations before display; pin reviewer datasets and measure false positives,
-evidence validity, defect detection, test behavior/mutation usefulness and cost.
+evidence validity, defect detection and test behavior/mutation usefulness.
+Implemented in [Revised Phase 6](REVISED_PHASE_6.md): snapshot-scoped lexical
+retrieval for Java/Python/JS/TS, curated versioned standards, checked cross-file
+evidence, hash-bound reviewer adjudications and real-container usefulness
+fixtures. No live-provider quality or cost measurement is claimed.
 
 Deployment concerns remain: reviewed schema migrations (Hibernate currently
 creates/updates tables), global tenant quotas, external worker scheduling, Docker
