@@ -90,6 +90,10 @@ provider-failure fallbacks. The numbered findings above describe the baseline.
 **Phase 5:** add a separately invoked reviewer, bounded repository traversal and
 coverage-of-review metadata. Persist actionable positive/negative findings,
 security/performance categories and exact evidence, with authorization tests.
+Implemented in [Revised Phase 5](REVISED_PHASE_5.md): explicit bounded multi-file
+reviews, frozen history/downloads, positive and improvement findings, exact
+source-citation validation and honest incomplete/unavailable states. Semantic
+reviewer quality and related-symbol retrieval remain Phase 6 work.
 
 **Phase 6:** add multilingual symbol/context retrieval and standards; validate
 citations before display; pin reviewer datasets and measure false positives,

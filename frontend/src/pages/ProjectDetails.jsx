@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { api } from '../api/client';
 import TestPlanning from '../components/TestPlanning';
+import CodeReviewer from '../components/CodeReviewer';
 import { FileCode, Play, Cpu, Plus, Clock, Github, RefreshCw, Unplug } from 'lucide-react';
 
 export default function ProjectDetails() {
@@ -158,7 +159,7 @@ export default function ProjectDetails() {
           <h1 className="text-2xl font-bold">{project?.name}</h1>
           <div className="flex gap-2">
             <button onClick={handleAnalyze} disabled={actionLoading || files.length === 0} className="btn-secondary">
-              <Cpu className="w-4 h-4 text-purple-400" /> AI Code Analysis
+              <Cpu className="w-4 h-4 text-purple-400" /> Java Testing Analysis
             </button>
             <button onClick={handleStartAutoRun} disabled={actionLoading || files.length === 0} className="btn-primary">
               <Play className="w-4 h-4" /> Run Java Test Orchestrator
@@ -203,7 +204,7 @@ export default function ProjectDetails() {
       {repository?.status === 'CONNECTED' && (
         <div className="card space-y-3">
           <h2 className="text-lg font-bold">Repository file selection</h2>
-          <p className="text-sm text-slate-400">Multi-language intake only. The current test runner still accepts Java source under src/main/java. Other languages are cataloged, not executed. System testing is out of scope.</p>
+          <p className="text-sm text-slate-400">The catalog provides immutable input for code review and Java/Python/JavaScript/TypeScript test drafts. Execution support depends on the offline worker and project layout. System testing is out of scope.</p>
           {selectionError && <p role="alert" className="text-amber-300 text-sm">{selectionError}</p>}
           {selection && <>
             <p className="text-sm">{selection.files.filter(f => f.disposition !== 'EXCLUDED').length} included · {selection.files.filter(f => f.disposition === 'EXCLUDED').length} excluded</p>
@@ -260,6 +261,8 @@ export default function ProjectDetails() {
           </div>
         </div>
       )}
+
+      <CodeReviewer key={`review:${id}`} projectId={id} />
 
       <TestPlanning key={`${id}:${repository?.selectedCommitSha || 'manual'}`} projectId={id} />
 

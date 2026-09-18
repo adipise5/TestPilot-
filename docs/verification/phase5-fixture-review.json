@@ -1,0 +1,73 @@
+{
+  "id": 1,
+  "projectId": 1,
+  "status": "COMPLETED",
+  "startedAt": "2026-09-18T18:12:06.305742",
+  "completedAt": "2026-09-18T18:12:06.36065",
+  "report": {
+    "schemaVersion": "testpilot-review-v1",
+    "snapshotId": "ad9d32450fb84f2686159968b0dbfec30d93081b683b77c74e77d7ec7cc10961",
+    "commitSha": "manual",
+    "provider": "openai-compatible",
+    "model": "phase5-ui-fixture",
+    "status": "COMPLETED",
+    "batchOffset": 0,
+    "nextBatchOffset": null,
+    "totalBatches": 1,
+    "files": [
+      {
+        "path": "src/main/java/App.java",
+        "language": "Java",
+        "sha256": "cb92490a3b611d733fa9ef78a262da0416f7acaa3d2a0a6b13d8064f7f78a413",
+        "lines": 7,
+        "status": "REVIEWED",
+        "reason": "AI acknowledged this file; cited snippets validated, conclusions unverified"
+      }
+    ],
+    "findings": [
+      {
+        "kind": "IMPROVEMENT",
+        "category": "SECURITY",
+        "severity": "HIGH",
+        "title": "Concatenated SQL includes the caller-supplied name",
+        "explanation": "If name is untrusted, quote characters can change the SQL query. This fixture demonstrates the review UI; no live model was called.",
+        "guidance": "Use a PreparedStatement with a ? placeholder and setString(1, name). Close statement/result resources with try-with-resources. Test a name containing an apostrophe as literal data.",
+        "evidence": [
+          {
+            "path": "src/main/java/App.java",
+            "startLine": 4,
+            "endLine": 4,
+            "snippet": "        return db.createStatement().executeQuery(\"SELECT * FROM users WHERE name = '\" + name + \"'\");"
+          }
+        ]
+      },
+      {
+        "kind": "GOOD_PRACTICE",
+        "category": "TESTABILITY",
+        "severity": "INFO",
+        "title": "Addition is isolated in a deterministic method",
+        "explanation": "This method reads only its arguments and returns a value, which permits direct unit tests. Fixture-provider output only.",
+        "guidance": "Preserve the absence of external I/O; cover zero, negative values and the intended integer-overflow behavior.",
+        "evidence": [
+          {
+            "path": "src/main/java/App.java",
+            "startLine": 6,
+            "endLine": 6,
+            "snippet": "    public int add(int a, int b) { return a + b; }"
+          }
+        ]
+      }
+    ],
+    "rejectedFindings": 0,
+    "successfulBatches": 1,
+    "failedBatches": 0,
+    "limitations": [
+      "AI findings and severity are proposals for human review, not verified defects, exploits, fixes or measured performance gains.",
+      "Evidence validation proves exact path/line/snippet membership only; it does not establish that an AI conclusion is correct.",
+      "Scope is the immutable catalog, not the entire remote repository. Intake-excluded, unsupported and oversized files are not reviewed.",
+      "Each request reviews up to 8 batches of 20 files / 40,000 source characters. Continue remaining batches explicitly; previous reports are retained.",
+      "Related files may be split across batches. No repository-wide call graph, RAG retrieval, vulnerability database lookup or execution is performed.",
+      "A completed review or empty findings list is not proof of correctness, security, performance or absence of defects."
+    ]
+  }
+}

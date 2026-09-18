@@ -57,6 +57,7 @@ public class OpenAiGeminiLlmClient implements LlmClient {
 
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(baseUrl + "/chat/completions"))
+                    .timeout(Duration.ofSeconds(45))
                     .header("Content-Type", "application/json")
                     .header("Authorization", "Bearer " + apiKey)
                     .POST(HttpRequest.BodyPublishers.ofString(jsonPayload))
