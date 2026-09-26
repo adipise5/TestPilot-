@@ -190,6 +190,24 @@ class RepositoryIntakeIntegrationTest {
     }
 
     @Test
+    void explicitRefreshRescansTheSameCommit() throws Exception {
+        String response = mockMvc.perform(post("/api/projects/" + projectId + "/repository")
+                        .header("Authorization", ownerToken).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"transport\":\"GITHUB_MCP\",\"owner\":\"octocat\",\"name\":\"sample\"}"))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        long repositoryId = objectMapper.readTree(response).path("repository").path("id").asLong();
+        long ingestionId = objectMapper.readTree(response).path("ingestion").path("id").asLong();
+
+        mockMvc.perform(post("/api/repositories/" + repositoryId + "/ingestions")
+                        .header("Authorization", ownerToken).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"revision\":\"main\",\"force\":true}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(ingestionId))
+                .andExpect(jsonPath("$.status").value("COMPLETED"));
+        verify(connector, times(2)).listTree(any(), eq(COMMIT_SHA), any());
+    }
+
+    @Test
     void shouldCatalogPythonWithoutSendingItToJavaRunner() throws Exception {
         when(connector.listTree(any(), any(), any())).thenReturn(List.of(
                 new RepositoryTreeEntry("app.py", "py-sha", 20, "blob")));

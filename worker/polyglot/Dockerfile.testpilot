@@ -1,0 +1,12 @@
+# Optional worker image for testing TestPilot's own Spring Boot repository.
+# The normal polyglot image stays generic. Resolve this trusted, checked-in POM
+# at image build time; runtime execution remains offline and network-disabled.
+FROM testpilot-polyglot:local
+USER root
+COPY pom.xml /opt/testpilot-self/pom.xml
+RUN mvn -B --no-transfer-progress -f /opt/testpilot-self/pom.xml \
+        -Dmaven.repo.local=/opt/m2 dependency:go-offline \
+    && mvn -B --no-transfer-progress -f /opt/testpilot-self/pom.xml \
+        -Dmaven.repo.local=/opt/m2 test-compile \
+    && chmod -R a+rX /opt/m2
+USER 10001:10001

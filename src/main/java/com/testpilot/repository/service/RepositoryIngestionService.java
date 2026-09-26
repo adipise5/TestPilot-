@@ -54,6 +54,11 @@ public class RepositoryIngestionService {
     }
 
     public RepositoryIngestionResponse ingest(Long repositoryId, String requestedRevision, UserPrincipal currentUser) {
+        return ingest(repositoryId, requestedRevision, false, currentUser);
+    }
+
+    public RepositoryIngestionResponse ingest(Long repositoryId, String requestedRevision,
+                                              boolean force, UserPrincipal currentUser) {
         ConnectedRepository repository = requireWritable(repositoryId, currentUser);
         RepositoryConnector connector = connectorRegistry.require(repository.getTransport());
         RepositoryCoordinates coordinates = coordinates(repository);
@@ -64,7 +69,7 @@ public class RepositoryIngestionService {
                 : requestedRevision;
         String commitSha = connector.resolveRevision(coordinates, revision, accessContext);
         RepositoryIngestionPersistenceService.BeginIngestionResult begin =
-                persistenceService.begin(repositoryId, commitSha);
+                persistenceService.begin(repositoryId, commitSha, force);
         if (!begin.shouldProcess()) {
             return RepositoryIngestionResponse.fromEntity(begin.ingestion());
         }

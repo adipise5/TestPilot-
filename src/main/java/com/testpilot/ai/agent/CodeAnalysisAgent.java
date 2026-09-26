@@ -19,8 +19,8 @@ public class CodeAnalysisAgent {
     }
 
     public CodeAnalysisResponse analyzeCode(List<CodeFile> sourceFiles) {
-        String combinedCode = sourceFiles.stream()
-                .map(f -> "// File: " + f.getFilePath() + "\n" + f.getContent())
+        String combinedCode = sourceFiles.stream().limit(8)
+                .map(f -> "// File: " + f.getFilePath() + "\n" + f.getContent().substring(0, Math.min(8_000, f.getContent().length())))
                 .collect(Collectors.joining("\n\n"));
 
         String systemInstruction = PromptBoundary.UNTRUSTED_DATA_INSTRUCTION + """
@@ -35,8 +35,9 @@ public class CodeAnalysisAgent {
                 - potentialIssues (list of strings)
                 """;
 
-        String prompt = "Analyze the Java source code supplied below."
-                + PromptBoundary.section("JAVA_SOURCE", combinedCode, 500_000);
+        String prompt = "Analyze the selected Java target and bounded repository context supplied below. "
+                + "The complete repository may contain additional files."
+                + PromptBoundary.section("JAVA_SOURCE", combinedCode, 65_000);
 
         return llmClient.generateStructured(prompt, systemInstruction, CodeAnalysisResponse.class);
     }

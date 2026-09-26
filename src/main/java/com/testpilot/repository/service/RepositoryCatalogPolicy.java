@@ -106,7 +106,7 @@ public class RepositoryCatalogPolicy {
     public static final long MAX_FILE_BYTES = 512L * 1024;
 
     private static final Pattern PRIVATE_KEY = Pattern.compile(
-            "-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----",
+            "-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----\\s*(?:[A-Za-z0-9+/=]\\s*){64,}-----END (?:RSA |EC |OPENSSH )?PRIVATE KEY-----",
             Pattern.CASE_INSENSITIVE);
     private static final Pattern AWS_ACCESS_KEY = Pattern.compile("(?<![A-Z0-9])AKIA[A-Z0-9]{16}(?![A-Z0-9])");
     private static final Pattern GITHUB_TOKEN = Pattern.compile("(?<![A-Za-z0-9])gh[pousr]_[A-Za-z0-9_]{20,}");

@@ -108,6 +108,10 @@ Maven does not need to be installed globally because the repository includes `mv
 ```
 
 The API starts at `http://localhost:8080`. The H2 console is intended only for this local profile.
+The default H2 database is in memory. For local runs that should survive a
+backend restart, set `H2_JDBC_URL=jdbc:h2:file:/absolute/private/path/testpilot`
+and `H2_DDL_AUTO=update` in the untracked `.env` loaded by your launch script.
+Keep that directory private and outside the repository.
 
 ### LangGraph orchestrator
 

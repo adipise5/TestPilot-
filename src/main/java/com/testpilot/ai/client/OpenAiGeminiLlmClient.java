@@ -15,6 +15,8 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 @Component
 @ConditionalOnProperty(name = "ai.provider", havingValue = "openai")
@@ -57,16 +59,23 @@ public class OpenAiGeminiLlmClient implements LlmClient {
 
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(baseUrl + "/chat/completions"))
-                    .timeout(Duration.ofSeconds(45))
+                    .timeout(Duration.ofSeconds(90))
                     .header("Content-Type", "application/json")
                     .header("Authorization", "Bearer " + apiKey)
                     .POST(HttpRequest.BodyPublishers.ofString(jsonPayload))
                     .build();
 
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            var pending = httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response;
+            try {
+                response = pending.get(90, TimeUnit.SECONDS);
+            } catch (TimeoutException timeout) {
+                pending.cancel(true);
+                throw new IllegalStateException("LLM provider did not respond within 90 seconds", timeout);
+            }
 
             if (response.statusCode() != 200) {
-                throw new RuntimeException("LLM API call failed with status: " + response.statusCode() + " body: " + response.body());
+                throw new RuntimeException("LLM API call failed with status: " + response.statusCode());
             }
 
             JsonNode root = objectMapper.readTree(response.body());
@@ -80,7 +89,9 @@ public class OpenAiGeminiLlmClient implements LlmClient {
 
     @Override
     public <T> T generateStructured(String prompt, String systemInstruction, Class<T> responseType) {
-        String jsonPrompt = prompt + "\n\nCRITICAL REQUIREMENT: Return ONLY a valid JSON object matching the requested schema. Do not include markdown code block formatting like ```json.";
+        String jsonPrompt = prompt + "\n\nCRITICAL REQUIREMENT: Return ONLY a valid JSON object matching the requested schema. "
+                + "Escape every backslash inside JSON strings, including backslashes in Java source code. "
+                + "Do not include markdown code blocks.";
         String rawResponse = generate(jsonPrompt, systemInstruction);
 
         String cleanedJson = rawResponse.trim();
@@ -98,9 +109,33 @@ public class OpenAiGeminiLlmClient implements LlmClient {
         try {
             return objectMapper.readValue(cleanedJson, responseType);
         } catch (Exception e) {
-            log.error("Failed to parse structured JSON response from LLM: {}", cleanedJson, e);
-            throw new RuntimeException("Malformed LLM JSON output: " + e.getMessage(), e);
+            try {
+                return objectMapper.readValue(escapeInvalidJsonBackslashes(cleanedJson), responseType);
+            } catch (Exception repairedFailure) {
+                log.warn("Failed to parse structured LLM response: {}", repairedFailure.getClass().getSimpleName());
+                throw new RuntimeException("Malformed LLM JSON output", repairedFailure);
+            }
         }
+    }
+
+    /** Preserve literal Java/Python escapes such as \0 when a model forgets JSON's second slash. */
+    static String escapeInvalidJsonBackslashes(String json) {
+        StringBuilder fixed = new StringBuilder(json.length());
+        boolean inString = false;
+        for (int i = 0; i < json.length(); i++) {
+            char ch = json.charAt(i);
+            if (ch == '"' && (i == 0 || !isEscaped(json, i))) inString = !inString;
+            if (inString && ch == '\\' && !isEscaped(json, i) && i + 1 < json.length()
+                    && "\"\\/bfnrtu".indexOf(json.charAt(i + 1)) < 0) fixed.append('\\');
+            fixed.append(ch);
+        }
+        return fixed.toString();
+    }
+
+    private static boolean isEscaped(String text, int quoteIndex) {
+        int slashes = 0;
+        for (int i = quoteIndex - 1; i >= 0 && text.charAt(i) == '\\'; i--) slashes++;
+        return slashes % 2 != 0;
     }
 
     @Override

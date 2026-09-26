@@ -70,7 +70,7 @@ export const api = {
   getConnectedRepository: (projectId) => apiRequest(`/projects/${projectId}/repository`),
   connectRepository: (projectId, data) => apiRequest(`/projects/${projectId}/repository`, 'POST', data),
   refreshRepository: (repositoryId, revision) => apiRequest(
-    `/repositories/${repositoryId}/ingestions`, 'POST', { revision }),
+    `/repositories/${repositoryId}/ingestions`, 'POST', { revision, force: true }),
   getRepositoryCatalog: (repositoryId) => apiRequest(`/repositories/${repositoryId}/catalog`),
   getRepositorySelection: (repositoryId) => apiRequest(`/repositories/${repositoryId}/selection`),
   disconnectRepository: (repositoryId) => apiRequest(`/repositories/${repositoryId}`, 'DELETE'),

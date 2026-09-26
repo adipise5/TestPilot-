@@ -12,6 +12,30 @@ export TEST_SECURE_WORKER_IMAGE=testpilot-polyglot:local
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=h2
 ```
 
+The application stages each input in `~/.testpilot/sandbox-input` by default.
+This directory must be shared with the Docker daemon; the macOS system temp
+directory under `/var/folders` is not shared by Colima. Set
+`TEST_EXECUTION_STAGING_DIR` to another absolute Docker-shared directory when
+needed. Only the private per-run input directory is mounted read-only, and it is
+removed after the attempt. If the backend itself runs in a container, configure
+the staging path to the same host-visible bind source on both sides.
+
+The generic image only includes a small Java fixture cache. To test **this
+TestPilot repository itself**, build the optional image that preloads its trusted
+Spring Boot POM at build time, then set `TEST_SECURE_WORKER_IMAGE=testpilot-selftest:local`
+before starting the backend:
+
+```bash
+docker build -t testpilot-selftest:local -f worker/polyglot/Dockerfile.testpilot .
+```
+
+This does not install dependencies from a connected third-party repository.
+Other repositories with uncached Maven dependencies will still receive a
+`DEPENDENCY_FAILURE` with the offline Maven diagnostic.
+Use the project page's **Refresh repository** action after changing intake
+rules: it explicitly rescans the selected commit even when its SHA is unchanged.
+Ordinary reconnects still reuse a completed immutable catalog.
+
 H2 is ephemeral (`create-drop`), and **also requires Docker** for execution.
 The application never automatically builds or pulls an image. Missing Docker,
 an unavailable image or an invalid worker response fails visibly; there is no

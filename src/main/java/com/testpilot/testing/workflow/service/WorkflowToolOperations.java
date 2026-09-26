@@ -186,7 +186,7 @@ public class WorkflowToolOperations {
     private JsonNode mapCodebase(WorkflowRun workflow, JsonNode state) {
         List<CodeFile> sourceFiles = requireSourceFiles(workflow);
         CodeAnalysisResponse analysis = modelInvocations.observe(
-                workflow.getTestRunId(), "code-analysis", sourceMaterial(sourceFiles),
+                workflow.getTestRunId(), "code-analysis", sourceMaterial(sourceFiles.subList(0, Math.min(8, sourceFiles.size()))),
                 () -> codeAnalysisAgent.analyzeCode(sourceFiles));
         Set<String> packages = new TreeSet<>();
         Set<String> modules = new TreeSet<>();
@@ -230,15 +230,24 @@ public class WorkflowToolOperations {
     }
 
     private JsonNode planTests(WorkflowRun workflow, JsonNode state) {
-        JsonNode codebaseMap = state.path("codebase_map");
-        int sourceCount = codebaseMap.path("source_count").asInt(
-                state.path("source_count").asInt(requireSourceFiles(workflow).size()));
-        boolean hasFramework = codebaseMap.path("frameworks").size() > 0;
-        boolean hasExternalResources = codebaseMap.path("external_resources").size() > 0;
+        // The repository map describes every file, but specialists generate for
+        // the selected primary source. A Spring application elsewhere in the
+        // repository must not turn a plain utility into a full-context test.
+        Set<String> targetFrameworks = new TreeSet<>();
+        Set<String> targetResources = new TreeSet<>();
+        String targetSource = requireSourceFiles(workflow).get(0).getContent();
+        detectSignals(targetSource, targetFrameworks, targetResources);
+        // A passive @Component marker on an otherwise self-contained class does
+        // not justify booting Spring or requesting external fixtures.
+        if (!WorkflowSourceSelector.needsFrameworkWiring(targetSource)) {
+            targetFrameworks.remove("SPRING");
+        }
+        boolean hasFramework = !targetFrameworks.isEmpty();
+        boolean hasExternalResources = !targetResources.isEmpty();
 
         ArrayNode plan = objectMapper.createArrayNode();
         plan.add(planItem(TestLevel.UNIT, "Isolated class behavior and edge cases"));
-        if (sourceCount > 1 || hasFramework) {
+        if (hasFramework || hasExternalResources) {
             plan.add(planItem(TestLevel.MODULE, "Collaboration inside one application module"));
         }
         if (hasFramework || hasExternalResources) {
@@ -250,7 +259,7 @@ public class WorkflowToolOperations {
         updates.put("approval_required", hasExternalResources);
         updates.put("approval_reason", hasExternalResources
                 ? "Integration plan references controlled external resources: "
-                        + joinText(codebaseMap.path("external_resources"))
+                        + String.join(", ", targetResources)
                 : "No external-resource approval is required");
         return updates;
     }
@@ -266,7 +275,7 @@ public class WorkflowToolOperations {
                 workflow.getTestRunId());
         TestGenerationResponse generated = modelInvocations.observe(
                 workflow.getTestRunId(), "test-generation-" + level.name().toLowerCase(),
-                sourceMaterial(sourceFiles) + "\n" + retrieval.context(),
+                sourceMaterial(sourceFiles.subList(0, 1)) + "\n" + retrieval.context(),
                 () -> testGenerationAgent.generateTests(sourceFiles, analysis, retrieval.context(), level));
         String testClass = pathPolicy.validateGeneratedTestClass(generated.testClass());
 
@@ -503,7 +512,7 @@ public class WorkflowToolOperations {
     }
 
     private List<CodeFile> requireSourceFiles(WorkflowRun workflow) {
-        List<CodeFile> sourceFiles = projectSourceService.getActiveSourceFiles(workflow.getProjectId());
+        List<CodeFile> sourceFiles = WorkflowSourceSelector.order(projectSourceService.getActiveSourceFiles(workflow.getProjectId()));
         if (sourceFiles.isEmpty()) {
             throw new InvalidRequestException("Workflow requires at least one Java source file");
         }

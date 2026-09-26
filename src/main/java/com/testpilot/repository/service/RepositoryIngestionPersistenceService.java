@@ -34,6 +34,11 @@ public class RepositoryIngestionPersistenceService {
 
     @Transactional
     public BeginIngestionResult begin(Long repositoryId, String commitSha) {
+        return begin(repositoryId, commitSha, false);
+    }
+
+    @Transactional
+    public BeginIngestionResult begin(Long repositoryId, String commitSha, boolean force) {
         var existing = ingestionRepository.findByConnectedRepositoryIdAndCommitSha(repositoryId, commitSha);
         if (existing.isEmpty()) {
             RepositoryIngestion created = ingestionRepository.save(new RepositoryIngestion(repositoryId, commitSha));
@@ -41,7 +46,7 @@ public class RepositoryIngestionPersistenceService {
         }
 
         RepositoryIngestion ingestion = existing.get();
-        if ((ingestion.getStatus() == RepositoryIngestionStatus.COMPLETED && ingestion.getSelectionReport() != null)
+        if ((!force && ingestion.getStatus() == RepositoryIngestionStatus.COMPLETED && ingestion.getSelectionReport() != null)
                 || ingestion.getStatus() == RepositoryIngestionStatus.RUNNING) {
             return new BeginIngestionResult(ingestion, false);
         }

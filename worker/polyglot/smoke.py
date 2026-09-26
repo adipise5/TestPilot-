@@ -109,7 +109,9 @@ def test_container_boundary():
 
 def execute(image, payload):
     name = "testpilot-secure-" + str(uuid.uuid4())
-    with tempfile.TemporaryDirectory(prefix="testpilot-smoke-") as directory:
+    staging = Path(os.environ.get("TEST_EXECUTION_STAGING_DIR") or Path.home() / ".testpilot" / "sandbox-input")
+    staging.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="testpilot-smoke-", dir=staging) as directory:
         mount = Path(directory) / "input"
         mount.mkdir(mode=0o755)
         request_file = mount / "request.json"

@@ -23,7 +23,7 @@ class SpringWorkflowTools:
         self,
         api_base: str,
         internal_token: str,
-        timeout_seconds: float = 150.0,
+        timeout_seconds: float = 360.0,
     ) -> None:
         self._api_base = api_base.rstrip("/")
         self._internal_token = internal_token

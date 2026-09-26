@@ -3,6 +3,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.testpilot.testing.execution.sandbox.*;
 import com.testpilot.testing.generation.SourceInput;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
@@ -10,9 +12,10 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 class SecureContainerExecutorTest {
+    @TempDir Path sharedDirectory;
     private final OfflineContainerCommands commands = new OfflineContainerCommands("testpilot-polyglot:test");
     private final ContainerProcess process = mock(ContainerProcess.class);
-    private final SecureContainerExecutor executor = new SecureContainerExecutor(commands, process, new ObjectMapper());
+    private final SecureContainerExecutor executor = new SecureContainerExecutor(commands, process, new ObjectMapper(), "");
     private final String name = "testpilot-secure-00000000-0000-0000-0000-000000000000";
     private SandboxRequest request(String language) {
         return new SandboxRequest(language, "pytest", "app.py", List.of(new SandboxRequest.TestFile("tests/test_app.py", "def test_app(): assert 1 == 1")),
@@ -46,6 +49,17 @@ class SecureContainerExecutorTest {
         when(process.run(anyList(), any(), any(), any())).thenReturn(new ContainerProcess.Result(null, true, false, ""));
         assertEquals("TIMEOUT", executor.execute(request("Python"), name, () -> false, () -> {}).outcome());
         verify(process).run(eq(commands.remove(name)), any(), any(), any());
+    }
+    @Test void stagesInputUnderConfiguredDockerSharedDirectoryAndCleansIt() throws Exception {
+        var configured = new SecureContainerExecutor(commands, process, new ObjectMapper(), sharedDirectory.toString());
+        when(process.run(anyList(), any(), any(), any())).thenReturn(new ContainerProcess.Result(125, false, false, "image unavailable"));
+        configured.execute(request("Python"), name, () -> false, () -> {});
+        var commandsSent = org.mockito.ArgumentCaptor.forClass(List.class);
+        verify(process, times(2)).run(commandsSent.capture(), any(), any(), any());
+        @SuppressWarnings("unchecked") List<String> run = (List<String>) commandsSent.getAllValues().get(0);
+        String mount = run.get(run.indexOf("--mount") + 1);
+        assertTrue(mount.startsWith("type=bind,src=" + sharedDirectory + "/testpilot-sandbox-"), mount);
+        try (var entries = Files.list(sharedDirectory)) { assertEquals(0, entries.count()); }
     }
     @Test void emptySkippedAndContradictorySuccessIsNeverGreen() {
         assertEquals("NO_TESTS", executor.validateResult(new SandboxResult("SUCCESS", 0, "", List.of())).outcome());

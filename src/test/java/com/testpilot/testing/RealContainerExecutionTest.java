@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class RealContainerExecutionTest {
     private final SecureContainerExecutor executor = new SecureContainerExecutor(
             new OfflineContainerCommands(System.getenv().getOrDefault("TEST_SECURE_WORKER_IMAGE", "testpilot-polyglot:local")),
-            new ContainerProcess(), new ObjectMapper());
+            new ContainerProcess(), new ObjectMapper(), System.getenv().getOrDefault("TEST_EXECUTION_STAGING_DIR", ""));
 
     private SandboxRequest python(String test) {
         return new SandboxRequest("Python", "pytest", "app.py",

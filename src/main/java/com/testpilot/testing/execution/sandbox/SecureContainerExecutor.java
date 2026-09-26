@@ -2,6 +2,7 @@ package com.testpilot.testing.execution.sandbox;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.testpilot.common.validation.RepositoryPathPolicy;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
@@ -16,9 +17,14 @@ public class SecureContainerExecutor {
     private final OfflineContainerCommands commands;
     private final ContainerProcess processes;
     private final ObjectMapper mapper;
+    private final Path stagingDirectory;
     private final Semaphore capacity = new Semaphore(2);
-    public SecureContainerExecutor(OfflineContainerCommands commands, ContainerProcess processes, ObjectMapper mapper) {
+    public SecureContainerExecutor(OfflineContainerCommands commands, ContainerProcess processes, ObjectMapper mapper,
+            @Value("${testpilot.execution.shared-staging-directory:}") String configuredStagingDirectory) {
         this.commands = commands; this.processes = processes; this.mapper = mapper;
+        this.stagingDirectory = configuredStagingDirectory == null || configuredStagingDirectory.isBlank()
+                ? Path.of(System.getProperty("user.home"), ".testpilot", "sandbox-input")
+                : Path.of(configuredStagingDirectory);
     }
 
     public SandboxResult execute(SandboxRequest request, String containerName, BooleanSupplier cancelled, Runnable heartbeat) {
@@ -31,7 +37,11 @@ public class SecureContainerExecutor {
         Path workspace = null;
         try {
             // Parent is private to this process; no repository filename is ever a host path.
-            workspace = Files.createTempDirectory("testpilot-sandbox-");
+            // The system temp directory on macOS is commonly /var/folders, which is not
+            // shared with Docker Desktop/Colima. Stage under the host home (or an
+            // operator-supplied shared directory) so the daemon can bind the input.
+            Files.createDirectories(stagingDirectory);
+            workspace = Files.createTempDirectory(stagingDirectory, "testpilot-sandbox-");
             Files.setPosixFilePermissions(workspace, PosixFilePermissions.fromString("rwx------"));
             Path input = Files.createDirectory(workspace.resolve("input"));
             Files.setPosixFilePermissions(input, PosixFilePermissions.fromString("rwxr-xr-x"));
@@ -60,7 +70,7 @@ public class SecureContainerExecutor {
             Thread.currentThread().interrupt();
             return SandboxResult.failure("CANCELLED", "Execution interrupted");
         } catch (Exception ex) {
-            return SandboxResult.failure("INFRASTRUCTURE_FAILURE", "Could not run or read the offline worker. Check Docker, the prebuilt image and worker protocol; no host fallback was used.");
+            return SandboxResult.failure("INFRASTRUCTURE_FAILURE", "Could not stage or run the offline worker. Ensure testpilot.execution.shared-staging-directory is visible to the Docker daemon and the prebuilt image is available; no host fallback was used.");
         } finally {
             cleanup(containerName);
             if (workspace != null) {

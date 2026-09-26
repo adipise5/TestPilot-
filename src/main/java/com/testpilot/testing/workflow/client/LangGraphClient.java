@@ -59,7 +59,10 @@ public class LangGraphClient {
         try {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(baseUrl + path))
-                    .timeout(Duration.ofMinutes(4))
+                    // A workflow contains several sequential model calls and an
+                    // offline container attempt. Keep this longer than the total
+                    // graph budget so the caller cannot mark an active run failed.
+                    .timeout(Duration.ofMinutes(20))
                     .header("Content-Type", "application/json")
                     .header("X-TestPilot-Internal-Token", internalToken)
                     .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(body)))

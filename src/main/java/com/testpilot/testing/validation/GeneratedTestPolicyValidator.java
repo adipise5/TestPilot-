@@ -6,9 +6,16 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 @Component
 public class GeneratedTestPolicyValidator {
+
+    private static final Pattern EMPTY_NO_THROW = Pattern.compile(
+            "assertDoesNotThrow\\s*\\(\\s*\\(\\s*\\)\\s*->\\s*\\{\\s*}\\s*\\)");
+    private static final Pattern EMPTY_CATCH = Pattern.compile(
+            "catch\\s*\\([^)]*\\)\\s*\\{\\s*}");
+    private static final Pattern DIRECT_MAIN = Pattern.compile("\\b[A-Za-z_$][\\w$]*\\.main\\s*\\(");
 
     private static final List<String> FORBIDDEN_EXECUTION_APIS = List.of(
             "Runtime.getRuntime(",
@@ -36,6 +43,11 @@ public class GeneratedTestPolicyValidator {
         }
         rejectAny(testCode, FORBIDDEN_EXECUTION_APIS, "process/native execution API", testClass);
         rejectAny(testCode, DIRECT_NETWORK_APIS, "uncontrolled network API", testClass);
+        String executableCode = testCode.replaceAll("(?s)/\\*.*?\\*/", "")
+                .replaceAll("(?m)//[^\\r\\n]*", "");
+        if (EMPTY_NO_THROW.matcher(executableCode).find() || EMPTY_CATCH.matcher(executableCode).find()) {
+            throw new InvalidRequestException("Test policy rejected a no-op assertion or swallowed exception in " + testClass);
+        }
 
         List<String> checks = new ArrayList<>();
         checks.add("junit-structure");
@@ -44,18 +56,20 @@ public class GeneratedTestPolicyValidator {
 
         switch (level) {
             case UNIT -> {
+                rejectDirectMain(executableCode, testClass);
                 rejectContains(testCode, "@SpringBootTest", "Unit tests must not start a Spring application context", testClass);
                 rejectContains(testCode, "@Testcontainers", "Unit tests must not start infrastructure containers", testClass);
                 checks.add("unit-isolation");
             }
             case MODULE -> {
+                rejectDirectMain(executableCode, testClass);
                 rejectContains(testCode, "@SpringBootTest", "Module tests must not start the complete application", testClass);
                 rejectContains(testCode, "@Testcontainers", "Module tests must not cross infrastructure boundaries", testClass);
                 checks.add("module-boundary");
             }
             case INTEGRATION -> {
+                rejectContains(testCode, "@SpringBootTest", "Full Spring application context is unavailable in isolated integration tests", testClass);
                 boolean marked = testCode.contains("@Tag(\"integration\")")
-                        || testCode.contains("@SpringBootTest")
                         || testCode.contains("@DataJpaTest")
                         || testCode.contains("@Testcontainers");
                 if (!marked) {
@@ -76,5 +90,11 @@ public class GeneratedTestPolicyValidator {
 
     private void rejectContains(String code, String pattern, String reason, String testClass) {
         if (code.contains(pattern)) throw new InvalidRequestException(reason + ": " + testClass);
+    }
+
+    private void rejectDirectMain(String code, String testClass) {
+        if (DIRECT_MAIN.matcher(code).find()) {
+            throw new InvalidRequestException("Unit and module tests must not launch an application main method: " + testClass);
+        }
     }
 }

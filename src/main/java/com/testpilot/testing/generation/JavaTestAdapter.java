@@ -23,7 +23,9 @@ public class JavaTestAdapter implements LanguageTestAdapter {
     public String instructions(TestPlanItem plan) {
         return "Use JUnit 5 and Mockito, real assertions against the supplied production code, package matching the assigned fully qualified testName, "
                 + "and @Tag(\"" + plan.level().name().toLowerCase(java.util.Locale.ROOT) + "\"). Generate exactly one complete Java class. "
-                + "Use Spring test slices only for integration when the source justifies them. No full application or infrastructure in unit/module tests.";
+                + "For integration, test only interactions actually present in the selected source using self-contained local fixtures; use a Spring test slice only if the source requires Spring wiring. Never use @SpringBootTest or @Autowired to start the full application: required services and secrets are unavailable in the isolated worker. "
+                + "For a plain Java class, instantiate it directly. No full application or infrastructure in unit/module tests. Import every JUnit annotation used. "
+                + "Escape backslashes correctly in Java string literals (for example, a path separator is two backslashes in Java source).";
     }
 
     public List<String> validate(TestPlanItem plan, TestGenerationResponse response, boolean mock) {

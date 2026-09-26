@@ -232,6 +232,7 @@ export default function TestRunDetails() {
                 <div>
                   <div className="font-mono text-sm text-slate-200">{step.node}</div>
                   <div className="text-xs text-slate-500">attempts: {step.attempts} · input: {step.inputHash.slice(0, 12)}</div>
+                  {step.error && <div className="mt-1 text-xs text-red-300 break-words">{step.error}</div>}
                 </div>
                 <span className={`text-xs font-mono ${step.status === 'COMPLETED' ? 'text-emerald-400' : step.status === 'FAILED' ? 'text-red-400' : 'text-amber-400'}`}>
                   {step.status}
@@ -261,7 +262,7 @@ export default function TestRunDetails() {
           </div>
           {testRun.executionOutput && (
             <details>
-              <summary className="cursor-pointer text-sm text-slate-400">Show bounded Maven output</summary>
+              <summary className="cursor-pointer text-sm text-slate-400">Show execution diagnostics</summary>
               <pre className="code-block mt-3 max-h-80 overflow-auto">{testRun.executionOutput}</pre>
             </details>
           )}
@@ -485,7 +486,8 @@ export default function TestRunDetails() {
 
         {(!testRun.testResults || testRun.testResults.length === 0) ? (
           <div className="text-center py-8 text-slate-500 text-sm">
-            {testRun.status === 'COMPLETED' ? 'No tests executed.' : 'Test execution in progress...'}
+            {testRun.status === 'COMPLETED' || testRun.status === 'FAILED' || testRun.status === 'REJECTED'
+              ? 'No tests executed.' : 'Test execution in progress...'}
           </div>
         ) : (
           <div className="space-y-3">

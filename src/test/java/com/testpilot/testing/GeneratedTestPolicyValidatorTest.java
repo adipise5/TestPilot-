@@ -27,5 +27,24 @@ class GeneratedTestPolicyValidatorTest {
                 () -> validator.validate("PriceTest", unit + " @SpringBootTest", TestLevel.UNIT));
         assertThrows(InvalidRequestException.class,
                 () -> validator.validate("PriceIntegrationTest", unit, TestLevel.INTEGRATION));
+        assertThrows(InvalidRequestException.class,
+                () -> validator.validate("PriceIntegrationTest", integration + " @SpringBootTest", TestLevel.INTEGRATION));
+    }
+
+    @Test
+    void rejectsTheNoOpPatternsFromTheFailedGeneratedRun() {
+        String emptyAssertion = "class EmptyTest { @Test void checks() { "
+                + "assertDoesNotThrow(() -> { // claimed smoke test\n }); } }";
+        assertThrows(InvalidRequestException.class,
+                () -> validator.validate("EmptyTest", emptyAssertion, TestLevel.INTEGRATION));
+
+        String swallowedStartup = "class StartupTest { @Test void checks() { "
+                + "try { App.main(new String[]{}); } catch (Exception ignored) { // expected\n } } }";
+        assertThrows(InvalidRequestException.class,
+                () -> validator.validate("StartupTest", swallowedStartup, TestLevel.UNIT));
+
+        String directStartup = "class StartupTest { @Test void checks() { App.main(new String[]{}); } }";
+        assertThrows(InvalidRequestException.class,
+                () -> validator.validate("StartupTest", directStartup, TestLevel.MODULE));
     }
 }

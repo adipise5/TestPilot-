@@ -92,4 +92,17 @@ class RepositoryCatalogPolicyTest {
                         "// ghp_abcdefghijklmnopqrstuvwxyz123456".getBytes(StandardCharsets.UTF_8)),
                 RepositoryArtifactKind.JAVA_SOURCE));
     }
+
+    @Test
+    void keepsPemParsingSourceButRejectsAnEmbeddedPrivateKeyBlock() {
+        String sourcePath = "src/main/java/example/TokenParser.java";
+        String parser = "class TokenParser { String header = \"-----BEGIN PRIVATE KEY-----\"; "
+                + "String footer = \"-----END PRIVATE KEY-----\"; }";
+        assertDoesNotThrow(() -> policy.decode(new RepositoryFileContent(
+                sourcePath, "sha", parser.getBytes(StandardCharsets.UTF_8)), RepositoryArtifactKind.JAVA_SOURCE));
+
+        String embedded = "-----BEGIN PRIVATE KEY-----\n" + "A".repeat(80) + "\n-----END PRIVATE KEY-----";
+        assertThrows(InvalidRequestException.class, () -> policy.decode(new RepositoryFileContent(
+                sourcePath, "sha", embedded.getBytes(StandardCharsets.UTF_8)), RepositoryArtifactKind.JAVA_SOURCE));
+    }
 }

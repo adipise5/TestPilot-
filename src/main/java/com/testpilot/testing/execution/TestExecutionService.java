@@ -46,8 +46,20 @@ public class TestExecutionService {
                 testFiles.add(new SandboxRequest.TestFile("src/test/java/" + test.getTestClass().replace('.', '/') + ".java", test.getTestCode()));
             }
         } catch (RuntimeException ex) { return convert(run, SandboxResult.failure("INPUT_REJECTED", "Invalid generated test identity")); }
-        String source = files.stream().filter(f -> f.path().endsWith(".java") && f.path().contains("src/main/java/"))
-                .map(SourceInput::path).findFirst().orElse("");
+        Set<String> sourcePaths = new HashSet<>();
+        for (var test : tests) sourcePaths.add(test.getSourceFile());
+        if (sourcePaths.size() != 1) return convert(run, SandboxResult.failure("INPUT_REJECTED", "Generated tests must target one source file"));
+        String source = sourcePaths.iterator().next();
+        if (source == null || source.isBlank())
+            return convert(run, SandboxResult.failure("INPUT_REJECTED", "Generated test source is absent from the snapshot"));
+        String requested = source;
+        if (files.stream().noneMatch(f -> requested.equals(f.path()))) {
+            List<String> matches = files.stream().map(SourceInput::path)
+                    .filter(path -> path.endsWith("/" + requested)).toList();
+            if (matches.size() != 1)
+                return convert(run, SandboxResult.failure("INPUT_REJECTED", "Generated test source is absent or ambiguous in the snapshot"));
+            source = matches.get(0);
+        }
         var request = new SandboxRequest("Java", "JUnit 5 / Mockito", source, testFiles, files);
         return convert(run, executor.execute(request, "testpilot-secure-" + UUID.randomUUID(), cancelled, heartbeat));
     }

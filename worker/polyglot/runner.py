@@ -124,8 +124,11 @@ def classify(exit_code, cases, output=""):
 
 def dependency_failure(output):
     return any(term in output.lower() for term in (
-        "modulenotfounderror", "cannot find module", "could not resolve", "could not find artifact",
-        "has not been downloaded", "err_module_not_found", "no module named", "failed to resolve import"))
+        "modulenotfounderror", "cannot find module", "could not find artifact",
+        "has not been downloaded", "err_module_not_found", "no module named", "failed to resolve import",
+        "non-resolvable parent pom", "pluginresolutionexception", "dependencyresolutionexception",
+        "cannot access central", "cannot access maven", "no plugin found for prefix",
+        "the following artifacts could not be resolved", "was not found in the local repository"))
 
 
 def compilation_failure(output):

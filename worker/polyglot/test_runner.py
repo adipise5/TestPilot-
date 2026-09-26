@@ -43,6 +43,10 @@ class WorkerTests(unittest.TestCase):
             self.assertEqual(runner.classify(0, cases), "SUCCESS")
             self.assertEqual(runner.classify(1, [], "ModuleNotFoundError: no module named xyz"), "DEPENDENCY_FAILURE")
 
+    def test_failed_test_cases_take_precedence_over_dependency_like_stack_traces(self):
+        cases = [{"name": "starts", "status": "ERROR", "message": "context failed", "seconds": 0.1}]
+        self.assertEqual(runner.classify(1, cases, "Could not resolve placeholder while creating bean"), "TEST_FAILURE")
+
     def test_python_commands_are_explicit_and_never_install(self):
         compile_cmd, test_cmd = runner.commands_for({"language": "Python", "framework": "pytest"}, ["/work/repo/tests/test_app.py"])
         self.assertIn("compileall", compile_cmd)
@@ -67,6 +71,7 @@ class WorkerTests(unittest.TestCase):
         self.assertEqual(runner.classify(2, error, "SyntaxError: invalid syntax"), "COMPILATION_FAILURE")
         self.assertEqual(runner.classify(1, error, "fixture setup failed"), "TEST_FAILURE")
         self.assertEqual(runner.classify(0, [], "SyntaxError"), "NO_TESTS")
+        self.assertEqual(runner.classify(1, [], "Non-resolvable parent POM: Cannot access central in offline mode"), "DEPENDENCY_FAILURE")
 
     def test_junit_limits_and_nameless_cases(self):
         with tempfile.TemporaryDirectory() as directory:

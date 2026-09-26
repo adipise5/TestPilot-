@@ -56,7 +56,8 @@ public class ConnectedRepositoryController {
             @PathVariable Long repositoryId,
             @Valid @RequestBody RefreshRepositoryRequest request,
             @AuthenticationPrincipal UserPrincipal currentUser) {
-        return ResponseEntity.ok(ingestionService.ingest(repositoryId, request.revision(), currentUser));
+        return ResponseEntity.ok(ingestionService.ingest(
+                repositoryId, request.revision(), Boolean.TRUE.equals(request.force()), currentUser));
     }
 
     @GetMapping("/repositories/{repositoryId}/ingestions")

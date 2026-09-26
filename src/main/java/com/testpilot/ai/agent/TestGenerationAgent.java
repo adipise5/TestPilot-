@@ -3,6 +3,7 @@ package com.testpilot.ai.agent;
 import com.testpilot.ai.client.LlmClient;
 import com.testpilot.ai.dto.CodeAnalysisResponse;
 import com.testpilot.ai.dto.TestGenerationResponse;
+import com.testpilot.ai.dto.TestCaseDto;
 import com.testpilot.ai.prompt.PromptBoundary;
 import com.testpilot.project.entity.CodeFile;
 import com.testpilot.testing.entity.TestLevel;
@@ -12,9 +13,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.ArrayList;
+import java.util.regex.Pattern;
 
 @Component
 public class TestGenerationAgent {
+
+    private static final Pattern JAVA_TEST_METHOD = Pattern.compile(
+            "@Test\\b(?:(?![{}]|@Test).){0,400}?\\bvoid\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*\\(",
+            Pattern.DOTALL);
 
     private final LlmClient llmClient;
 
@@ -36,7 +43,9 @@ public class TestGenerationAgent {
         var context = new java.util.ArrayList<SourceInput>();
         if (analysis != null) context.add(new SourceInput("ANALYSIS_CONTEXT",
                 analysis.summary() + "\n" + String.valueOf(analysis.edgeCases())));
-        sourceFiles.stream().map(f -> new SourceInput(f.getFilePath(), f.getContent())).forEach(context::add);
+        // Related symbols arrive from snapshot-scoped RAG. Avoid forwarding the
+        // entire repository to every specialist for a single selected target.
+        context.add(source);
         JavaTestAdapter adapter = new JavaTestAdapter();
         var plan = adapter.plan(source, testLevel, context, "legacy-java");
         return generate(plan, source, context, ragContext, adapter);
@@ -49,6 +58,7 @@ public class TestGenerationAgent {
                 You are a software testing agent using the assigned language adapter.
                 Generate a complete test file for the requested language, framework and level.
                 Ensure test methods cover happy paths, edge cases, invalid inputs, and exceptions.
+                Keep the generated file concise: 3 to 8 focused test methods, with no duplicate scenarios.
                 Return a structured JSON object with fields:
                 - testClass (string, exact server-assigned testName, even for non-Java files)
                 - explanation (string, summary of generated tests)
@@ -77,6 +87,27 @@ public class TestGenerationAgent {
 
         promptBuilder.append("Generate one complete test file matching the assigned language, framework, identity and level. Context may be partial. Retrieved symbols are lexical candidates; inspect their definitions before calling them. Apply supplied language standards only when relevant to the target contract.");
         var response = llmClient.generateStructured(promptBuilder.toString(), systemInstruction, TestGenerationResponse.class);
+        if (adapter instanceof JavaTestAdapter && !"mock".equals(llmClient.providerId()) && response != null
+                && response.fullTestCode() != null) {
+            String repairedCode = JavaTestStringEscapes.repair(response.fullTestCode());
+            if (!repairedCode.equals(response.fullTestCode())) {
+                response = new TestGenerationResponse(response.testClass(),
+                        response.explanation() + " Java string escapes were normalized before validation.",
+                        response.tests(), repairedCode);
+            }
+            // The source file is authoritative. Model-provided test metadata is
+            // frequently stale or named differently from the actual @Test methods.
+            var matcher = JAVA_TEST_METHOD.matcher(response.fullTestCode());
+            List<TestCaseDto> actualTests = new ArrayList<>();
+            while (matcher.find() && actualTests.size() <= 100) {
+                actualTests.add(new TestCaseDto(matcher.group(1), matcher.group()));
+            }
+            if (actualTests.isEmpty() || actualTests.size() > 100) {
+                throw new InvalidRequestException("Generated Java test file must declare 1–100 JUnit @Test methods");
+            }
+            response = new TestGenerationResponse(response.testClass(), response.explanation(), actualTests,
+                    response.fullTestCode());
+        }
         adapter.validate(plan, response, "mock".equals(llmClient.providerId()));
         return response;
     }
