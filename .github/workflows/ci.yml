@@ -32,7 +32,7 @@ jobs:
 
       - name: Upload snapshot retrieval and citation evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: phase6-context-evidence
           path: target/phase6-context-evidence.json
@@ -126,7 +126,7 @@ jobs:
 
       - name: Upload reviewer metric regression evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: phase6-review-quality
           path: /tmp/phase6-review-quality.json
@@ -134,7 +134,7 @@ jobs:
 
       - name: Upload benchmark evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: phase7-benchmark-results
           path: |
@@ -169,7 +169,7 @@ jobs:
 
       - name: Upload test usefulness evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: phase6-usefulness
           path: /tmp/phase6-usefulness.json
@@ -190,7 +190,7 @@ jobs:
 
       - name: Upload container acceptance evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: phase4-container-evidence
           path: /tmp/phase4-container-evidence.json
